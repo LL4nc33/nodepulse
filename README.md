@@ -28,13 +28,11 @@ Ein leichtgewichtiges Homelab Dashboard für Raspberry Pi und Fire HD 10 Tablets
 **One-Shot Command** - Kopieren, einfügen, fertig:
 
 ```bash
+# Für öffentliche Repos:
 curl -fsSL https://raw.githubusercontent.com/LL4nc33/nodepulse/main/scripts/install.sh | bash
-```
 
-Oder manuell:
-
-```bash
-git clone https://github.com/LL4nc33/nodepulse.git ~/nodepulse && cd ~/nodepulse && npm install && sudo cp scripts/nodepulse.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now nodepulse
+# Für private Repos (PAT erforderlich):
+git clone https://LL4nc33:<DEIN_PAT>@github.com/LL4nc33/nodepulse.git ~/nodepulse && cd ~/nodepulse && npm install && sudo cp scripts/nodepulse.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now nodepulse
 ```
 
 Nach der Installation: `http://<raspberry-pi-ip>:3000`
