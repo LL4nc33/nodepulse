@@ -1,0 +1,46 @@
+<%- include('partials/header', { currentPath: '/' }) %>
+
+<div class="page-header">
+  <h1>Dashboard</h1>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value"><%= stats.total %></div>
+    <div class="stat-label">Nodes</div>
+  </div>
+  <div class="stat-card stat-online">
+    <div class="stat-value"><%= stats.online %></div>
+    <div class="stat-label">Online</div>
+  </div>
+  <div class="stat-card stat-offline">
+    <div class="stat-value"><%= stats.offline %></div>
+    <div class="stat-label">Offline</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <h2>Nodes</h2>
+    <a href="/nodes/add" class="btn btn-primary">+ Node hinzufügen</a>
+  </div>
+
+  <% if (nodes.length === 0) { %>
+    <p class="empty-state">Noch keine Nodes vorhanden. <a href="/nodes/add">Ersten Node hinzufügen</a></p>
+  <% } else { %>
+    <div class="node-grid">
+      <% nodes.forEach(function(node) { %>
+        <div class="node-card <%= node.online ? 'online' : 'offline' %>">
+          <div class="node-status" aria-label="Status: <%= node.online ? 'Online' : 'Offline' %>"></div>
+          <div class="node-info">
+            <a href="/nodes/<%= node.id %>" class="node-name" title="<%= node.name %>"><%= node.name %></a>
+            <div class="node-host"><%= node.host %></div>
+            <div class="node-type"><%= node.node_type || 'unknown' %></div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

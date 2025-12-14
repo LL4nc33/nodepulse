@@ -1,0 +1,7 @@
+#!/usr/bin/env node
+
+/**
+ * nodepulse CLI entry point
+ */
+
+require('../src/cli/index');

@@ -1,0 +1,126 @@
+<%- include('../partials/header', { currentPath: '/settings' }) %>
+
+<div class="page-header">
+  <h1>Einstellungen</h1>
+</div>
+
+<% if (typeof success !== 'undefined' && success) { %>
+<div class="alert alert-success" role="alert">
+  Einstellungen wurden gespeichert.
+</div>
+<% } %>
+
+<% if (typeof error !== 'undefined' && error) { %>
+<div class="alert alert-error" role="alert">
+  <%= error %>
+</div>
+<% } %>
+
+<form action="/settings" method="POST" class="settings-form">
+  <div class="settings-grid">
+    <div class="settings-section">
+      <h3>Discovery</h3>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" name="auto_discovery_enabled" <%= settings.auto_discovery_enabled === 'true' ? 'checked' : '' %>>
+          <span>Auto-Discovery aktiv</span>
+        </label>
+        <small>Automatische Erkennung von Node-Typ und Features</small>
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" name="rediscovery_on_connect" <%= settings.rediscovery_on_connect === 'true' ? 'checked' : '' %>>
+          <span>Re-Discovery bei Connect</span>
+        </label>
+        <small>Discovery erneut ausführen wenn Node online geht</small>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Monitoring</h3>
+      <div class="form-group">
+        <label for="monitoring_default_interval">Standard-Interval (Sekunden)</label>
+        <input type="number" id="monitoring_default_interval" name="monitoring_default_interval"
+               value="<%= settings.monitoring_default_interval || '30' %>" min="5" max="3600">
+        <small>Wie oft Stats gesammelt werden (5-3600s)</small>
+      </div>
+      <div class="form-group">
+        <label for="stats_retention_hours">Stats-Aufbewahrung (Stunden)</label>
+        <input type="number" id="stats_retention_hours" name="stats_retention_hours"
+               value="<%= settings.stats_retention_hours || '168' %>" min="1" max="8760">
+        <small>Wie lange Stats-History gespeichert wird (1-8760h)</small>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>CPU Alerts</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="alert_cpu_warning">Warning (%)</label>
+          <input type="number" id="alert_cpu_warning" name="alert_cpu_warning"
+                 value="<%= settings.alert_cpu_warning || '80' %>" min="1" max="100">
+        </div>
+        <div class="form-group">
+          <label for="alert_cpu_critical">Critical (%)</label>
+          <input type="number" id="alert_cpu_critical" name="alert_cpu_critical"
+                 value="<%= settings.alert_cpu_critical || '95' %>" min="1" max="100">
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>RAM Alerts</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="alert_ram_warning">Warning (%)</label>
+          <input type="number" id="alert_ram_warning" name="alert_ram_warning"
+                 value="<%= settings.alert_ram_warning || '85' %>" min="1" max="100">
+        </div>
+        <div class="form-group">
+          <label for="alert_ram_critical">Critical (%)</label>
+          <input type="number" id="alert_ram_critical" name="alert_ram_critical"
+                 value="<%= settings.alert_ram_critical || '95' %>" min="1" max="100">
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Disk Alerts</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="alert_disk_warning">Warning (%)</label>
+          <input type="number" id="alert_disk_warning" name="alert_disk_warning"
+                 value="<%= settings.alert_disk_warning || '80' %>" min="1" max="100">
+        </div>
+        <div class="form-group">
+          <label for="alert_disk_critical">Critical (%)</label>
+          <input type="number" id="alert_disk_critical" name="alert_disk_critical"
+                 value="<%= settings.alert_disk_critical || '95' %>" min="1" max="100">
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Temperatur Alerts</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="alert_temp_warning">Warning (&deg;C)</label>
+          <input type="number" id="alert_temp_warning" name="alert_temp_warning"
+                 value="<%= settings.alert_temp_warning || '70' %>" min="1" max="150">
+        </div>
+        <div class="form-group">
+          <label for="alert_temp_critical">Critical (&deg;C)</label>
+          <input type="number" id="alert_temp_critical" name="alert_temp_critical"
+                 value="<%= settings.alert_temp_critical || '85' %>" min="1" max="150">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Speichern</button>
+    <a href="/settings" class="btn btn-secondary">Zurücksetzen</a>
+  </div>
+</form>
+
+<%- include('../partials/footer') %>

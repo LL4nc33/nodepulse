@@ -1,0 +1,75 @@
+<%- include('partials/header', { currentPath: '/about' }) %>
+
+<div class="page-header">
+  <h1>Über nodepulse</h1>
+</div>
+
+<div class="about-container">
+  <div class="about-card">
+    <div class="about-logo">
+      <span class="logo-icon">NP</span>
+    </div>
+    <h2>nodepulse</h2>
+    <p class="version">Version <%= version %></p>
+    <p class="tagline">Homelab Dashboard für Raspberry Pi</p>
+  </div>
+
+  <div class="about-section">
+    <h3>Features</h3>
+    <ul class="feature-list">
+      <li>Node Management (Bare Metal, VMs, Container, Pis)</li>
+      <li>Auto-Discovery von Node-Typ und Features</li>
+      <li>Hardware-Inventar und System-Informationen</li>
+      <li>Live-Monitoring (CPU, RAM, Disk, Temp)</li>
+      <li>Docker-Management (Container, Images, Volumes)</li>
+      <li>Proxmox-Management (VMs, CTs, Storage, Snapshots)</li>
+      <li>Command Execution via SSH</li>
+      <li>CLI Tool (np)</li>
+    </ul>
+  </div>
+
+  <div class="about-section">
+    <h3>System</h3>
+    <dl class="system-info">
+      <dt>Node.js Version</dt>
+      <dd><%= nodeVersion %></dd>
+      <dt>Platform</dt>
+      <dd><%= platform %></dd>
+      <dt>Architecture</dt>
+      <dd><%= arch %></dd>
+      <dt>Uptime</dt>
+      <dd><%= uptime %></dd>
+      <dt>Memory Usage</dt>
+      <dd><%= memoryUsage %></dd>
+    </dl>
+  </div>
+
+  <div class="about-section">
+    <h3>Datenbank</h3>
+    <dl class="system-info">
+      <dt>Nodes</dt>
+      <dd><%= dbStats.nodes %></dd>
+      <dt>Tags</dt>
+      <dd><%= dbStats.tags %></dd>
+      <dt>Stats Einträge</dt>
+      <dd><%= dbStats.statsHistory %></dd>
+      <dt>Command Historie</dt>
+      <dd><%= dbStats.commandHistory %></dd>
+    </dl>
+  </div>
+
+  <div class="about-section">
+    <h3>Links</h3>
+    <ul class="link-list">
+      <li><a href="https://github.com/LL4nc33/nodepulse" target="_blank" rel="noopener">GitHub Repository</a></li>
+      <li><a href="/api" target="_blank">API Documentation</a></li>
+    </ul>
+  </div>
+
+  <div class="about-footer">
+    <p>Made with care for Homelab enthusiasts</p>
+    <p class="copyright">by OidaNice</p>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,27 @@
+<%- include('partials/header', { currentPath: '' }) %>
+
+<div class="error-page">
+  <div class="error-icon">
+    <% if (typeof statusCode !== 'undefined' && statusCode === 404) { %>
+      <span class="error-code">404</span>
+    <% } else if (typeof statusCode !== 'undefined' && statusCode === 500) { %>
+      <span class="error-code">500</span>
+    <% } else { %>
+      <span class="error-code">!</span>
+    <% } %>
+  </div>
+  <h1><%= typeof title !== 'undefined' ? title : 'Fehler' %></h1>
+  <p class="error-message"><%= typeof message !== 'undefined' ? message : 'Ein unbekannter Fehler ist aufgetreten.' %></p>
+  <% if (typeof details !== 'undefined' && details) { %>
+    <details class="error-details">
+      <summary>Technische Details</summary>
+      <pre><%= details %></pre>
+    </details>
+  <% } %>
+  <div class="error-actions">
+    <a href="javascript:history.back()" class="btn btn-secondary">Zurück</a>
+    <a href="/" class="btn btn-primary">Dashboard</a>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

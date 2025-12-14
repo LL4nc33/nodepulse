@@ -1,0 +1,247 @@
+<%- include('../partials/header', { currentPath: '/monitoring' }) %>
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="/monitoring">Monitoring</a> / <span><%= node.name %></span>
+</nav>
+
+<div class="page-header">
+  <h1>
+    <span class="status-dot <%= node.online ? 'online' : 'offline' %>"
+          aria-label="Status: <%= node.online ? 'Online' : 'Offline' %>"></span>
+    <%= node.name %>
+  </h1>
+  <div class="page-actions">
+    <button class="btn btn-secondary" id="btn-refresh" onclick="collectStats()">
+      <span class="btn-text">Stats sammeln</span>
+      <span class="btn-loading"><span class="spinner"></span> Sammle...</span>
+    </button>
+    <a href="/nodes/<%= node.id %>" class="btn">Node-Details</a>
+  </div>
+</div>
+
+<div id="stats-result" class="alert" role="alert" aria-live="polite" style="display: none;"></div>
+
+<div id="auto-refresh-status" class="auto-refresh-status">
+  Auto-Refresh: <span id="refresh-countdown">30</span>s
+  <button class="btn btn-sm" id="btn-toggle-refresh" onclick="toggleAutoRefresh()">Pausieren</button>
+</div>
+
+<% if (!stats) { %>
+  <div class="empty-state">
+    <p>Keine Stats vorhanden. Starte die Stats-Sammlung.</p>
+    <button class="btn btn-primary" onclick="collectStats()">Stats sammeln</button>
+  </div>
+<% } else { %>
+  <div class="detail-grid">
+    <!-- CPU Card -->
+    <div class="detail-card monitoring-detail-card">
+      <h3>CPU</h3>
+      <div class="big-stat <%= stats.cpu_percent >= thresholds.cpu_critical ? 'critical' : (stats.cpu_percent >= thresholds.cpu_warning ? 'warning' : 'ok') %>">
+        <span class="big-stat-value"><%= Math.round(stats.cpu_percent || 0) %></span>
+        <span class="big-stat-unit">%</span>
+      </div>
+      <div class="stat-bar-large">
+        <div class="stat-bar-track">
+          <div class="stat-bar-fill <%= stats.cpu_percent >= thresholds.cpu_critical ? 'critical' : (stats.cpu_percent >= thresholds.cpu_warning ? 'warning' : 'ok') %>"
+               style="width: <%= Math.min(stats.cpu_percent || 0, 100) %>%"></div>
+        </div>
+      </div>
+      <dl class="stat-details">
+        <dt>Load 1m</dt><dd><%= stats.load_1m || '-' %></dd>
+        <dt>Load 5m</dt><dd><%= stats.load_5m || '-' %></dd>
+        <dt>Load 15m</dt><dd><%= stats.load_15m || '-' %></dd>
+      </dl>
+    </div>
+
+    <!-- RAM Card -->
+    <div class="detail-card monitoring-detail-card">
+      <h3>Arbeitsspeicher</h3>
+      <div class="big-stat <%= stats.ram_percent >= thresholds.ram_critical ? 'critical' : (stats.ram_percent >= thresholds.ram_warning ? 'warning' : 'ok') %>">
+        <span class="big-stat-value"><%= Math.round(stats.ram_percent || 0) %></span>
+        <span class="big-stat-unit">%</span>
+      </div>
+      <div class="stat-bar-large">
+        <div class="stat-bar-track">
+          <div class="stat-bar-fill <%= stats.ram_percent >= thresholds.ram_critical ? 'critical' : (stats.ram_percent >= thresholds.ram_warning ? 'warning' : 'ok') %>"
+               style="width: <%= Math.min(stats.ram_percent || 0, 100) %>%"></div>
+        </div>
+      </div>
+      <dl class="stat-details">
+        <dt>Verwendet</dt><dd><%= formatBytes(stats.ram_used_bytes) %></dd>
+        <dt>Verfügbar</dt><dd><%= formatBytes(stats.ram_available_bytes) %></dd>
+        <dt>Swap</dt><dd><%= formatBytes(stats.swap_used_bytes) %></dd>
+      </dl>
+    </div>
+
+    <!-- Disk Card -->
+    <div class="detail-card monitoring-detail-card">
+      <h3>Festplatte (Root)</h3>
+      <div class="big-stat <%= stats.disk_percent >= thresholds.disk_critical ? 'critical' : (stats.disk_percent >= thresholds.disk_warning ? 'warning' : 'ok') %>">
+        <span class="big-stat-value"><%= Math.round(stats.disk_percent || 0) %></span>
+        <span class="big-stat-unit">%</span>
+      </div>
+      <div class="stat-bar-large">
+        <div class="stat-bar-track">
+          <div class="stat-bar-fill <%= stats.disk_percent >= thresholds.disk_critical ? 'critical' : (stats.disk_percent >= thresholds.disk_warning ? 'warning' : 'ok') %>"
+               style="width: <%= Math.min(stats.disk_percent || 0, 100) %>%"></div>
+        </div>
+      </div>
+      <dl class="stat-details">
+        <dt>Verwendet</dt><dd><%= formatBytes(stats.disk_used_bytes) %></dd>
+        <dt>Verfügbar</dt><dd><%= formatBytes(stats.disk_available_bytes) %></dd>
+      </dl>
+    </div>
+
+    <!-- System Card -->
+    <div class="detail-card monitoring-detail-card">
+      <h3>System</h3>
+      <% if (stats.temp_cpu !== null) { %>
+        <div class="big-stat <%= stats.temp_cpu >= thresholds.temp_critical ? 'critical' : (stats.temp_cpu >= thresholds.temp_warning ? 'warning' : 'ok') %>">
+          <span class="big-stat-value"><%= Math.round(stats.temp_cpu) %></span>
+          <span class="big-stat-unit">&deg;C</span>
+        </div>
+      <% } else { %>
+        <div class="big-stat ok">
+          <span class="big-stat-value">-</span>
+          <span class="big-stat-unit">&deg;C</span>
+        </div>
+      <% } %>
+      <dl class="stat-details">
+        <dt>Uptime</dt>
+        <dd>
+          <% if (stats.uptime_seconds) {
+               var days = Math.floor(stats.uptime_seconds / 86400);
+               var hours = Math.floor((stats.uptime_seconds % 86400) / 3600);
+               var mins = Math.floor((stats.uptime_seconds % 3600) / 60);
+          %>
+            <%= days %>d <%= hours %>h <%= mins %>m
+          <% } else { %>
+            -
+          <% } %>
+        </dd>
+        <dt>Prozesse</dt><dd><%= stats.processes || '-' %></dd>
+        <dt>Netzwerk RX</dt><dd><%= formatBytes(stats.net_rx_bytes) %></dd>
+        <dt>Netzwerk TX</dt><dd><%= formatBytes(stats.net_tx_bytes) %></dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="detail-card full-width">
+    <h3>Letzte Aktualisierung</h3>
+    <p class="stats-timestamp">
+      <% if (stats.timestamp) { %>
+        <%= new Date(stats.timestamp * 1000).toLocaleString('de-DE') %>
+      <% } else { %>
+        Unbekannt
+      <% } %>
+    </p>
+  </div>
+<% } %>
+
+<script>
+var autoRefreshEnabled = true;
+var refreshInterval = 30;
+var countdownTimer = null;
+var countdown = refreshInterval;
+var nodeId = <%= node.id %>;
+
+// Collect stats for this node
+function collectStats() {
+  var resultEl = document.getElementById('stats-result');
+  var btnEl = document.getElementById('btn-refresh');
+
+  if (btnEl) {
+    btnEl.classList.add('loading');
+    btnEl.disabled = true;
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/nodes/' + nodeId + '/stats', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 60000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (resultEl) {
+          resultEl.className = 'alert alert-success';
+          resultEl.textContent = 'Stats erfolgreich gesammelt. Seite wird neu geladen...';
+          resultEl.style.display = 'block';
+        }
+        setTimeout(function() {
+          window.location.reload();
+        }, 1000);
+      } else {
+        var response;
+        try {
+          response = JSON.parse(xhr.responseText);
+        } catch (e) {
+          response = { error: { message: 'Fehler beim Sammeln der Stats' } };
+        }
+        if (resultEl) {
+          resultEl.className = 'alert alert-error';
+          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+          resultEl.style.display = 'block';
+        }
+      }
+
+      countdown = refreshInterval;
+      updateCountdown();
+    }
+  };
+
+  xhr.onerror = function() {
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Netzwerkfehler';
+      resultEl.style.display = 'block';
+    }
+  };
+
+  xhr.send();
+}
+
+// Update countdown display
+function updateCountdown() {
+  var el = document.getElementById('refresh-countdown');
+  if (el) {
+    el.textContent = countdown;
+  }
+}
+
+// Toggle auto-refresh
+function toggleAutoRefresh() {
+  autoRefreshEnabled = !autoRefreshEnabled;
+  var btnEl = document.getElementById('btn-toggle-refresh');
+  if (btnEl) {
+    btnEl.textContent = autoRefreshEnabled ? 'Pausieren' : 'Fortsetzen';
+  }
+}
+
+// Countdown tick
+function tick() {
+  if (autoRefreshEnabled) {
+    countdown--;
+    if (countdown <= 0) {
+      window.location.reload();
+    } else {
+      updateCountdown();
+    }
+  }
+}
+
+// Start countdown timer
+countdownTimer = setInterval(tick, 1000);
+updateCountdown();
+</script>
+
+<%- include('../partials/footer') %>

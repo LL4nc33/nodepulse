@@ -1,0 +1,71 @@
+<%- include('../partials/header', { currentPath: '/nodes' }) %>
+
+<div class="page-header">
+  <h1>Node hinzufügen</h1>
+</div>
+
+<% if (error) { %>
+  <div class="alert alert-error" role="alert"><%= error %></div>
+<% } %>
+
+<form method="POST" action="/nodes/add" class="form">
+  <div class="form-group">
+    <label for="name">Name *</label>
+    <input type="text" id="name" name="name"
+           value="<%= typeof node !== 'undefined' && node.name ? node.name : '' %>"
+           required
+           autocomplete="off"
+           placeholder="z.B. proxmox-01"
+           maxlength="255">
+    <small>Eindeutiger Name fur den Node</small>
+  </div>
+
+  <div class="form-group">
+    <label for="host">Host *</label>
+    <input type="text" id="host" name="host"
+           value="<%= typeof node !== 'undefined' && node.host ? node.host : '' %>"
+           required
+           autocomplete="off"
+           placeholder="z.B. 192.168.1.100"
+           maxlength="255">
+    <small>IP-Adresse oder Hostname</small>
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="ssh_user">SSH User *</label>
+      <input type="text" id="ssh_user" name="ssh_user"
+             value="<%= typeof node !== 'undefined' && node.ssh_user ? node.ssh_user : 'root' %>"
+             required
+             autocomplete="off"
+             maxlength="64">
+    </div>
+    <div class="form-group">
+      <label for="ssh_port">SSH Port</label>
+      <input type="number" id="ssh_port" name="ssh_port"
+             value="<%= typeof node !== 'undefined' && node.ssh_port ? node.ssh_port : 22 %>"
+             min="1" max="65535">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label for="ssh_key_path">SSH Key Pfad</label>
+    <input type="text" id="ssh_key_path" name="ssh_key_path"
+           value="<%= typeof node !== 'undefined' && node.ssh_key_path ? node.ssh_key_path : '' %>"
+           autocomplete="off"
+           placeholder="z.B. ~/.ssh/id_rsa">
+    <small>Leer lassen fur Standard-Key</small>
+  </div>
+
+  <div class="form-group">
+    <label for="notes">Notizen</label>
+    <textarea id="notes" name="notes" rows="4"><%= typeof node !== 'undefined' && node.notes ? node.notes : '' %></textarea>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Node erstellen</button>
+    <a href="/nodes" class="btn">Abbrechen</a>
+  </div>
+</form>
+
+<%- include('../partials/footer') %>

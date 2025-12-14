@@ -1,0 +1,40 @@
+  </div>
+</main>
+<footer class="footer">
+  <div class="footer-inner">
+    <span>nodepulse v0.3.1</span>
+    <span>by OidaNice</span>
+  </div>
+</footer>
+<script>
+(function() {
+  var toggle = document.getElementById('themeToggle');
+  if (!toggle) return;
+
+  function updateToggleIcon() {
+    var isLight = document.documentElement.classList.contains('light-mode');
+    var sun = toggle.querySelector('.icon-sun');
+    var moon = toggle.querySelector('.icon-moon');
+    if (sun) sun.style.display = isLight ? 'none' : 'block';
+    if (moon) moon.style.display = isLight ? 'block' : 'none';
+  }
+
+  toggle.addEventListener('click', function() {
+    var html = document.documentElement;
+    var isLight = html.classList.contains('light-mode');
+
+    if (isLight) {
+      html.classList.remove('light-mode');
+      localStorage.setItem('nodepulse-theme', 'dark');
+    } else {
+      html.classList.add('light-mode');
+      localStorage.setItem('nodepulse-theme', 'light');
+    }
+    updateToggleIcon();
+  });
+
+  updateToggleIcon();
+})();
+</script>
+</body>
+</html>

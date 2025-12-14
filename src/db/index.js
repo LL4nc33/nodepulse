@@ -1,0 +1,1296 @@
+const Database = require('better-sqlite3');
+const fs = require('fs');
+const path = require('path');
+const config = require('../config');
+
+let db = null;
+
+/**
+ * Initialize the database connection and create tables if needed
+ */
+function init() {
+  if (db) return db;
+
+  // Ensure data directory exists
+  const dbDir = path.dirname(config.dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+
+  // Create/open database
+  db = new Database(config.dbPath);
+
+  // Enable foreign keys
+  db.pragma('foreign_keys = ON');
+
+  // Enable WAL mode for better performance
+  db.pragma('journal_mode = WAL');
+
+  // Run schema
+  const schemaPath = path.join(__dirname, 'schema.sql');
+  const schema = fs.readFileSync(schemaPath, 'utf8');
+  db.exec(schema);
+
+  // Run seed data
+  const seedPath = path.join(__dirname, 'seed.sql');
+  const seed = fs.readFileSync(seedPath, 'utf8');
+  db.exec(seed);
+
+  console.log('[DB] Database initialized at', config.dbPath);
+
+  return db;
+}
+
+/**
+ * Get the database instance
+ */
+function getDb() {
+  if (!db) {
+    return init();
+  }
+  return db;
+}
+
+/**
+ * Close the database connection
+ */
+function close() {
+  if (db) {
+    db.close();
+    db = null;
+    console.log('[DB] Database connection closed');
+  }
+}
+
+// =====================================================
+// Node Operations
+// =====================================================
+
+const nodes = {
+  /**
+   * Get all nodes
+   */
+  getAll() {
+    const stmt = getDb().prepare(`
+      SELECT n.*,
+        GROUP_CONCAT(t.name) as tags
+      FROM nodes n
+      LEFT JOIN node_tags nt ON n.id = nt.node_id
+      LEFT JOIN tags t ON nt.tag_id = t.id
+      GROUP BY n.id
+      ORDER BY n.name
+    `);
+    return stmt.all();
+  },
+
+  /**
+   * Get a single node by ID
+   */
+  getById(id) {
+    const stmt = getDb().prepare(`
+      SELECT n.*,
+        GROUP_CONCAT(t.name) as tags
+      FROM nodes n
+      LEFT JOIN node_tags nt ON n.id = nt.node_id
+      LEFT JOIN tags t ON nt.tag_id = t.id
+      WHERE n.id = ?
+      GROUP BY n.id
+    `);
+    return stmt.get(id);
+  },
+
+  /**
+   * Get a single node by name
+   */
+  getByName(name) {
+    const stmt = getDb().prepare(`
+      SELECT n.*,
+        GROUP_CONCAT(t.name) as tags
+      FROM nodes n
+      LEFT JOIN node_tags nt ON n.id = nt.node_id
+      LEFT JOIN tags t ON nt.tag_id = t.id
+      WHERE n.name = ?
+      GROUP BY n.id
+    `);
+    return stmt.get(name);
+  },
+
+  /**
+   * Create a new node
+   */
+  create(node) {
+    const stmt = getDb().prepare(`
+      INSERT INTO nodes (name, host, ssh_port, ssh_user, ssh_key_path, notes)
+      VALUES (@name, @host, @ssh_port, @ssh_user, @ssh_key_path, @notes)
+    `);
+    const result = stmt.run({
+      name: node.name,
+      host: node.host,
+      ssh_port: node.ssh_port || 22,
+      ssh_user: node.ssh_user,
+      ssh_key_path: node.ssh_key_path || null,
+      notes: node.notes || null,
+    });
+    return result.lastInsertRowid;
+  },
+
+  /**
+   * Update an existing node
+   */
+  update(id, node) {
+    const stmt = getDb().prepare(`
+      UPDATE nodes SET
+        name = @name,
+        host = @host,
+        ssh_port = @ssh_port,
+        ssh_user = @ssh_user,
+        ssh_key_path = @ssh_key_path,
+        notes = @notes,
+        monitoring_enabled = @monitoring_enabled,
+        monitoring_interval = @monitoring_interval
+      WHERE id = @id
+    `);
+    return stmt.run({
+      id,
+      name: node.name,
+      host: node.host,
+      ssh_port: node.ssh_port || 22,
+      ssh_user: node.ssh_user,
+      ssh_key_path: node.ssh_key_path || null,
+      notes: node.notes || null,
+      monitoring_enabled: node.monitoring_enabled !== undefined ? node.monitoring_enabled : 1,
+      monitoring_interval: node.monitoring_interval || 30,
+    });
+  },
+
+  /**
+   * Delete a node
+   */
+  delete(id) {
+    const stmt = getDb().prepare('DELETE FROM nodes WHERE id = ?');
+    return stmt.run(id);
+  },
+
+  /**
+   * Update node online status
+   */
+  setOnline(id, online, error = null) {
+    const stmt = getDb().prepare(`
+      UPDATE nodes SET
+        online = ?,
+        last_seen = CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE last_seen END,
+        last_error = ?
+      WHERE id = ?
+    `);
+    return stmt.run(online ? 1 : 0, online ? 1 : 0, error, id);
+  },
+
+  /**
+   * Update node type
+   */
+  setNodeType(id, nodeType) {
+    const stmt = getDb().prepare(`
+      UPDATE nodes SET node_type = ? WHERE id = ? AND node_type_locked = 0
+    `);
+    return stmt.run(nodeType, id);
+  },
+};
+
+// =====================================================
+// Tag Operations
+// =====================================================
+
+const tags = {
+  /**
+   * Get all tags
+   */
+  getAll() {
+    const stmt = getDb().prepare('SELECT * FROM tags ORDER BY tag_type, name');
+    return stmt.all();
+  },
+
+  /**
+   * Get tags for a node
+   */
+  getForNode(nodeId) {
+    const stmt = getDb().prepare(`
+      SELECT t.* FROM tags t
+      JOIN node_tags nt ON t.id = nt.tag_id
+      WHERE nt.node_id = ?
+      ORDER BY t.name
+    `);
+    return stmt.all(nodeId);
+  },
+
+  /**
+   * Add a tag to a node
+   */
+  addToNode(nodeId, tagId) {
+    const stmt = getDb().prepare(`
+      INSERT OR IGNORE INTO node_tags (node_id, tag_id) VALUES (?, ?)
+    `);
+    return stmt.run(nodeId, tagId);
+  },
+
+  /**
+   * Remove a tag from a node
+   */
+  removeFromNode(nodeId, tagId) {
+    const stmt = getDb().prepare(`
+      DELETE FROM node_tags WHERE node_id = ? AND tag_id = ?
+    `);
+    return stmt.run(nodeId, tagId);
+  },
+
+  /**
+   * Get tag by name
+   */
+  getByName(name) {
+    const stmt = getDb().prepare('SELECT * FROM tags WHERE name = ?');
+    return stmt.get(name);
+  },
+
+  /**
+   * Create a user tag
+   */
+  create(tag) {
+    const stmt = getDb().prepare(`
+      INSERT INTO tags (name, tag_type, color, description)
+      VALUES (@name, 'user', @color, @description)
+    `);
+    const result = stmt.run({
+      name: tag.name,
+      color: tag.color || '#718096',
+      description: tag.description || null,
+    });
+    return result.lastInsertRowid;
+  },
+};
+
+// =====================================================
+// Settings Operations
+// =====================================================
+
+const settings = {
+  /**
+   * Get a setting value
+   */
+  get(key, defaultValue = null) {
+    const stmt = getDb().prepare('SELECT value FROM settings WHERE key = ?');
+    const row = stmt.get(key);
+    return row ? row.value : defaultValue;
+  },
+
+  /**
+   * Set a setting value
+   */
+  set(key, value) {
+    const stmt = getDb().prepare(`
+      INSERT INTO settings (key, value) VALUES (?, ?)
+      ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `);
+    return stmt.run(key, value);
+  },
+
+  /**
+   * Get all settings
+   */
+  getAll() {
+    const stmt = getDb().prepare('SELECT * FROM settings');
+    const rows = stmt.all();
+    const result = {};
+    for (const row of rows) {
+      result[row.key] = row.value;
+    }
+    return result;
+  },
+};
+
+// =====================================================
+// Discovery Operations
+// =====================================================
+
+const discovery = {
+  /**
+   * Get discovery data for a node
+   */
+  getForNode(nodeId) {
+    const stmt = getDb().prepare('SELECT * FROM node_discovery WHERE node_id = ?');
+    return stmt.get(nodeId);
+  },
+
+  /**
+   * Save or update discovery data for a node
+   */
+  save(nodeId, data) {
+    const stmt = getDb().prepare(`
+      INSERT INTO node_discovery (
+        node_id, raw_json, virtualization,
+        is_proxmox_host, proxmox_version, is_proxmox_cluster,
+        proxmox_cluster_name, proxmox_cluster_nodes,
+        has_docker, docker_version, docker_containers,
+        has_podman, podman_version,
+        is_raspberry_pi, raspberry_pi_model,
+        arch, os_id, os_name, hostname, has_systemd,
+        discovered_at
+      ) VALUES (
+        @node_id, @raw_json, @virtualization,
+        @is_proxmox_host, @proxmox_version, @is_proxmox_cluster,
+        @proxmox_cluster_name, @proxmox_cluster_nodes,
+        @has_docker, @docker_version, @docker_containers,
+        @has_podman, @podman_version,
+        @is_raspberry_pi, @raspberry_pi_model,
+        @arch, @os_id, @os_name, @hostname, @has_systemd,
+        CURRENT_TIMESTAMP
+      )
+      ON CONFLICT(node_id) DO UPDATE SET
+        raw_json = excluded.raw_json,
+        virtualization = excluded.virtualization,
+        is_proxmox_host = excluded.is_proxmox_host,
+        proxmox_version = excluded.proxmox_version,
+        is_proxmox_cluster = excluded.is_proxmox_cluster,
+        proxmox_cluster_name = excluded.proxmox_cluster_name,
+        proxmox_cluster_nodes = excluded.proxmox_cluster_nodes,
+        has_docker = excluded.has_docker,
+        docker_version = excluded.docker_version,
+        docker_containers = excluded.docker_containers,
+        has_podman = excluded.has_podman,
+        podman_version = excluded.podman_version,
+        is_raspberry_pi = excluded.is_raspberry_pi,
+        raspberry_pi_model = excluded.raspberry_pi_model,
+        arch = excluded.arch,
+        os_id = excluded.os_id,
+        os_name = excluded.os_name,
+        hostname = excluded.hostname,
+        has_systemd = excluded.has_systemd,
+        discovered_at = CURRENT_TIMESTAMP
+    `);
+
+    return stmt.run({
+      node_id: nodeId,
+      raw_json: JSON.stringify(data),
+      virtualization: data.virtualization || null,
+      is_proxmox_host: data.is_proxmox_host ? 1 : 0,
+      proxmox_version: data.proxmox_version || null,
+      is_proxmox_cluster: data.is_proxmox_cluster ? 1 : 0,
+      proxmox_cluster_name: data.proxmox_cluster_name || null,
+      proxmox_cluster_nodes: data.proxmox_cluster_nodes || null,
+      has_docker: data.has_docker ? 1 : 0,
+      docker_version: data.docker_version || null,
+      docker_containers: data.docker_containers || 0,
+      has_podman: data.has_podman ? 1 : 0,
+      podman_version: data.podman_version || null,
+      is_raspberry_pi: data.is_raspberry_pi ? 1 : 0,
+      raspberry_pi_model: data.raspberry_pi_model || null,
+      arch: data.arch || null,
+      os_id: data.os_id || null,
+      os_name: data.os_name || null,
+      hostname: data.hostname || null,
+      has_systemd: data.has_systemd ? 1 : 0,
+    });
+  },
+
+  /**
+   * Delete discovery data for a node
+   */
+  delete(nodeId) {
+    const stmt = getDb().prepare('DELETE FROM node_discovery WHERE node_id = ?');
+    return stmt.run(nodeId);
+  },
+};
+
+// =====================================================
+// Hardware Operations
+// =====================================================
+
+const hardware = {
+  /**
+   * Get hardware data for a node
+   */
+  getForNode(nodeId) {
+    const stmt = getDb().prepare('SELECT * FROM node_hardware WHERE node_id = ?');
+    return stmt.get(nodeId);
+  },
+
+  /**
+   * Save or update hardware data for a node
+   */
+  save(nodeId, data) {
+    const stmt = getDb().prepare(`
+      INSERT INTO node_hardware (
+        node_id,
+        system_manufacturer, system_product, system_serial, bios_version, boot_mode,
+        cpu_model, cpu_vendor, cpu_cores, cpu_threads, cpu_max_mhz, cpu_arch,
+        cpu_cache_l1, cpu_cache_l2, cpu_cache_l3, cpu_virt_support,
+        ram_total_bytes, ram_type, ram_speed_mhz, swap_total_bytes,
+        disks_json, network_json, gpu_json,
+        updated_at
+      ) VALUES (
+        @node_id,
+        @system_manufacturer, @system_product, @system_serial, @bios_version, @boot_mode,
+        @cpu_model, @cpu_vendor, @cpu_cores, @cpu_threads, @cpu_max_mhz, @cpu_arch,
+        @cpu_cache_l1, @cpu_cache_l2, @cpu_cache_l3, @cpu_virt_support,
+        @ram_total_bytes, @ram_type, @ram_speed_mhz, @swap_total_bytes,
+        @disks_json, @network_json, @gpu_json,
+        CURRENT_TIMESTAMP
+      )
+      ON CONFLICT(node_id) DO UPDATE SET
+        system_manufacturer = excluded.system_manufacturer,
+        system_product = excluded.system_product,
+        system_serial = excluded.system_serial,
+        bios_version = excluded.bios_version,
+        boot_mode = excluded.boot_mode,
+        cpu_model = excluded.cpu_model,
+        cpu_vendor = excluded.cpu_vendor,
+        cpu_cores = excluded.cpu_cores,
+        cpu_threads = excluded.cpu_threads,
+        cpu_max_mhz = excluded.cpu_max_mhz,
+        cpu_arch = excluded.cpu_arch,
+        cpu_cache_l1 = excluded.cpu_cache_l1,
+        cpu_cache_l2 = excluded.cpu_cache_l2,
+        cpu_cache_l3 = excluded.cpu_cache_l3,
+        cpu_virt_support = excluded.cpu_virt_support,
+        ram_total_bytes = excluded.ram_total_bytes,
+        ram_type = excluded.ram_type,
+        ram_speed_mhz = excluded.ram_speed_mhz,
+        swap_total_bytes = excluded.swap_total_bytes,
+        disks_json = excluded.disks_json,
+        network_json = excluded.network_json,
+        gpu_json = excluded.gpu_json,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+
+    const system = data.system || {};
+    const cpu = data.cpu || {};
+    const memory = data.memory || {};
+
+    return stmt.run({
+      node_id: nodeId,
+      system_manufacturer: system.manufacturer || null,
+      system_product: system.product || null,
+      system_serial: system.serial || null,
+      bios_version: system.bios_version || null,
+      boot_mode: system.boot_mode || null,
+      cpu_model: cpu.model || null,
+      cpu_vendor: cpu.vendor || null,
+      cpu_cores: cpu.cores || null,
+      cpu_threads: cpu.threads || null,
+      cpu_max_mhz: cpu.max_mhz || null,
+      cpu_arch: cpu.arch || null,
+      cpu_cache_l1: cpu.cache_l1 || null,
+      cpu_cache_l2: cpu.cache_l2 || null,
+      cpu_cache_l3: cpu.cache_l3 || null,
+      cpu_virt_support: cpu.virt_support || null,
+      ram_total_bytes: memory.total_bytes || null,
+      ram_type: memory.type || null,
+      ram_speed_mhz: memory.speed_mhz || null,
+      swap_total_bytes: memory.swap_total_bytes || null,
+      disks_json: JSON.stringify(data.disks || []),
+      network_json: JSON.stringify(data.network || []),
+      gpu_json: JSON.stringify(data.gpu || []),
+    });
+  },
+
+  /**
+   * Delete hardware data for a node
+   */
+  delete(nodeId) {
+    const stmt = getDb().prepare('DELETE FROM node_hardware WHERE node_id = ?');
+    return stmt.run(nodeId);
+  },
+};
+
+// =====================================================
+// Stats Operations
+// =====================================================
+
+const stats = {
+  /**
+   * Get current stats for a node
+   */
+  getCurrent(nodeId) {
+    const stmt = getDb().prepare('SELECT * FROM node_stats_current WHERE node_id = ?');
+    return stmt.get(nodeId);
+  },
+
+  /**
+   * Get current stats for all nodes
+   */
+  getAllCurrent() {
+    const stmt = getDb().prepare(`
+      SELECT s.*, n.name as node_name, n.online, n.node_type
+      FROM node_stats_current s
+      JOIN nodes n ON s.node_id = n.id
+      ORDER BY n.name
+    `);
+    return stmt.all();
+  },
+
+  /**
+   * Get all nodes with their current stats (including nodes without stats)
+   */
+  getAllNodesWithStats() {
+    const stmt = getDb().prepare(`
+      SELECT
+        n.id, n.name, n.host, n.node_type, n.online, n.last_seen,
+        n.monitoring_enabled, n.monitoring_interval,
+        s.timestamp, s.cpu_percent, s.load_1m, s.load_5m, s.load_15m,
+        s.ram_used_bytes, s.ram_available_bytes, s.ram_percent,
+        s.swap_used_bytes, s.disk_used_bytes, s.disk_available_bytes,
+        s.disk_percent, s.net_rx_bytes, s.net_tx_bytes,
+        s.temp_cpu, s.uptime_seconds, s.processes
+      FROM nodes n
+      LEFT JOIN node_stats_current s ON n.id = s.node_id
+      ORDER BY n.name
+    `);
+    return stmt.all();
+  },
+
+  /**
+   * Save or update current stats for a node
+   */
+  saveCurrent(nodeId, data) {
+    const stmt = getDb().prepare(`
+      INSERT INTO node_stats_current (
+        node_id, timestamp,
+        cpu_percent, load_1m, load_5m, load_15m,
+        ram_used_bytes, ram_available_bytes, ram_percent, swap_used_bytes,
+        disk_used_bytes, disk_available_bytes, disk_percent,
+        net_rx_bytes, net_tx_bytes, temp_cpu,
+        uptime_seconds, processes
+      ) VALUES (
+        @node_id, @timestamp,
+        @cpu_percent, @load_1m, @load_5m, @load_15m,
+        @ram_used_bytes, @ram_available_bytes, @ram_percent, @swap_used_bytes,
+        @disk_used_bytes, @disk_available_bytes, @disk_percent,
+        @net_rx_bytes, @net_tx_bytes, @temp_cpu,
+        @uptime_seconds, @processes
+      )
+      ON CONFLICT(node_id) DO UPDATE SET
+        timestamp = excluded.timestamp,
+        cpu_percent = excluded.cpu_percent,
+        load_1m = excluded.load_1m,
+        load_5m = excluded.load_5m,
+        load_15m = excluded.load_15m,
+        ram_used_bytes = excluded.ram_used_bytes,
+        ram_available_bytes = excluded.ram_available_bytes,
+        ram_percent = excluded.ram_percent,
+        swap_used_bytes = excluded.swap_used_bytes,
+        disk_used_bytes = excluded.disk_used_bytes,
+        disk_available_bytes = excluded.disk_available_bytes,
+        disk_percent = excluded.disk_percent,
+        net_rx_bytes = excluded.net_rx_bytes,
+        net_tx_bytes = excluded.net_tx_bytes,
+        temp_cpu = excluded.temp_cpu,
+        uptime_seconds = excluded.uptime_seconds,
+        processes = excluded.processes
+    `);
+
+    return stmt.run({
+      node_id: nodeId,
+      timestamp: data.timestamp || Math.floor(Date.now() / 1000),
+      cpu_percent: data.cpu_percent || 0,
+      load_1m: data.load_1m || 0,
+      load_5m: data.load_5m || 0,
+      load_15m: data.load_15m || 0,
+      ram_used_bytes: data.ram_used_bytes || 0,
+      ram_available_bytes: data.ram_available_bytes || 0,
+      ram_percent: data.ram_percent || 0,
+      swap_used_bytes: data.swap_used_bytes || 0,
+      disk_used_bytes: data.disk_used_bytes || 0,
+      disk_available_bytes: data.disk_available_bytes || 0,
+      disk_percent: data.disk_percent || 0,
+      net_rx_bytes: data.net_rx_bytes || 0,
+      net_tx_bytes: data.net_tx_bytes || 0,
+      temp_cpu: data.temp_cpu !== null && data.temp_cpu !== 'null' ? data.temp_cpu : null,
+      uptime_seconds: data.uptime_seconds || 0,
+      processes: data.processes || 0,
+    });
+  },
+
+  /**
+   * Save stats to history
+   */
+  saveHistory(nodeId, data) {
+    const stmt = getDb().prepare(`
+      INSERT INTO node_stats_history (
+        node_id, timestamp,
+        cpu_percent, load_1m, ram_percent, ram_used_bytes,
+        swap_used_bytes, disk_percent,
+        net_rx_bytes, net_tx_bytes, temp_cpu
+      ) VALUES (
+        @node_id, @timestamp,
+        @cpu_percent, @load_1m, @ram_percent, @ram_used_bytes,
+        @swap_used_bytes, @disk_percent,
+        @net_rx_bytes, @net_tx_bytes, @temp_cpu
+      )
+    `);
+
+    return stmt.run({
+      node_id: nodeId,
+      timestamp: data.timestamp || Math.floor(Date.now() / 1000),
+      cpu_percent: data.cpu_percent || 0,
+      load_1m: data.load_1m || 0,
+      ram_percent: data.ram_percent || 0,
+      ram_used_bytes: data.ram_used_bytes || 0,
+      swap_used_bytes: data.swap_used_bytes || 0,
+      disk_percent: data.disk_percent || 0,
+      net_rx_bytes: data.net_rx_bytes || 0,
+      net_tx_bytes: data.net_tx_bytes || 0,
+      temp_cpu: data.temp_cpu !== null && data.temp_cpu !== 'null' ? data.temp_cpu : null,
+    });
+  },
+
+  /**
+   * Get history for a node (last X hours)
+   */
+  getHistory(nodeId, hours = 24) {
+    const cutoff = Math.floor(Date.now() / 1000) - (hours * 3600);
+    const stmt = getDb().prepare(`
+      SELECT * FROM node_stats_history
+      WHERE node_id = ? AND timestamp > ?
+      ORDER BY timestamp ASC
+    `);
+    return stmt.all(nodeId, cutoff);
+  },
+
+  /**
+   * Delete old history entries
+   */
+  cleanupHistory(retentionHours = 168) {
+    const cutoff = Math.floor(Date.now() / 1000) - (retentionHours * 3600);
+    const stmt = getDb().prepare('DELETE FROM node_stats_history WHERE timestamp < ?');
+    return stmt.run(cutoff);
+  },
+
+  /**
+   * Delete stats for a node
+   */
+  deleteForNode(nodeId) {
+    const stmt1 = getDb().prepare('DELETE FROM node_stats_current WHERE node_id = ?');
+    const stmt2 = getDb().prepare('DELETE FROM node_stats_history WHERE node_id = ?');
+    stmt1.run(nodeId);
+    stmt2.run(nodeId);
+  },
+};
+
+// =====================================================
+// Docker Operations
+// =====================================================
+
+const docker = {
+  /**
+   * Get all Docker data for a node
+   */
+  getAllForNode(nodeId) {
+    return {
+      containers: this.getContainers(nodeId),
+      images: this.getImages(nodeId),
+      volumes: this.getVolumes(nodeId),
+      networks: this.getNetworks(nodeId),
+    };
+  },
+
+  /**
+   * Get containers for a node
+   */
+  getContainers(nodeId) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM docker_containers WHERE node_id = ? ORDER BY name
+    `);
+    return stmt.all(nodeId);
+  },
+
+  /**
+   * Get a single container
+   */
+  getContainer(nodeId, containerId) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM docker_containers WHERE node_id = ? AND container_id = ?
+    `);
+    return stmt.get(nodeId, containerId);
+  },
+
+  /**
+   * Save containers for a node (replaces all existing)
+   */
+  saveContainers(nodeId, containers) {
+    const deleteStmt = getDb().prepare('DELETE FROM docker_containers WHERE node_id = ?');
+    const insertStmt = getDb().prepare(`
+      INSERT INTO docker_containers (node_id, container_id, name, image, status, state, ports_json, created_at)
+      VALUES (@node_id, @container_id, @name, @image, @status, @state, @ports_json, @created_at)
+    `);
+
+    const transaction = getDb().transaction(function(containers) {
+      deleteStmt.run(nodeId);
+      for (var i = 0; i < containers.length; i++) {
+        var c = containers[i];
+        insertStmt.run({
+          node_id: nodeId,
+          container_id: c.id,
+          name: c.name,
+          image: c.image,
+          status: c.status,
+          state: c.state,
+          ports_json: c.ports || null,
+          created_at: c.created || null,
+        });
+      }
+    });
+
+    transaction(containers);
+  },
+
+  /**
+   * Get images for a node
+   */
+  getImages(nodeId) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM docker_images WHERE node_id = ? ORDER BY repository, tag
+    `);
+    return stmt.all(nodeId);
+  },
+
+  /**
+   * Save images for a node (replaces all existing)
+   */
+  saveImages(nodeId, images) {
+    const deleteStmt = getDb().prepare('DELETE FROM docker_images WHERE node_id = ?');
+    const insertStmt = getDb().prepare(`
+      INSERT INTO docker_images (node_id, image_id, repository, tag, size_bytes, created_at)
+      VALUES (@node_id, @image_id, @repository, @tag, @size_bytes, @created_at)
+    `);
+
+    const transaction = getDb().transaction(function(images) {
+      deleteStmt.run(nodeId);
+      for (var i = 0; i < images.length; i++) {
+        var img = images[i];
+        insertStmt.run({
+          node_id: nodeId,
+          image_id: img.id,
+          repository: img.repository,
+          tag: img.tag,
+          size_bytes: img.size_bytes || 0,
+          created_at: img.created || null,
+        });
+      }
+    });
+
+    transaction(images);
+  },
+
+  /**
+   * Get volumes for a node
+   */
+  getVolumes(nodeId) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM docker_volumes WHERE node_id = ? ORDER BY name
+    `);
+    return stmt.all(nodeId);
+  },
+
+  /**
+   * Save volumes for a node (replaces all existing)
+   */
+  saveVolumes(nodeId, volumes) {
+    const deleteStmt = getDb().prepare('DELETE FROM docker_volumes WHERE node_id = ?');
+    const insertStmt = getDb().prepare(`
+      INSERT INTO docker_volumes (node_id, name, driver, mountpoint, in_use)
+      VALUES (@node_id, @name, @driver, @mountpoint, @in_use)
+    `);
+
+    const transaction = getDb().transaction(function(volumes) {
+      deleteStmt.run(nodeId);
+      for (var i = 0; i < volumes.length; i++) {
+        var v = volumes[i];
+        insertStmt.run({
+          node_id: nodeId,
+          name: v.name,
+          driver: v.driver || 'local',
+          mountpoint: v.mountpoint || null,
+          in_use: v.in_use ? 1 : 0,
+        });
+      }
+    });
+
+    transaction(volumes);
+  },
+
+  /**
+   * Get networks for a node
+   */
+  getNetworks(nodeId) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM docker_networks WHERE node_id = ? ORDER BY name
+    `);
+    return stmt.all(nodeId);
+  },
+
+  /**
+   * Save networks for a node (replaces all existing)
+   */
+  saveNetworks(nodeId, networks) {
+    const deleteStmt = getDb().prepare('DELETE FROM docker_networks WHERE node_id = ?');
+    const insertStmt = getDb().prepare(`
+      INSERT INTO docker_networks (node_id, network_id, name, driver, scope)
+      VALUES (@node_id, @network_id, @name, @driver, @scope)
+    `);
+
+    const transaction = getDb().transaction(function(networks) {
+      deleteStmt.run(nodeId);
+      for (var i = 0; i < networks.length; i++) {
+        var n = networks[i];
+        insertStmt.run({
+          node_id: nodeId,
+          network_id: n.id,
+          name: n.name,
+          driver: n.driver || 'bridge',
+          scope: n.scope || 'local',
+        });
+      }
+    });
+
+    transaction(networks);
+  },
+
+  /**
+   * Save all Docker data for a node
+   */
+  saveAll(nodeId, data) {
+    if (data.containers) {
+      this.saveContainers(nodeId, data.containers);
+    }
+    if (data.images) {
+      this.saveImages(nodeId, data.images);
+    }
+    if (data.volumes) {
+      this.saveVolumes(nodeId, data.volumes);
+    }
+    if (data.networks) {
+      this.saveNetworks(nodeId, data.networks);
+    }
+  },
+
+  /**
+   * Delete all Docker data for a node
+   */
+  deleteForNode(nodeId) {
+    getDb().prepare('DELETE FROM docker_containers WHERE node_id = ?').run(nodeId);
+    getDb().prepare('DELETE FROM docker_images WHERE node_id = ?').run(nodeId);
+    getDb().prepare('DELETE FROM docker_volumes WHERE node_id = ?').run(nodeId);
+    getDb().prepare('DELETE FROM docker_networks WHERE node_id = ?').run(nodeId);
+  },
+
+  /**
+   * Get summary counts for a node
+   */
+  getSummary(nodeId) {
+    const containers = getDb().prepare('SELECT COUNT(*) as count FROM docker_containers WHERE node_id = ?').get(nodeId);
+    const running = getDb().prepare("SELECT COUNT(*) as count FROM docker_containers WHERE node_id = ? AND state = 'running'").get(nodeId);
+    const images = getDb().prepare('SELECT COUNT(*) as count FROM docker_images WHERE node_id = ?').get(nodeId);
+    const volumes = getDb().prepare('SELECT COUNT(*) as count FROM docker_volumes WHERE node_id = ?').get(nodeId);
+    const networks = getDb().prepare('SELECT COUNT(*) as count FROM docker_networks WHERE node_id = ?').get(nodeId);
+
+    return {
+      containers_total: containers.count,
+      containers_running: running.count,
+      images: images.count,
+      volumes: volumes.count,
+      networks: networks.count,
+    };
+  },
+};
+
+// =====================================================
+// Proxmox Operations
+// =====================================================
+
+const proxmox = {
+  /**
+   * Get all Proxmox data for a node
+   */
+  getAllForNode(nodeId) {
+    return {
+      vms: this.getVMs(nodeId),
+      cts: this.getCTs(nodeId),
+      storage: this.getStorage(nodeId),
+      snapshots: this.getSnapshots(nodeId),
+    };
+  },
+
+  /**
+   * Get VMs for a node
+   */
+  getVMs(nodeId) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM proxmox_vms WHERE node_id = ? ORDER BY vmid
+    `);
+    return stmt.all(nodeId);
+  },
+
+  /**
+   * Get a single VM
+   */
+  getVM(nodeId, vmid) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM proxmox_vms WHERE node_id = ? AND vmid = ?
+    `);
+    return stmt.get(nodeId, vmid);
+  },
+
+  /**
+   * Save VMs for a node (replaces all existing)
+   */
+  saveVMs(nodeId, vms) {
+    const deleteStmt = getDb().prepare('DELETE FROM proxmox_vms WHERE node_id = ?');
+    const insertStmt = getDb().prepare(`
+      INSERT INTO proxmox_vms (node_id, vmid, name, status, cpu_cores, memory_bytes, disk_bytes, template)
+      VALUES (@node_id, @vmid, @name, @status, @cpu_cores, @memory_bytes, @disk_bytes, @template)
+    `);
+
+    const transaction = getDb().transaction(function(vms) {
+      deleteStmt.run(nodeId);
+      for (var i = 0; i < vms.length; i++) {
+        var vm = vms[i];
+        insertStmt.run({
+          node_id: nodeId,
+          vmid: vm.vmid,
+          name: vm.name || null,
+          status: vm.status || 'unknown',
+          cpu_cores: vm.cpu_cores || 1,
+          memory_bytes: vm.memory_bytes || 0,
+          disk_bytes: vm.disk_bytes || 0,
+          template: vm.template ? 1 : 0,
+        });
+      }
+    });
+
+    transaction(vms);
+  },
+
+  /**
+   * Get CTs for a node
+   */
+  getCTs(nodeId) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM proxmox_cts WHERE node_id = ? ORDER BY ctid
+    `);
+    return stmt.all(nodeId);
+  },
+
+  /**
+   * Get a single CT
+   */
+  getCT(nodeId, ctid) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM proxmox_cts WHERE node_id = ? AND ctid = ?
+    `);
+    return stmt.get(nodeId, ctid);
+  },
+
+  /**
+   * Save CTs for a node (replaces all existing)
+   */
+  saveCTs(nodeId, cts) {
+    const deleteStmt = getDb().prepare('DELETE FROM proxmox_cts WHERE node_id = ?');
+    const insertStmt = getDb().prepare(`
+      INSERT INTO proxmox_cts (node_id, ctid, name, status, cpu_cores, memory_bytes, disk_bytes, template)
+      VALUES (@node_id, @ctid, @name, @status, @cpu_cores, @memory_bytes, @disk_bytes, @template)
+    `);
+
+    const transaction = getDb().transaction(function(cts) {
+      deleteStmt.run(nodeId);
+      for (var i = 0; i < cts.length; i++) {
+        var ct = cts[i];
+        insertStmt.run({
+          node_id: nodeId,
+          ctid: ct.ctid,
+          name: ct.name || null,
+          status: ct.status || 'unknown',
+          cpu_cores: ct.cpu_cores || 1,
+          memory_bytes: ct.memory_bytes || 0,
+          disk_bytes: ct.disk_bytes || 0,
+          template: ct.template ? 1 : 0,
+        });
+      }
+    });
+
+    transaction(cts);
+  },
+
+  /**
+   * Get storage for a node
+   */
+  getStorage(nodeId) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM proxmox_storage WHERE node_id = ? ORDER BY storage_name
+    `);
+    return stmt.all(nodeId);
+  },
+
+  /**
+   * Save storage for a node (replaces all existing)
+   */
+  saveStorage(nodeId, storage) {
+    const deleteStmt = getDb().prepare('DELETE FROM proxmox_storage WHERE node_id = ?');
+    const insertStmt = getDb().prepare(`
+      INSERT INTO proxmox_storage (node_id, storage_name, storage_type, total_bytes, used_bytes, available_bytes)
+      VALUES (@node_id, @storage_name, @storage_type, @total_bytes, @used_bytes, @available_bytes)
+    `);
+
+    const transaction = getDb().transaction(function(storage) {
+      deleteStmt.run(nodeId);
+      for (var i = 0; i < storage.length; i++) {
+        var s = storage[i];
+        insertStmt.run({
+          node_id: nodeId,
+          storage_name: s.name,
+          storage_type: s.type || 'unknown',
+          total_bytes: s.total_bytes || 0,
+          used_bytes: s.used_bytes || 0,
+          available_bytes: s.available_bytes || 0,
+        });
+      }
+    });
+
+    transaction(storage);
+  },
+
+  /**
+   * Get snapshots for a node
+   */
+  getSnapshots(nodeId) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM proxmox_snapshots WHERE node_id = ? ORDER BY vmid, snap_name
+    `);
+    return stmt.all(nodeId);
+  },
+
+  /**
+   * Get snapshots for a specific VM/CT
+   */
+  getSnapshotsForVM(nodeId, vmid, vmType) {
+    const stmt = getDb().prepare(`
+      SELECT * FROM proxmox_snapshots WHERE node_id = ? AND vmid = ? AND vm_type = ? ORDER BY snap_name
+    `);
+    return stmt.all(nodeId, vmid, vmType);
+  },
+
+  /**
+   * Save snapshots for a node (replaces all existing)
+   */
+  saveSnapshots(nodeId, snapshots) {
+    const deleteStmt = getDb().prepare('DELETE FROM proxmox_snapshots WHERE node_id = ?');
+    const insertStmt = getDb().prepare(`
+      INSERT INTO proxmox_snapshots (node_id, vmid, vm_type, snap_name, description)
+      VALUES (@node_id, @vmid, @vm_type, @snap_name, @description)
+    `);
+
+    const transaction = getDb().transaction(function(snapshots) {
+      deleteStmt.run(nodeId);
+      for (var i = 0; i < snapshots.length; i++) {
+        var snap = snapshots[i];
+        insertStmt.run({
+          node_id: nodeId,
+          vmid: snap.vmid,
+          vm_type: snap.vm_type || 'vm',
+          snap_name: snap.snap_name,
+          description: snap.description || null,
+        });
+      }
+    });
+
+    transaction(snapshots);
+  },
+
+  /**
+   * Save all Proxmox data for a node
+   */
+  saveAll(nodeId, data) {
+    if (data.vms) {
+      this.saveVMs(nodeId, data.vms);
+    }
+    if (data.cts) {
+      this.saveCTs(nodeId, data.cts);
+    }
+    if (data.storage) {
+      this.saveStorage(nodeId, data.storage);
+    }
+    if (data.snapshots) {
+      this.saveSnapshots(nodeId, data.snapshots);
+    }
+  },
+
+  /**
+   * Delete all Proxmox data for a node
+   */
+  deleteForNode(nodeId) {
+    getDb().prepare('DELETE FROM proxmox_vms WHERE node_id = ?').run(nodeId);
+    getDb().prepare('DELETE FROM proxmox_cts WHERE node_id = ?').run(nodeId);
+    getDb().prepare('DELETE FROM proxmox_storage WHERE node_id = ?').run(nodeId);
+    getDb().prepare('DELETE FROM proxmox_snapshots WHERE node_id = ?').run(nodeId);
+  },
+
+  /**
+   * Get summary counts for a node
+   */
+  getSummary(nodeId) {
+    const vms = getDb().prepare('SELECT COUNT(*) as count FROM proxmox_vms WHERE node_id = ?').get(nodeId);
+    const vmsRunning = getDb().prepare("SELECT COUNT(*) as count FROM proxmox_vms WHERE node_id = ? AND status = 'running'").get(nodeId);
+    const cts = getDb().prepare('SELECT COUNT(*) as count FROM proxmox_cts WHERE node_id = ?').get(nodeId);
+    const ctsRunning = getDb().prepare("SELECT COUNT(*) as count FROM proxmox_cts WHERE node_id = ? AND status = 'running'").get(nodeId);
+    const storage = getDb().prepare('SELECT COUNT(*) as count FROM proxmox_storage WHERE node_id = ?').get(nodeId);
+    const snapshots = getDb().prepare('SELECT COUNT(*) as count FROM proxmox_snapshots WHERE node_id = ?').get(nodeId);
+
+    return {
+      vms_total: vms.count,
+      vms_running: vmsRunning.count,
+      cts_total: cts.count,
+      cts_running: ctsRunning.count,
+      storage_count: storage.count,
+      snapshots_count: snapshots.count,
+    };
+  },
+};
+
+// =====================================================
+// Commands
+// =====================================================
+
+const commands = {
+  // Command Templates
+  getTemplates: function(category) {
+    if (category) {
+      return getDb().prepare('SELECT * FROM command_templates WHERE category = ? ORDER BY sort_order, name').all(category);
+    }
+    return getDb().prepare('SELECT * FROM command_templates ORDER BY category, sort_order, name').all();
+  },
+
+  getTemplateById: function(id) {
+    return getDb().prepare('SELECT * FROM command_templates WHERE id = ?').get(id);
+  },
+
+  getTemplatesForNodeType: function(nodeType) {
+    var templates = getDb().prepare('SELECT * FROM command_templates ORDER BY category, sort_order, name').all();
+    return templates.filter(function(t) {
+      var types = t.node_types.split(',').map(function(s) { return s.trim(); });
+      return types.indexOf(nodeType) !== -1 || types.indexOf('all') !== -1;
+    });
+  },
+
+  createTemplate: function(data) {
+    var stmt = getDb().prepare(
+      'INSERT INTO command_templates (name, description, category, node_types, template, requires_param, dangerous, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    var result = stmt.run(
+      data.name,
+      data.description || null,
+      data.category,
+      data.node_types,
+      data.template,
+      data.requires_param || null,
+      data.dangerous || 0,
+      data.sort_order || 0
+    );
+    return result.lastInsertRowid;
+  },
+
+  deleteTemplate: function(id) {
+    return getDb().prepare('DELETE FROM command_templates WHERE id = ?').run(id);
+  },
+
+  // Command History
+  createHistory: function(data) {
+    var stmt = getDb().prepare(
+      'INSERT INTO command_history (command_template_id, full_command, target_type, target_value) VALUES (?, ?, ?, ?)'
+    );
+    var result = stmt.run(
+      data.command_template_id || null,
+      data.full_command,
+      data.target_type,
+      data.target_value || null
+    );
+    return result.lastInsertRowid;
+  },
+
+  getHistory: function(limit) {
+    limit = limit || 50;
+    return getDb().prepare(
+      'SELECT h.*, t.name as template_name, t.category as template_category FROM command_history h LEFT JOIN command_templates t ON h.command_template_id = t.id ORDER BY h.executed_at DESC LIMIT ?'
+    ).all(limit);
+  },
+
+  getHistoryForNode: function(nodeId, limit) {
+    limit = limit || 20;
+    return getDb().prepare(
+      'SELECT DISTINCT h.*, t.name as template_name, t.category as template_category FROM command_history h LEFT JOIN command_templates t ON h.command_template_id = t.id INNER JOIN command_results r ON h.id = r.history_id WHERE r.node_id = ? ORDER BY h.executed_at DESC LIMIT ?'
+    ).all(nodeId, limit);
+  },
+
+  // Command Results
+  createResult: function(data) {
+    var stmt = getDb().prepare(
+      'INSERT INTO command_results (history_id, node_id, status, exit_code, output, error, started_at, finished_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    );
+    var result = stmt.run(
+      data.history_id,
+      data.node_id,
+      data.status,
+      data.exit_code,
+      data.output || null,
+      data.error || null,
+      data.started_at,
+      data.finished_at
+    );
+    return result.lastInsertRowid;
+  },
+
+  getResultsForHistory: function(historyId) {
+    return getDb().prepare(
+      'SELECT r.*, n.name as node_name FROM command_results r INNER JOIN nodes n ON r.node_id = n.id WHERE r.history_id = ? ORDER BY r.started_at'
+    ).all(historyId);
+  },
+
+  getResultById: function(id) {
+    return getDb().prepare(
+      'SELECT r.*, n.name as node_name, h.full_command FROM command_results r INNER JOIN nodes n ON r.node_id = n.id INNER JOIN command_history h ON r.history_id = h.id WHERE r.id = ?'
+    ).get(id);
+  },
+
+  getLatestResultForNode: function(nodeId) {
+    return getDb().prepare(
+      'SELECT r.*, h.full_command FROM command_results r INNER JOIN command_history h ON r.history_id = h.id WHERE r.node_id = ? ORDER BY r.started_at DESC LIMIT 1'
+    ).get(nodeId);
+  },
+
+  // Cleanup old history
+  cleanupHistory: function(olderThanDays) {
+    olderThanDays = olderThanDays || 30;
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - olderThanDays);
+    var cutoffStr = cutoff.toISOString();
+
+    // Delete results first (FK constraint)
+    getDb().prepare(
+      'DELETE FROM command_results WHERE history_id IN (SELECT id FROM command_history WHERE executed_at < ?)'
+    ).run(cutoffStr);
+
+    // Then delete history
+    return getDb().prepare('DELETE FROM command_history WHERE executed_at < ?').run(cutoffStr);
+  },
+};
+
+module.exports = {
+  init,
+  getDb,
+  close,
+  nodes,
+  tags,
+  settings,
+  discovery,
+  hardware,
+  stats,
+  docker,
+  proxmox,
+  commands,
+};

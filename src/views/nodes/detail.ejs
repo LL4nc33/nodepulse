@@ -1,0 +1,2124 @@
+<%- include('../partials/header', { currentPath: '/nodes' }) %>
+
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="/nodes">Nodes</a> / <span><%= node.name %></span>
+</nav>
+
+<div class="page-header">
+  <h1>
+    <span class="status-dot <%= node.online ? 'online' : 'offline' %>"
+          aria-label="Status: <%= node.online ? 'Online' : 'Offline' %>"></span>
+    <%= node.name %>
+  </h1>
+  <div class="page-actions">
+    <button class="btn btn-primary" id="btn-test" onclick="testConnection(<%= node.id %>)">
+      <span class="btn-text">SSH Test</span>
+      <span class="btn-loading"><span class="spinner"></span> Teste...</span>
+    </button>
+    <button class="btn btn-secondary" id="btn-discover" onclick="runDiscovery(<%= node.id %>)">
+      <span class="btn-text">Discovery</span>
+      <span class="btn-loading"><span class="spinner"></span> Scanne...</span>
+    </button>
+    <a href="/nodes/<%= node.id %>/edit" class="btn">Bearbeiten</a>
+  </div>
+</div>
+
+<div id="test-result" class="alert" role="alert" aria-live="polite" style="display: none;"></div>
+
+<!-- Tab Navigation -->
+<div class="tabs">
+  <button class="tab-btn active" data-tab="overview">Übersicht</button>
+  <button class="tab-btn" data-tab="hardware">Hardware</button>
+  <button class="tab-btn" data-tab="discovery">Discovery</button>
+  <% if (discovery && discovery.has_docker) { %>
+    <button class="tab-btn" data-tab="docker">Docker</button>
+  <% } %>
+  <% if (discovery && discovery.is_proxmox_host) { %>
+    <button class="tab-btn" data-tab="proxmox">Proxmox</button>
+  <% } %>
+  <% if (discovery && discovery.has_systemd) { %>
+    <button class="tab-btn" data-tab="services">Services</button>
+  <% } %>
+  <button class="tab-btn" data-tab="terminal">Terminal</button>
+</div>
+
+<!-- Overview Tab -->
+<div class="tab-content active" id="tab-overview">
+  <div class="detail-grid">
+    <div class="detail-card">
+      <h3>Verbindung</h3>
+      <dl>
+        <dt>Host</dt>
+        <dd><%= node.host %></dd>
+        <dt>SSH Port</dt>
+        <dd><%= node.ssh_port %></dd>
+        <dt>SSH User</dt>
+        <dd><%= node.ssh_user %></dd>
+        <dt>SSH Key</dt>
+        <dd><%= node.ssh_key_path || 'Standard' %></dd>
+      </dl>
+    </div>
+
+    <div class="detail-card">
+      <h3>Status</h3>
+      <dl>
+        <dt>Online</dt>
+        <dd><%= node.online ? 'Ja' : 'Nein' %></dd>
+        <dt>Zuletzt gesehen</dt>
+        <dd><%= node.last_seen || 'Nie' %></dd>
+        <dt>Node-Typ</dt>
+        <dd><span class="node-type-badge"><%= node.node_type || 'Unbekannt' %></span></dd>
+        <dt>Letzter Fehler</dt>
+        <dd class="<%= node.last_error ? 'text-error' : '' %>"><%= node.last_error || '-' %></dd>
+      </dl>
+    </div>
+
+    <div class="detail-card">
+      <h3>Monitoring</h3>
+      <dl>
+        <dt>Aktiv</dt>
+        <dd><%= node.monitoring_enabled ? 'Ja' : 'Nein' %></dd>
+        <dt>Interval</dt>
+        <dd><%= node.monitoring_interval %>s</dd>
+        <dt>Auto-Discovery</dt>
+        <dd><%= node.auto_discovery ? 'Ja' : 'Nein' %></dd>
+      </dl>
+    </div>
+
+    <div class="detail-card">
+      <h3>Tags</h3>
+      <div class="tags">
+        <% if (tags.length === 0) { %>
+          <span class="empty">Keine Tags</span>
+        <% } else { %>
+          <% tags.forEach(function(tag) { %>
+            <span class="tag" style="background-color: <%= tag.color %>"><%= tag.name %></span>
+          <% }); %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <% if (node.notes) { %>
+    <div class="detail-card full-width">
+      <h3>Notizen</h3>
+      <p><%= node.notes %></p>
+    </div>
+  <% } %>
+</div>
+
+<!-- Hardware Tab -->
+<div class="tab-content" id="tab-hardware">
+  <% if (!hardware) { %>
+    <div class="empty-state">
+      <p>Keine Hardware-Daten vorhanden.</p>
+      <button class="btn btn-primary btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
+        <span class="btn-text">Discovery starten</span>
+        <span class="btn-loading"><span class="spinner"></span> Scanne...</span>
+      </button>
+    </div>
+  <% } else { %>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>System</h3>
+        <dl>
+          <dt>Hersteller</dt>
+          <dd><%= hardware.system_manufacturer || '-' %></dd>
+          <dt>Produkt</dt>
+          <dd><%= hardware.system_product || '-' %></dd>
+          <dt>Seriennummer</dt>
+          <dd><%= hardware.system_serial || '-' %></dd>
+          <dt>BIOS</dt>
+          <dd><%= hardware.bios_version || '-' %></dd>
+          <dt>Boot-Modus</dt>
+          <dd><%= hardware.boot_mode || '-' %></dd>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>CPU</h3>
+        <dl>
+          <dt>Modell</dt>
+          <dd><%= hardware.cpu_model || '-' %></dd>
+          <dt>Hersteller</dt>
+          <dd><%= hardware.cpu_vendor || '-' %></dd>
+          <dt>Kerne / Threads</dt>
+          <dd><%= hardware.cpu_cores || '-' %> / <%= hardware.cpu_threads || '-' %></dd>
+          <dt>Architektur</dt>
+          <dd><%= hardware.cpu_arch || '-' %></dd>
+          <dt>Max. Takt</dt>
+          <dd><%= hardware.cpu_max_mhz ? hardware.cpu_max_mhz + ' MHz' : '-' %></dd>
+          <dt>Virtualisierung</dt>
+          <dd><%= hardware.cpu_virt_support || '-' %></dd>
+          <dt>Cache L1/L2/L3</dt>
+          <dd><%= hardware.cpu_cache_l1 || '-' %> / <%= hardware.cpu_cache_l2 || '-' %> / <%= hardware.cpu_cache_l3 || '-' %></dd>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>Arbeitsspeicher</h3>
+        <dl>
+          <dt>RAM Total</dt>
+          <dd><%= hardware.ram_total_bytes ? formatBytes(hardware.ram_total_bytes) : '-' %></dd>
+          <dt>RAM Typ</dt>
+          <dd><%= hardware.ram_type || '-' %></dd>
+          <dt>RAM Geschwindigkeit</dt>
+          <dd><%= hardware.ram_speed_mhz ? hardware.ram_speed_mhz + ' MHz' : '-' %></dd>
+          <dt>Swap Total</dt>
+          <dd><%= hardware.swap_total_bytes ? formatBytes(hardware.swap_total_bytes) : '-' %></dd>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>Festplatten</h3>
+        <%
+          var disks = [];
+          try { disks = JSON.parse(hardware.disks_json || '[]'); } catch(e) {}
+        %>
+        <% if (disks.length === 0) { %>
+          <span class="empty">Keine Festplatten erkannt</span>
+        <% } else { %>
+          <div class="disk-list">
+            <% disks.forEach(function(disk) { %>
+              <div class="disk-item">
+                <strong><%= disk.name || disk.NAME || '-' %></strong>
+                <% var size = disk.size || disk.SIZE; %>
+                <span class="disk-size"><%= size ? formatBytes(size) : '-' %></span>
+                <span class="disk-type"><%= (disk.rota || disk.ROTA) === 1 ? 'HDD' : 'SSD' %></span>
+                <% if (disk.model || disk.MODEL) { %>
+                  <small><%= disk.model || disk.MODEL %></small>
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="detail-card">
+        <h3>Netzwerk</h3>
+        <%
+          var networks = [];
+          try { networks = JSON.parse(hardware.network_json || '[]'); } catch(e) {}
+        %>
+        <% if (networks.length === 0) { %>
+          <span class="empty">Keine Netzwerk-Interfaces erkannt</span>
+        <% } else { %>
+          <div class="network-list">
+            <% networks.forEach(function(net) { %>
+              <div class="network-item">
+                <strong><%= net.name || '-' %></strong>
+                <span class="net-state <%= net.state === 'UP' ? 'up' : 'down' %>"><%= net.state || '-' %></span>
+                <% if (net.mac) { %>
+                  <small>MAC: <%= net.mac %></small>
+                <% } %>
+                <% if (net.ips && net.ips.length > 0) { %>
+                  <% net.ips.forEach(function(ip) { %>
+                    <% if (ip.address) { %>
+                      <span class="ip-address"><%= ip.address %></span>
+                    <% } %>
+                  <% }); %>
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="detail-card">
+        <h3>GPU</h3>
+        <%
+          var gpus = [];
+          try { gpus = JSON.parse(hardware.gpu_json || '[]'); } catch(e) {}
+        %>
+        <% if (gpus.length === 0) { %>
+          <span class="empty">Keine GPU erkannt</span>
+        <% } else { %>
+          <ul class="gpu-list">
+            <% gpus.forEach(function(gpu) { %>
+              <li><%= gpu.description || '-' %></li>
+            <% }); %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<!-- Discovery Tab -->
+<div class="tab-content" id="tab-discovery">
+  <% if (!discovery) { %>
+    <div class="empty-state">
+      <p>Keine Discovery-Daten vorhanden.</p>
+      <button class="btn btn-primary btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
+        <span class="btn-text">Discovery starten</span>
+        <span class="btn-loading"><span class="spinner"></span> Scanne...</span>
+      </button>
+    </div>
+  <% } else { %>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>System</h3>
+        <dl>
+          <dt>Hostname</dt>
+          <dd><%= discovery.hostname || '-' %></dd>
+          <dt>Betriebssystem</dt>
+          <dd><%= discovery.os_name || '-' %></dd>
+          <dt>OS ID</dt>
+          <dd><%= discovery.os_id || '-' %></dd>
+          <dt>Architektur</dt>
+          <dd><%= discovery.arch || '-' %></dd>
+          <dt>Virtualisierung</dt>
+          <dd><%= discovery.virtualization || 'none' %></dd>
+          <dt>Systemd</dt>
+          <dd><%= discovery.has_systemd ? 'Ja' : 'Nein' %></dd>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>Proxmox</h3>
+        <dl>
+          <dt>Proxmox Host</dt>
+          <dd><%= discovery.is_proxmox_host ? 'Ja' : 'Nein' %></dd>
+          <% if (discovery.is_proxmox_host) { %>
+            <dt>Version</dt>
+            <dd><%= discovery.proxmox_version || '-' %></dd>
+            <dt>Cluster</dt>
+            <dd><%= discovery.is_proxmox_cluster ? 'Ja' : 'Nein' %></dd>
+            <% if (discovery.is_proxmox_cluster) { %>
+              <dt>Cluster Name</dt>
+              <dd><%= discovery.proxmox_cluster_name || '-' %></dd>
+              <dt>Cluster Nodes</dt>
+              <dd><%= discovery.proxmox_cluster_nodes || '-' %></dd>
+            <% } %>
+          <% } %>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>Container Runtimes</h3>
+        <dl>
+          <dt>Docker</dt>
+          <dd><%= discovery.has_docker ? 'Ja' : 'Nein' %></dd>
+          <% if (discovery.has_docker) { %>
+            <dt>Docker Version</dt>
+            <dd><%= discovery.docker_version || '-' %></dd>
+            <dt>Container</dt>
+            <dd><%= discovery.docker_containers || 0 %></dd>
+          <% } %>
+          <dt>Podman</dt>
+          <dd><%= discovery.has_podman ? 'Ja' : 'Nein' %></dd>
+          <% if (discovery.has_podman) { %>
+            <dt>Podman Version</dt>
+            <dd><%= discovery.podman_version || '-' %></dd>
+          <% } %>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>Hardware-Typ</h3>
+        <dl>
+          <dt>Raspberry Pi</dt>
+          <dd><%= discovery.is_raspberry_pi ? 'Ja' : 'Nein' %></dd>
+          <% if (discovery.is_raspberry_pi) { %>
+            <dt>Pi Modell</dt>
+            <dd><%= discovery.raspberry_pi_model || '-' %></dd>
+          <% } %>
+        </dl>
+        <% if (discovery.discovered_at) { %>
+          <p class="discovery-time">Zuletzt gescannt: <%= discovery.discovered_at %></p>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<!-- Docker Tab -->
+<% if (discovery && discovery.has_docker) { %>
+<div class="tab-content" id="tab-docker">
+  <div class="docker-header">
+    <h2>Docker Management</h2>
+    <div class="docker-actions">
+      <button class="btn btn-primary" id="btn-refresh-docker" onclick="refreshDocker(<%= node.id %>)">
+        <span class="btn-text">Aktualisieren</span>
+        <span class="btn-loading"><span class="spinner"></span> Lade...</span>
+      </button>
+      <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle" onclick="togglePruneMenu()">Aufraeumen</button>
+        <div class="dropdown-menu" id="prune-menu">
+          <button class="dropdown-item" onclick="pruneDocker(<%= node.id %>, 'containers')">Gestoppte Container</button>
+          <button class="dropdown-item" onclick="pruneDocker(<%= node.id %>, 'images')">Unbenutzte Images</button>
+          <button class="dropdown-item" onclick="pruneDocker(<%= node.id %>, 'volumes')">Unbenutzte Volumes</button>
+          <button class="dropdown-item" onclick="pruneDocker(<%= node.id %>, 'networks')">Unbenutzte Networks</button>
+          <button class="dropdown-item text-danger" onclick="pruneDocker(<%= node.id %>, 'system')">System Prune (Alles)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="docker-result" class="alert" role="alert" aria-live="polite" style="display: none;"></div>
+
+  <% if (!docker || (!docker.containers.length && !docker.images.length)) { %>
+    <div class="empty-state">
+      <p>Keine Docker-Daten vorhanden.</p>
+      <button class="btn btn-primary" onclick="refreshDocker(<%= node.id %>)">
+        Docker-Daten laden
+      </button>
+    </div>
+  <% } else { %>
+    <!-- Docker Summary -->
+    <div class="docker-summary">
+      <div class="summary-card">
+        <span class="summary-value"><%= docker.containers.filter(function(c) { return c.state === 'running'; }).length %></span>
+        <span class="summary-label">Running</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= docker.containers.length %></span>
+        <span class="summary-label">Container</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= docker.images.length %></span>
+        <span class="summary-label">Images</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= docker.volumes.length %></span>
+        <span class="summary-label">Volumes</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= docker.networks.length %></span>
+        <span class="summary-label">Networks</span>
+      </div>
+    </div>
+
+    <!-- Containers Section -->
+    <div class="docker-section">
+      <h3>Container</h3>
+      <% if (docker.containers.length === 0) { %>
+        <p class="empty">Keine Container vorhanden</p>
+      <% } else { %>
+        <div class="docker-table-wrapper">
+          <table class="docker-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Image</th>
+                <th>Status</th>
+                <th>Ports</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% docker.containers.forEach(function(container) { %>
+                <tr class="container-row <%= container.state %>">
+                  <td class="container-name"><%= container.name %></td>
+                  <td class="container-image"><%= container.image %></td>
+                  <td class="container-status">
+                    <span class="state-badge <%= container.state %>"><%= container.state %></span>
+                  </td>
+                  <td class="container-ports"><%= container.ports || '-' %></td>
+                  <td class="container-actions">
+                    <% if (container.state === 'running') { %>
+                      <button class="btn btn-sm btn-icon" title="Stop" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'stop')">
+                        <span class="icon-stop"></span>
+                      </button>
+                      <button class="btn btn-sm btn-icon" title="Restart" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'restart')">
+                        <span class="icon-restart"></span>
+                      </button>
+                    <% } else if (container.state === 'exited' || container.state === 'created') { %>
+                      <button class="btn btn-sm btn-icon" title="Start" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'start')">
+                        <span class="icon-start"></span>
+                      </button>
+                    <% } else if (container.state === 'paused') { %>
+                      <button class="btn btn-sm btn-icon" title="Unpause" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'unpause')">
+                        <span class="icon-start"></span>
+                      </button>
+                    <% } %>
+                    <button class="btn btn-sm btn-icon" title="Logs" onclick="showLogs(<%= node.id %>, '<%= container.container_id %>', '<%= container.name %>')">
+                      <span class="icon-logs"></span>
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Images Section -->
+    <div class="docker-section">
+      <h3>Images</h3>
+      <% if (docker.images.length === 0) { %>
+        <p class="empty">Keine Images vorhanden</p>
+      <% } else { %>
+        <div class="docker-table-wrapper">
+          <table class="docker-table">
+            <thead>
+              <tr>
+                <th>Repository</th>
+                <th>Tag</th>
+                <th>Groesse</th>
+                <th>Erstellt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% docker.images.forEach(function(image) { %>
+                <tr>
+                  <td><%= image.repository %></td>
+                  <td><span class="image-tag"><%= image.tag %></span></td>
+                  <td><%= image.size %></td>
+                  <td class="date-cell"><%= image.created %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Volumes Section -->
+    <div class="docker-section">
+      <h3>Volumes</h3>
+      <% if (docker.volumes.length === 0) { %>
+        <p class="empty">Keine Volumes vorhanden</p>
+      <% } else { %>
+        <div class="docker-table-wrapper">
+          <table class="docker-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Driver</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% docker.volumes.forEach(function(volume) { %>
+                <tr>
+                  <td class="volume-name"><%= volume.name %></td>
+                  <td><%= volume.driver %></td>
+                  <td>
+                    <span class="usage-badge <%= volume.in_use ? 'in-use' : 'unused' %>">
+                      <%= volume.in_use ? 'In Verwendung' : 'Unbenutzt' %>
+                    </span>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Networks Section -->
+    <div class="docker-section">
+      <h3>Networks</h3>
+      <% if (docker.networks.length === 0) { %>
+        <p class="empty">Keine Networks vorhanden</p>
+      <% } else { %>
+        <div class="docker-table-wrapper">
+          <table class="docker-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Driver</th>
+                <th>Scope</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% docker.networks.forEach(function(network) { %>
+                <tr>
+                  <td><%= network.name %></td>
+                  <td><%= network.driver %></td>
+                  <td><%= network.scope %></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+<% } %>
+
+<!-- Proxmox Tab -->
+<% if (discovery && discovery.is_proxmox_host) { %>
+<div class="tab-content" id="tab-proxmox">
+  <div class="proxmox-header">
+    <h2>Proxmox Management</h2>
+    <div class="proxmox-actions">
+      <button class="btn btn-primary" id="btn-refresh-proxmox" onclick="refreshProxmox(<%= node.id %>)">
+        <span class="btn-text">Aktualisieren</span>
+        <span class="btn-loading"><span class="spinner"></span> Lade...</span>
+      </button>
+      <button class="btn btn-secondary" onclick="toggleSnapshotModal()">Snapshot erstellen</button>
+    </div>
+  </div>
+
+  <div id="proxmox-result" class="alert" role="alert" aria-live="polite" style="display: none;"></div>
+
+  <% if (!proxmox || (!proxmox.vms.length && !proxmox.cts.length)) { %>
+    <div class="empty-state">
+      <p>Keine Proxmox-Daten vorhanden.</p>
+      <button class="btn btn-primary" onclick="refreshProxmox(<%= node.id %>)">
+        Proxmox-Daten laden
+      </button>
+    </div>
+  <% } else { %>
+    <!-- Proxmox Summary -->
+    <div class="proxmox-summary">
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.vms.filter(function(v) { return v.status === 'running'; }).length %></span>
+        <span class="summary-label">VMs Running</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.vms.length %></span>
+        <span class="summary-label">VMs Total</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.cts.filter(function(c) { return c.status === 'running'; }).length %></span>
+        <span class="summary-label">CTs Running</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.cts.length %></span>
+        <span class="summary-label">CTs Total</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.storage.length %></span>
+        <span class="summary-label">Storage</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.snapshots.length %></span>
+        <span class="summary-label">Snapshots</span>
+      </div>
+    </div>
+
+    <!-- VMs Section -->
+    <div class="proxmox-section">
+      <h3>Virtuelle Maschinen (VMs)</h3>
+      <% if (proxmox.vms.length === 0) { %>
+        <p class="empty">Keine VMs vorhanden</p>
+      <% } else { %>
+        <div class="proxmox-table-wrapper">
+          <table class="proxmox-table">
+            <thead>
+              <tr>
+                <th>VMID</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>CPU</th>
+                <th>RAM</th>
+                <th>Disk</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% proxmox.vms.forEach(function(vm) { %>
+                <tr class="vm-row <%= vm.status %>">
+                  <td class="vm-id"><%= vm.vmid %></td>
+                  <td class="vm-name">
+                    <%= vm.name || '-' %>
+                    <% if (vm.template) { %><span class="template-badge">Template</span><% } %>
+                  </td>
+                  <td class="vm-status">
+                    <span class="state-badge <%= vm.status %>"><%= vm.status %></span>
+                  </td>
+                  <td><%= vm.cpu_cores %> Cores</td>
+                  <td><%= vm.memory_bytes ? formatBytes(vm.memory_bytes) : '-' %></td>
+                  <td><%= vm.disk_bytes ? formatBytes(vm.disk_bytes) : '-' %></td>
+                  <td class="vm-actions">
+                    <% if (!vm.template) { %>
+                      <% if (vm.status === 'running') { %>
+                        <button class="btn btn-sm btn-icon" title="Shutdown" onclick="proxmoxAction(<%= node.id %>, 'vm', <%= vm.vmid %>, 'shutdown')">
+                          <span class="icon-shutdown"></span>
+                        </button>
+                        <button class="btn btn-sm btn-icon btn-danger" title="Stop" onclick="proxmoxAction(<%= node.id %>, 'vm', <%= vm.vmid %>, 'stop')">
+                          <span class="icon-stop"></span>
+                        </button>
+                        <button class="btn btn-sm btn-icon" title="Reboot" onclick="proxmoxAction(<%= node.id %>, 'vm', <%= vm.vmid %>, 'reboot')">
+                          <span class="icon-restart"></span>
+                        </button>
+                      <% } else { %>
+                        <button class="btn btn-sm btn-icon" title="Start" onclick="proxmoxAction(<%= node.id %>, 'vm', <%= vm.vmid %>, 'start')">
+                          <span class="icon-start"></span>
+                        </button>
+                      <% } %>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- CTs Section -->
+    <div class="proxmox-section">
+      <h3>Container (LXC)</h3>
+      <% if (proxmox.cts.length === 0) { %>
+        <p class="empty">Keine Container vorhanden</p>
+      <% } else { %>
+        <div class="proxmox-table-wrapper">
+          <table class="proxmox-table">
+            <thead>
+              <tr>
+                <th>CTID</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>CPU</th>
+                <th>RAM</th>
+                <th>Disk</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% proxmox.cts.forEach(function(ct) { %>
+                <tr class="ct-row <%= ct.status %>">
+                  <td class="ct-id"><%= ct.ctid %></td>
+                  <td class="ct-name">
+                    <%= ct.name || '-' %>
+                    <% if (ct.template) { %><span class="template-badge">Template</span><% } %>
+                  </td>
+                  <td class="ct-status">
+                    <span class="state-badge <%= ct.status %>"><%= ct.status %></span>
+                  </td>
+                  <td><%= ct.cpu_cores %> Cores</td>
+                  <td><%= ct.memory_bytes ? formatBytes(ct.memory_bytes) : '-' %></td>
+                  <td><%= ct.disk_bytes ? formatBytes(ct.disk_bytes) : '-' %></td>
+                  <td class="ct-actions">
+                    <% if (!ct.template) { %>
+                      <% if (ct.status === 'running') { %>
+                        <button class="btn btn-sm btn-icon" title="Shutdown" onclick="proxmoxAction(<%= node.id %>, 'ct', <%= ct.ctid %>, 'shutdown')">
+                          <span class="icon-shutdown"></span>
+                        </button>
+                        <button class="btn btn-sm btn-icon btn-danger" title="Stop" onclick="proxmoxAction(<%= node.id %>, 'ct', <%= ct.ctid %>, 'stop')">
+                          <span class="icon-stop"></span>
+                        </button>
+                        <button class="btn btn-sm btn-icon" title="Reboot" onclick="proxmoxAction(<%= node.id %>, 'ct', <%= ct.ctid %>, 'reboot')">
+                          <span class="icon-restart"></span>
+                        </button>
+                      <% } else { %>
+                        <button class="btn btn-sm btn-icon" title="Start" onclick="proxmoxAction(<%= node.id %>, 'ct', <%= ct.ctid %>, 'start')">
+                          <span class="icon-start"></span>
+                        </button>
+                      <% } %>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Storage Section -->
+    <div class="proxmox-section">
+      <h3>Storage</h3>
+      <% if (proxmox.storage.length === 0) { %>
+        <p class="empty">Kein Storage vorhanden</p>
+      <% } else { %>
+        <div class="proxmox-table-wrapper">
+          <table class="proxmox-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Typ</th>
+                <th>Status</th>
+                <th>Gesamt</th>
+                <th>Belegt</th>
+                <th>Frei</th>
+                <th>Auslastung</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% proxmox.storage.forEach(function(store) { %>
+                <%
+                  var usedPercent = 0;
+                  if (store.total_bytes > 0) {
+                    usedPercent = Math.round((store.used_bytes / store.total_bytes) * 100);
+                  }
+                  var storageClass = usedPercent >= 95 ? 'critical' : (usedPercent >= 80 ? 'warning' : '');
+                %>
+                <tr class="storage-row">
+                  <td class="storage-name"><%= store.storage_name %></td>
+                  <td><%= store.storage_type %></td>
+                  <td><span class="state-badge active">active</span></td>
+                  <td><%= store.total_bytes ? formatBytes(store.total_bytes) : '-' %></td>
+                  <td><%= store.used_bytes ? formatBytes(store.used_bytes) : '-' %></td>
+                  <td><%= store.available_bytes ? formatBytes(store.available_bytes) : '-' %></td>
+                  <td>
+                    <div class="storage-bar">
+                      <div class="storage-bar-fill <%= storageClass %>" style="width: <%= usedPercent %>%"></div>
+                      <span class="storage-bar-text"><%= usedPercent %>%</span>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Snapshots Section -->
+    <div class="proxmox-section">
+      <h3>Snapshots</h3>
+      <% if (proxmox.snapshots.length === 0) { %>
+        <p class="empty">Keine Snapshots vorhanden</p>
+      <% } else { %>
+        <div class="proxmox-table-wrapper">
+          <table class="proxmox-table">
+            <thead>
+              <tr>
+                <th>VM/CT</th>
+                <th>Typ</th>
+                <th>Snapshot Name</th>
+                <th>Beschreibung</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% proxmox.snapshots.forEach(function(snap) { %>
+                <tr class="snapshot-row">
+                  <td><%= snap.vmid %></td>
+                  <td><span class="type-badge <%= snap.vm_type %>"><%= snap.vm_type.toUpperCase() %></span></td>
+                  <td class="snap-name"><%= snap.snap_name %></td>
+                  <td class="snap-desc"><%= snap.description || '-' %></td>
+                  <td class="snap-actions">
+                    <button class="btn btn-sm btn-danger" title="Löschen" onclick="deleteSnapshot(<%= node.id %>, '<%= snap.vm_type %>', <%= snap.vmid %>, '<%= snap.snap_name %>')">
+                      Löschen
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+<% } %>
+
+<!-- Services Tab (systemd) -->
+<% if (discovery && discovery.has_systemd) { %>
+<div class="tab-content" id="tab-services">
+  <div class="services-container">
+    <div class="services-header">
+      <h3>Systemd Services</h3>
+      <button class="btn btn-secondary" onclick="loadServices(<%= node.id %>)">
+        <span class="btn-text">Aktualisieren</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+
+    <div class="services-filter">
+      <input type="text" id="services-search" placeholder="Service suchen..."
+             onkeyup="filterServices()" class="form-control">
+      <select id="services-status-filter" onchange="filterServices()" class="form-control">
+        <option value="">Alle Status</option>
+        <option value="running">Running</option>
+        <option value="exited">Exited</option>
+        <option value="failed">Failed</option>
+        <option value="dead">Dead</option>
+      </select>
+    </div>
+
+    <div class="services-list" id="services-list">
+      <div class="loading-placeholder">
+        <span class="spinner"></span>
+        <span>Services werden geladen...</span>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- Terminal Tab -->
+<div class="tab-content" id="tab-terminal">
+  <div class="terminal-container">
+    <div class="terminal-header">
+      <h3>Command Execution</h3>
+    </div>
+
+    <!-- Command Input -->
+    <div class="terminal-input-section">
+      <form id="command-form" onsubmit="executeCommand(event, <%= node.id %>)">
+        <div class="terminal-input-wrapper">
+          <span class="terminal-prompt">$</span>
+          <input type="text" id="command-input" name="command" class="terminal-input"
+                 placeholder="Befehl eingeben..." autocomplete="off" maxlength="2000">
+          <button type="submit" class="btn btn-primary" id="btn-execute">
+            <span class="btn-text">Ausführen</span>
+            <span class="btn-loading"><span class="spinner"></span></span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Quick Commands -->
+    <div class="terminal-quick-commands">
+      <span class="quick-commands-label">Schnellbefehle:</span>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('uptime')">uptime</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('free -h')">free -h</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('df -h')">df -h</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('top -bn1 | head -20')">top</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('cat /etc/os-release')">OS Info</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('ip addr')">IP Addr</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('ps aux --sort=-%mem | head -15')">Prozesse</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('journalctl -n 50 --no-pager')">Logs</button>
+    </div>
+
+    <!-- Output Area -->
+    <div class="terminal-output-section">
+      <div class="terminal-output-header">
+        <span>Ausgabe</span>
+        <button type="button" class="btn btn-sm" onclick="clearOutput()">Leeren</button>
+      </div>
+      <pre id="terminal-output" class="terminal-output">Noch kein Befehl ausgefuehrt.</pre>
+    </div>
+
+    <!-- Command History -->
+    <div class="terminal-history-section">
+      <div class="terminal-history-header">
+        <span>Letzte Befehle</span>
+        <button type="button" class="btn btn-sm" id="btn-refresh-history" onclick="loadCommandHistory(<%= node.id %>)">
+          Aktualisieren
+        </button>
+      </div>
+      <div id="command-history" class="command-history">
+        <p class="empty">Keine Befehle in der Historie.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Snapshot Create Modal -->
+<% if (discovery && discovery.is_proxmox_host) { %>
+<div class="modal" id="snapshot-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="toggleSnapshotModal()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Snapshot erstellen</h3>
+      <button class="btn-close" onclick="toggleSnapshotModal()" aria-label="Modal schliessen">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="snapshot-form" onsubmit="createSnapshot(event, <%= node.id %>)">
+        <div class="form-group">
+          <label for="snap-vm-type">Typ</label>
+          <select id="snap-vm-type" name="vm_type" required>
+            <option value="">-- Waehlen --</option>
+            <option value="vm">VM</option>
+            <option value="ct">Container</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="snap-vmid">VMID / CTID</label>
+          <input type="number" id="snap-vmid" name="vmid" min="100" max="999999999" required>
+        </div>
+        <div class="form-group">
+          <label for="snap-name">Snapshot Name</label>
+          <input type="text" id="snap-name" name="snap_name" pattern="[a-zA-Z0-9_-]+" maxlength="40" required>
+          <small>Nur Buchstaben, Zahlen, - und _ erlaubt</small>
+        </div>
+        <div class="form-group">
+          <label for="snap-desc">Beschreibung (optional)</label>
+          <input type="text" id="snap-desc" name="description" maxlength="255">
+        </div>
+        <div id="snapshot-form-result" class="alert" style="display: none;"></div>
+        <button type="submit" class="btn btn-primary" id="btn-create-snapshot">
+          <span class="btn-text">Snapshot erstellen</span>
+          <span class="btn-loading"><span class="spinner"></span> Erstelle...</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- Logs Modal -->
+<div class="modal" id="logs-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeLogs()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="logs-title">Container Logs</h3>
+      <button class="btn-close" onclick="closeLogs()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <pre id="logs-content" class="logs-output">Lade Logs...</pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeLogs()">Schliessen</button>
+    </div>
+  </div>
+</div>
+
+<div class="danger-zone">
+  <h3>Gefahrenzone</h3>
+  <form method="POST" action="/nodes/<%= node.id %>/delete" id="delete-form">
+    <p>Node "<strong><%= node.name %></strong>" unwiderruflich loschen?</p>
+    <button type="submit" class="btn btn-danger">Node loschen</button>
+  </form>
+</div>
+
+<script>
+// Format bytes to human readable
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  var k = 1024;
+  var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  var i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Tab switching
+var tabBtns = document.querySelectorAll('.tab-btn');
+var tabContents = document.querySelectorAll('.tab-content');
+
+for (var i = 0; i < tabBtns.length; i++) {
+  tabBtns[i].addEventListener('click', function() {
+    var tabId = this.getAttribute('data-tab');
+
+    // Update buttons
+    for (var j = 0; j < tabBtns.length; j++) {
+      tabBtns[j].classList.remove('active');
+    }
+    this.classList.add('active');
+
+    // Update content
+    for (var k = 0; k < tabContents.length; k++) {
+      tabContents[k].classList.remove('active');
+    }
+    document.getElementById('tab-' + tabId).classList.add('active');
+  });
+}
+
+// Discovery function
+function runDiscovery(nodeId) {
+  var resultEl = document.getElementById('test-result');
+  var btnEl = document.getElementById('btn-discover');
+  var secondaryBtns = document.querySelectorAll('.btn-discover-secondary');
+
+  if (!resultEl) return;
+
+  // Show loading
+  resultEl.className = 'alert alert-info';
+  resultEl.textContent = 'Discovery läuft... (kann 1-2 Minuten dauern)';
+  resultEl.style.display = 'block';
+
+  // Set loading state on all discovery buttons
+  if (btnEl) {
+    btnEl.classList.add('loading');
+    btnEl.disabled = true;
+  }
+  for (var i = 0; i < secondaryBtns.length; i++) {
+    secondaryBtns[i].classList.add('loading');
+    secondaryBtns[i].disabled = true;
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/nodes/' + nodeId + '/discover', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 180000; // 3 minutes
+
+  function resetButtons() {
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+    for (var i = 0; i < secondaryBtns.length; i++) {
+      secondaryBtns[i].classList.remove('loading');
+      secondaryBtns[i].disabled = false;
+    }
+  }
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      resetButtons();
+
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        var msg = 'Discovery erfolgreich! Node-Typ: ' + (response.data.nodeType || 'Unbekannt');
+        if (response.data.hardwareError) {
+          msg += ' (Hardware-Warnung: ' + response.data.hardwareError + ')';
+        }
+        msg += '. Seite wird neu geladen...';
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = msg;
+        setTimeout(function() {
+          window.location.reload();
+        }, 1500);
+      } else {
+        var errMsg = response.error ? response.error.message : 'Discovery fehlgeschlagen';
+        resultEl.className = 'alert alert-error';
+        resultEl.textContent = 'Fehler: ' + errMsg;
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    resetButtons();
+    resultEl.className = 'alert alert-error';
+    resultEl.textContent = 'Netzwerkfehler bei Discovery';
+  };
+
+  xhr.ontimeout = function() {
+    resetButtons();
+    resultEl.className = 'alert alert-error';
+    resultEl.textContent = 'Discovery Timeout (3 Minuten)';
+  };
+
+  xhr.send();
+}
+
+// Docker functions
+function refreshDocker(nodeId) {
+  var resultEl = document.getElementById('docker-result');
+  var btnEl = document.getElementById('btn-refresh-docker');
+
+  if (resultEl) {
+    resultEl.className = 'alert alert-info';
+    resultEl.textContent = 'Docker-Daten werden geladen...';
+    resultEl.style.display = 'block';
+  }
+
+  if (btnEl) {
+    btnEl.classList.add('loading');
+    btnEl.disabled = true;
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/nodes/' + nodeId + '/docker', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 120000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        if (resultEl) {
+          resultEl.className = 'alert alert-success';
+          resultEl.textContent = 'Docker-Daten aktualisiert. Seite wird neu geladen...';
+        }
+        setTimeout(function() {
+          window.location.reload();
+        }, 1000);
+      } else {
+        if (resultEl) {
+          resultEl.className = 'alert alert-error';
+          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Netzwerkfehler';
+    }
+  };
+
+  xhr.ontimeout = function() {
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Timeout (2 Minuten)';
+    }
+  };
+
+  xhr.send();
+}
+
+function containerAction(nodeId, containerId, action) {
+  var resultEl = document.getElementById('docker-result');
+  var actionNames = {
+    'start': 'Starten',
+    'stop': 'Stoppen',
+    'restart': 'Neustarten',
+    'pause': 'Pausieren',
+    'unpause': 'Fortsetzen'
+  };
+
+  if (resultEl) {
+    resultEl.className = 'alert alert-info';
+    resultEl.textContent = 'Container wird ' + (actionNames[action] || action) + '...';
+    resultEl.style.display = 'block';
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/nodes/' + nodeId + '/docker/containers/' + containerId + '/' + action, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 60000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        if (resultEl) {
+          resultEl.className = 'alert alert-success';
+          resultEl.textContent = 'Container ' + action + ' erfolgreich. Aktualisiere...';
+        }
+        setTimeout(function() {
+          refreshDocker(nodeId);
+        }, 500);
+      } else {
+        if (resultEl) {
+          resultEl.className = 'alert alert-error';
+          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Netzwerkfehler';
+    }
+  };
+
+  xhr.ontimeout = function() {
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Timeout (60 Sekunden)';
+    }
+  };
+
+  xhr.send();
+}
+
+// Track active logs XHR for cancellation
+var activeLogsXHR = null;
+
+function showLogs(nodeId, containerId, containerName) {
+  var modal = document.getElementById('logs-modal');
+  var title = document.getElementById('logs-title');
+  var content = document.getElementById('logs-content');
+
+  if (!modal || !content) return;
+
+  // Abort previous XHR if still running
+  if (activeLogsXHR) {
+    activeLogsXHR.abort();
+  }
+
+  modal.style.display = 'flex';
+  title.textContent = 'Logs: ' + containerName;
+  content.textContent = 'Lade Logs...';
+
+  var xhr = new XMLHttpRequest();
+  activeLogsXHR = xhr;
+  xhr.open('GET', '/api/nodes/' + nodeId + '/docker/containers/' + containerId + '/logs?tail=100', true);
+  xhr.timeout = 30000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      activeLogsXHR = null;
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        content.textContent = response.data.logs || '(Keine Logs vorhanden)';
+      } else {
+        content.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    activeLogsXHR = null;
+    content.textContent = 'Netzwerkfehler beim Laden der Logs';
+  };
+
+  xhr.ontimeout = function() {
+    activeLogsXHR = null;
+    content.textContent = 'Timeout beim Laden der Logs';
+  };
+
+  xhr.send();
+}
+
+function closeLogs() {
+  var modal = document.getElementById('logs-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+  // Abort active XHR if running
+  if (activeLogsXHR) {
+    activeLogsXHR.abort();
+    activeLogsXHR = null;
+  }
+}
+
+function togglePruneMenu() {
+  var menu = document.getElementById('prune-menu');
+  if (menu) {
+    menu.classList.toggle('open');
+  }
+}
+
+function pruneDocker(nodeId, type) {
+  var resultEl = document.getElementById('docker-result');
+  var typeNames = {
+    'system': 'System',
+    'containers': 'Container',
+    'images': 'Images',
+    'volumes': 'Volumes',
+    'networks': 'Networks'
+  };
+
+  var confirmMsg = 'Wirklich ' + (typeNames[type] || type) + ' aufraeumen?';
+  if (type === 'system') {
+    confirmMsg = 'ACHTUNG: System Prune entfernt alle unbenutzten Container, Images, Volumes und Networks. Fortfahren?';
+  }
+
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  // Close menu
+  var menu = document.getElementById('prune-menu');
+  if (menu) {
+    menu.classList.remove('open');
+  }
+
+  if (resultEl) {
+    resultEl.className = 'alert alert-info';
+    resultEl.textContent = 'Fuehre ' + (typeNames[type] || type) + ' Prune aus...';
+    resultEl.style.display = 'block';
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/nodes/' + nodeId + '/docker/prune/' + type, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 120000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        if (resultEl) {
+          resultEl.className = 'alert alert-success';
+          resultEl.textContent = 'Prune erfolgreich. Aktualisiere...';
+        }
+        setTimeout(function() {
+          refreshDocker(nodeId);
+        }, 1000);
+      } else {
+        if (resultEl) {
+          resultEl.className = 'alert alert-error';
+          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Netzwerkfehler';
+    }
+  };
+
+  xhr.ontimeout = function() {
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Timeout (2 Minuten)';
+    }
+  };
+
+  xhr.send();
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('prune-menu');
+  var toggle = document.querySelector('.dropdown-toggle');
+  if (menu && toggle && !toggle.contains(e.target) && !menu.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+
+// Proxmox functions
+function refreshProxmox(nodeId) {
+  var resultEl = document.getElementById('proxmox-result');
+  var btnEl = document.getElementById('btn-refresh-proxmox');
+
+  if (resultEl) {
+    resultEl.className = 'alert alert-info';
+    resultEl.textContent = 'Proxmox-Daten werden geladen...';
+    resultEl.style.display = 'block';
+  }
+
+  if (btnEl) {
+    btnEl.classList.add('loading');
+    btnEl.disabled = true;
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/nodes/' + nodeId + '/proxmox', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 180000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        if (resultEl) {
+          resultEl.className = 'alert alert-success';
+          resultEl.textContent = 'Proxmox-Daten aktualisiert. Seite wird neu geladen...';
+        }
+        setTimeout(function() {
+          window.location.reload();
+        }, 1000);
+      } else {
+        if (resultEl) {
+          resultEl.className = 'alert alert-error';
+          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Netzwerkfehler';
+    }
+  };
+
+  xhr.ontimeout = function() {
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Timeout (3 Minuten)';
+    }
+  };
+
+  xhr.send();
+}
+
+function proxmoxAction(nodeId, vmType, vmid, action) {
+  var resultEl = document.getElementById('proxmox-result');
+  var actionNames = {
+    'start': 'Starten',
+    'stop': 'Stoppen',
+    'shutdown': 'Herunterfahren',
+    'reboot': 'Neustarten',
+    'reset': 'Reset',
+    'suspend': 'Suspendieren',
+    'resume': 'Fortsetzen'
+  };
+
+  var typeName = vmType === 'vm' ? 'VM' : 'Container';
+
+  if (action === 'stop') {
+    if (!confirm('ACHTUNG: ' + typeName + ' ' + vmid + ' wird hart gestoppt. Fortfahren?')) {
+      return;
+    }
+  }
+
+  if (resultEl) {
+    resultEl.className = 'alert alert-info';
+    resultEl.textContent = typeName + ' ' + vmid + ' wird ' + (actionNames[action] || action) + '...';
+    resultEl.style.display = 'block';
+  }
+
+  var endpoint = vmType === 'vm' ? 'vms' : 'cts';
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/nodes/' + nodeId + '/proxmox/' + endpoint + '/' + vmid + '/' + action, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 180000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        if (resultEl) {
+          resultEl.className = 'alert alert-success';
+          resultEl.textContent = typeName + ' ' + action + ' erfolgreich. Aktualisiere...';
+        }
+        setTimeout(function() {
+          refreshProxmox(nodeId);
+        }, 1000);
+      } else {
+        if (resultEl) {
+          resultEl.className = 'alert alert-error';
+          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Netzwerkfehler';
+    }
+  };
+
+  xhr.ontimeout = function() {
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Timeout (3 Minuten)';
+    }
+  };
+
+  xhr.send();
+}
+
+// Track active snapshot XHR for cancellation
+var activeSnapshotXHR = null;
+
+function toggleSnapshotModal() {
+  var modal = document.getElementById('snapshot-modal');
+  if (modal) {
+    if (modal.style.display === 'none') {
+      modal.style.display = 'flex';
+    } else {
+      modal.style.display = 'none';
+      // Abort active XHR if running
+      if (activeSnapshotXHR) {
+        activeSnapshotXHR.abort();
+        activeSnapshotXHR = null;
+      }
+      // Reset form
+      var form = document.getElementById('snapshot-form');
+      if (form) form.reset();
+      var resultEl = document.getElementById('snapshot-form-result');
+      if (resultEl) resultEl.style.display = 'none';
+      // Reset button state
+      var btnEl = document.getElementById('btn-create-snapshot');
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+    }
+  }
+}
+
+function createSnapshot(event, nodeId) {
+  event.preventDefault();
+
+  var form = document.getElementById('snapshot-form');
+  var resultEl = document.getElementById('snapshot-form-result');
+  var btnEl = document.getElementById('btn-create-snapshot');
+
+  var vmType = document.getElementById('snap-vm-type').value;
+  var vmid = document.getElementById('snap-vmid').value;
+  var snapName = document.getElementById('snap-name').value;
+  var description = document.getElementById('snap-desc').value;
+
+  // Frontend validation
+  if (!vmid || isNaN(parseInt(vmid, 10))) {
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'VMID/CTID muss eine Zahl sein';
+      resultEl.style.display = 'block';
+    }
+    return;
+  }
+
+  if (resultEl) {
+    resultEl.className = 'alert alert-info';
+    resultEl.textContent = 'Snapshot wird erstellt...';
+    resultEl.style.display = 'block';
+  }
+
+  if (btnEl) {
+    btnEl.classList.add('loading');
+    btnEl.disabled = true;
+  }
+
+  var xhr = new XMLHttpRequest();
+  activeSnapshotXHR = xhr;
+  xhr.open('POST', '/api/nodes/' + nodeId + '/proxmox/snapshots', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 300000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      activeSnapshotXHR = null;
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        if (resultEl) {
+          resultEl.className = 'alert alert-success';
+          resultEl.textContent = 'Snapshot erstellt. Seite wird neu geladen...';
+        }
+        setTimeout(function() {
+          window.location.reload();
+        }, 1500);
+      } else {
+        if (resultEl) {
+          resultEl.className = 'alert alert-error';
+          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    activeSnapshotXHR = null;
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Netzwerkfehler';
+    }
+  };
+
+  xhr.ontimeout = function() {
+    activeSnapshotXHR = null;
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Timeout (5 Minuten)';
+    }
+  };
+
+  xhr.send(JSON.stringify({
+    vm_type: vmType,
+    vmid: parseInt(vmid, 10),
+    snap_name: snapName,
+    description: description
+  }));
+}
+
+function deleteSnapshot(nodeId, vmType, vmid, snapName) {
+  var resultEl = document.getElementById('proxmox-result');
+
+  if (!confirm('Snapshot "' + snapName + '" wirklich löschen?')) {
+    return;
+  }
+
+  if (resultEl) {
+    resultEl.className = 'alert alert-info';
+    resultEl.textContent = 'Snapshot wird gelöscht...';
+    resultEl.style.display = 'block';
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/nodes/' + nodeId + '/proxmox/snapshots/' + encodeURIComponent(vmType) + '/' + encodeURIComponent(vmid) + '/' + encodeURIComponent(snapName), true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 300000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        if (resultEl) {
+          resultEl.className = 'alert alert-success';
+          resultEl.textContent = 'Snapshot gelöscht. Aktualisiere...';
+        }
+        setTimeout(function() {
+          refreshProxmox(nodeId);
+        }, 1000);
+      } else {
+        if (resultEl) {
+          resultEl.className = 'alert alert-error';
+          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Netzwerkfehler';
+    }
+  };
+
+  xhr.ontimeout = function() {
+    if (resultEl) {
+      resultEl.className = 'alert alert-error';
+      resultEl.textContent = 'Timeout (5 Minuten)';
+    }
+  };
+
+  xhr.send();
+}
+
+// =====================================================
+// Terminal Functions
+// =====================================================
+
+var activeCommandXHR = null;
+
+function setCommand(cmd) {
+  var input = document.getElementById('command-input');
+  if (input) {
+    input.value = cmd;
+    input.focus();
+  }
+}
+
+function clearOutput() {
+  var output = document.getElementById('terminal-output');
+  if (output) {
+    output.textContent = 'Noch kein Befehl ausgefuehrt.';
+    output.className = 'terminal-output';
+  }
+}
+
+function executeCommand(event, nodeId) {
+  event.preventDefault();
+
+  var input = document.getElementById('command-input');
+  var output = document.getElementById('terminal-output');
+  var btnEl = document.getElementById('btn-execute');
+  var command = input ? input.value.trim() : '';
+
+  if (!command) {
+    if (output) {
+      output.textContent = 'Bitte einen Befehl eingeben.';
+      output.className = 'terminal-output error';
+    }
+    return;
+  }
+
+  // Abort previous request if still running
+  if (activeCommandXHR) {
+    activeCommandXHR.abort();
+  }
+
+  if (output) {
+    output.textContent = 'Fuehre aus: ' + command + '\n\nBitte warten...';
+    output.className = 'terminal-output loading';
+  }
+
+  if (btnEl) {
+    btnEl.classList.add('loading');
+    btnEl.disabled = true;
+  }
+
+  var xhr = new XMLHttpRequest();
+  activeCommandXHR = xhr;
+  xhr.open('POST', '/api/nodes/' + nodeId + '/commands', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 125000; // 125s (backend 120s + 5s network buffer)
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      activeCommandXHR = null;
+
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort vom Server' } };
+      }
+
+      if (output) {
+        var outputText = '$ ' + command + '\n\n';
+
+        if (response.data) {
+          var data = response.data;
+
+          if (data.output) {
+            outputText += data.output;
+          }
+
+          if (data.error && data.error.trim()) {
+            if (data.output) outputText += '\n';
+            outputText += '[STDERR]\n' + data.error;
+          }
+
+          if (!data.output && !data.error) {
+            outputText += '(Keine Ausgabe)';
+          }
+
+          outputText += '\n\n[Exit Code: ' + data.exit_code + '] [Status: ' + data.status + ']';
+
+          output.textContent = outputText;
+          output.className = 'terminal-output ' + (data.status === 'success' ? 'success' : 'error');
+        } else if (response.error) {
+          outputText += 'Fehler: ' + response.error.message;
+          output.textContent = outputText;
+          output.className = 'terminal-output error';
+        }
+      }
+
+      // Refresh history
+      loadCommandHistory(nodeId);
+    }
+  };
+
+  xhr.onerror = function() {
+    activeCommandXHR = null;
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+    if (output) {
+      output.textContent = '$ ' + command + '\n\nNetzwerkfehler - Verbindung fehlgeschlagen.';
+      output.className = 'terminal-output error';
+    }
+  };
+
+  xhr.ontimeout = function() {
+    activeCommandXHR = null;
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+    if (output) {
+      output.textContent = '$ ' + command + '\n\nTimeout - Der Befehl hat zu lange gedauert (> 2 Minuten).';
+      output.className = 'terminal-output error';
+    }
+  };
+
+  xhr.send(JSON.stringify({ command: command }));
+}
+
+function loadCommandHistory(nodeId) {
+  var historyEl = document.getElementById('command-history');
+  if (!historyEl) return;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/nodes/' + nodeId + '/commands/history?limit=10', true);
+  xhr.timeout = 10000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false };
+      }
+
+      if (response.success && response.data && response.data.length > 0) {
+        var html = '';
+        for (var i = 0; i < response.data.length; i++) {
+          var item = response.data[i];
+          var date = new Date(item.executed_at);
+          var dateStr = date.toLocaleString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          html += '<div class="history-item" tabindex="0" onclick="setCommand(\'' + escapeForJsString(item.full_command) + '\')" onkeypress="if(event.key===\'Enter\')setCommand(\'' + escapeForJsString(item.full_command) + '\')">';
+          html += '<code class="history-command">' + escapeHtml(item.full_command) + '</code>';
+          html += '<span class="history-time">' + dateStr + '</span>';
+          html += '</div>';
+        }
+        historyEl.innerHTML = html;
+      } else {
+        historyEl.innerHTML = '<p class="empty">Keine Befehle in der Historie.</p>';
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    historyEl.innerHTML = '<p class="empty">Fehler beim Laden der Historie.</p>';
+  };
+
+  xhr.send();
+}
+
+function escapeHtml(text) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(text));
+  return div.innerHTML;
+}
+
+// Escape text for use inside JavaScript single-quoted string
+function escapeForJsString(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/</g, '\\x3c')
+    .replace(/>/g, '\\x3e');
+}
+
+// Load command history when terminal tab is opened
+var terminalTabBtn = document.querySelector('[data-tab="terminal"]');
+if (terminalTabBtn && !terminalTabBtn.hasAttribute('data-history-listener')) {
+  terminalTabBtn.addEventListener('click', function() {
+    loadCommandHistory(<%= node.id %>);
+  });
+  terminalTabBtn.setAttribute('data-history-listener', 'true');
+}
+
+// =====================================================
+// Services Tab Functions
+// =====================================================
+
+var servicesData = [];
+var activeServicesXHR = null;
+
+function loadServices(nodeId) {
+  var listEl = document.getElementById('services-list');
+  var btn = document.querySelector('#tab-services .btn');
+
+  if (!listEl) return;
+
+  // Cancel any pending request
+  if (activeServicesXHR) {
+    activeServicesXHR.abort();
+    activeServicesXHR = null;
+  }
+
+  // Show loading
+  listEl.innerHTML = '<div class="loading-placeholder"><span class="spinner"></span><span>Services werden geladen...</span></div>';
+
+  if (btn) {
+    btn.classList.add('loading');
+    btn.disabled = true;
+  }
+
+  var xhr = new XMLHttpRequest();
+  activeServicesXHR = xhr;
+  xhr.open('GET', '/api/nodes/' + nodeId + '/services', true);
+  xhr.timeout = 60000;
+
+  function resetState() {
+    activeServicesXHR = null;
+    if (btn) {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  }
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      resetState();
+
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        servicesData = response.data.services || [];
+        renderServices();
+      } else {
+        var errMsg = response.error ? response.error.message : 'Fehler beim Laden der Services';
+        listEl.innerHTML = '<div class="empty-state"><p>' + escapeHtml(errMsg) + '</p></div>';
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    resetState();
+    listEl.innerHTML = '<div class="empty-state"><p>Netzwerkfehler</p></div>';
+  };
+
+  xhr.ontimeout = function() {
+    resetState();
+    listEl.innerHTML = '<div class="empty-state"><p>Timeout - Server antwortet nicht</p></div>';
+  };
+
+  xhr.send();
+}
+
+function renderServices() {
+  var listEl = document.getElementById('services-list');
+  if (!listEl) return;
+
+  var searchTerm = (document.getElementById('services-search').value || '').toLowerCase();
+  var statusFilter = document.getElementById('services-status-filter').value;
+
+  var filtered = servicesData.filter(function(svc) {
+    var matchesSearch = !searchTerm || svc.name.toLowerCase().indexOf(searchTerm) !== -1 ||
+                        (svc.description && svc.description.toLowerCase().indexOf(searchTerm) !== -1);
+    var matchesStatus = !statusFilter || svc.sub === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  if (filtered.length === 0) {
+    if (servicesData.length === 0) {
+      listEl.innerHTML = '<div class="empty-state"><p>Keine Services gefunden.</p></div>';
+    } else {
+      listEl.innerHTML = '<div class="empty-state"><p>Keine Services gefunden für diesen Filter.</p></div>';
+    }
+    return;
+  }
+
+  var html = '<div class="table-responsive"><table class="table services-table">';
+  html += '<thead><tr><th>Service</th><th>Status</th><th>Beschreibung</th><th>Aktionen</th></tr></thead>';
+  html += '<tbody>';
+
+  for (var i = 0; i < filtered.length; i++) {
+    var svc = filtered[i];
+    var statusClass = 'status-' + svc.sub;
+    if (svc.active === 'failed') statusClass = 'status-failed';
+
+    html += '<tr>';
+    html += '<td class="service-name">' + escapeHtml(svc.name) + '</td>';
+    html += '<td><span class="service-status ' + statusClass + '">' + escapeHtml(svc.sub) + '</span></td>';
+    html += '<td class="service-desc">' + escapeHtml(svc.description || '-') + '</td>';
+    html += '<td class="service-actions">';
+    if (svc.sub === 'running') {
+      html += '<button class="btn btn-sm btn-warning" onclick="controlService(<%= node.id %>, \'' + escapeForJsString(svc.name) + '\', \'restart\')">Restart</button>';
+      html += '<button class="btn btn-sm btn-danger" onclick="controlService(<%= node.id %>, \'' + escapeForJsString(svc.name) + '\', \'stop\')">Stop</button>';
+    } else if (svc.sub === 'exited' || svc.sub === 'dead' || svc.sub === 'failed') {
+      html += '<button class="btn btn-sm btn-success" onclick="controlService(<%= node.id %>, \'' + escapeForJsString(svc.name) + '\', \'start\')">Start</button>';
+    }
+    html += '</td>';
+    html += '</tr>';
+  }
+
+  html += '</tbody></table></div>';
+  html += '<div class="services-summary"><small>' + filtered.length + ' von ' + servicesData.length + ' Services</small></div>';
+
+  listEl.innerHTML = html;
+}
+
+function filterServices() {
+  renderServices();
+}
+
+function controlService(nodeId, serviceName, action) {
+  var confirmMsg = 'Service "' + serviceName + '" ' + action + '?';
+  if (action === 'stop') {
+    confirmMsg = 'Warnung: Service "' + serviceName + '" stoppen?';
+  }
+
+  if (!confirm(confirmMsg)) return;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/nodes/' + nodeId + '/services/' + encodeURIComponent(serviceName) + '/' + action, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 30000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        // Reload services after action
+        loadServices(nodeId);
+      } else {
+        var errMsg = response.error ? response.error.message : 'Aktion fehlgeschlagen';
+        alert('Fehler: ' + errMsg);
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    alert('Netzwerkfehler');
+  };
+
+  xhr.send();
+}
+
+// Load services when services tab is opened
+var servicesTabBtn = document.querySelector('[data-tab="services"]');
+if (servicesTabBtn && !servicesTabBtn.hasAttribute('data-services-listener')) {
+  servicesTabBtn.addEventListener('click', function() {
+    if (servicesData.length === 0) {
+      loadServices(<%= node.id %>);
+    }
+  });
+  servicesTabBtn.setAttribute('data-services-listener', 'true');
+}
+</script>
+
+<%- include('../partials/footer') %>

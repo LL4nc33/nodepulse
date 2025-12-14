@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title><%= typeof title !== 'undefined' ? title : 'nodepulse' %> - nodepulse</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <%- include('partials/header', { currentPath: typeof currentPath !== 'undefined' ? currentPath : '' }) %>
+
+  <main class="container" role="main">
+    <div class="main-content">
+      <%- body %>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script src="/static/js/main.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "nodepulse",
+  "version": "0.3.1",
+  "description": "Homelab Dashboard + CLI für Infrastruktur-Management",
+  "main": "src/index.js",
+  "bin": {
+    "np": "./bin/np"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": [
+    "homelab",
+    "dashboard",
+    "monitoring",
+    "ssh",
+    "proxmox",
+    "docker"
+  ],
+  "author": "OidaNice",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "ssh2": "^1.15.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

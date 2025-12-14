@@ -1,0 +1,233 @@
+<%- include('../partials/header', { currentPath: '/monitoring' }) %>
+
+<div class="page-header">
+  <h1>Monitoring</h1>
+  <div class="page-actions">
+    <button class="btn btn-secondary" id="btn-refresh" onclick="refreshStats()">
+      <span class="btn-text">Aktualisieren</span>
+      <span class="btn-loading"><span class="spinner"></span> Laden...</span>
+    </button>
+  </div>
+</div>
+
+<div id="auto-refresh-status" class="auto-refresh-status">
+  Auto-Refresh: <span id="refresh-countdown">30</span>s
+  <button class="btn btn-sm" id="btn-toggle-refresh" onclick="toggleAutoRefresh()">Pausieren</button>
+</div>
+
+<% if (nodes.length === 0) { %>
+  <div class="empty-state">
+    <p>Keine Nodes vorhanden.</p>
+    <a href="/nodes/add" class="btn btn-primary">Node hinzufuegen</a>
+  </div>
+<% } else { %>
+  <div class="monitoring-grid" id="monitoring-grid">
+    <% nodes.forEach(function(node) { %>
+      <%
+        // Determine alert status
+        var alertLevel = 'ok';
+        if (!node.online) {
+          alertLevel = 'offline';
+        } else if (node.timestamp) {
+          if (node.cpu_percent >= thresholds.cpu_critical ||
+              node.ram_percent >= thresholds.ram_critical ||
+              node.disk_percent >= thresholds.disk_critical ||
+              (node.temp_cpu && node.temp_cpu >= thresholds.temp_critical)) {
+            alertLevel = 'critical';
+          } else if (node.cpu_percent >= thresholds.cpu_warning ||
+                     node.ram_percent >= thresholds.ram_warning ||
+                     node.disk_percent >= thresholds.disk_warning ||
+                     (node.temp_cpu && node.temp_cpu >= thresholds.temp_warning)) {
+            alertLevel = 'warning';
+          }
+        } else {
+          alertLevel = 'unknown';
+        }
+      %>
+      <div class="monitoring-card <%= alertLevel %>" data-node-id="<%= node.id %>">
+        <div class="monitoring-header">
+          <a href="/monitoring/<%= node.id %>" class="monitoring-name"><%= node.name %></a>
+          <span class="monitoring-status <%= node.online ? 'online' : 'offline' %>">
+            <%= node.online ? 'Online' : 'Offline' %>
+          </span>
+        </div>
+
+        <% if (!node.online) { %>
+          <div class="monitoring-offline">
+            <span class="monitoring-offline-text">Node nicht erreichbar</span>
+          </div>
+        <% } else if (!node.timestamp) { %>
+          <div class="monitoring-offline">
+            <span class="monitoring-offline-text">Keine Stats verfügbar</span>
+          </div>
+        <% } else { %>
+          <div class="monitoring-stats">
+            <div class="stat-bar">
+              <div class="stat-bar-label">
+                <span>CPU</span>
+                <span class="stat-bar-value <%= node.cpu_percent >= thresholds.cpu_critical ? 'critical' : (node.cpu_percent >= thresholds.cpu_warning ? 'warning' : '') %>">
+                  <%= Math.round(node.cpu_percent || 0) %>%
+                </span>
+              </div>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill <%= node.cpu_percent >= thresholds.cpu_critical ? 'critical' : (node.cpu_percent >= thresholds.cpu_warning ? 'warning' : 'ok') %>"
+                     style="width: <%= Math.min(node.cpu_percent || 0, 100) %>%"></div>
+              </div>
+            </div>
+
+            <div class="stat-bar">
+              <div class="stat-bar-label">
+                <span>RAM</span>
+                <span class="stat-bar-value <%= node.ram_percent >= thresholds.ram_critical ? 'critical' : (node.ram_percent >= thresholds.ram_warning ? 'warning' : '') %>">
+                  <%= Math.round(node.ram_percent || 0) %>%
+                </span>
+              </div>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill <%= node.ram_percent >= thresholds.ram_critical ? 'critical' : (node.ram_percent >= thresholds.ram_warning ? 'warning' : 'ok') %>"
+                     style="width: <%= Math.min(node.ram_percent || 0, 100) %>%"></div>
+              </div>
+            </div>
+
+            <div class="stat-bar">
+              <div class="stat-bar-label">
+                <span>Disk</span>
+                <span class="stat-bar-value <%= node.disk_percent >= thresholds.disk_critical ? 'critical' : (node.disk_percent >= thresholds.disk_warning ? 'warning' : '') %>">
+                  <%= Math.round(node.disk_percent || 0) %>%
+                </span>
+              </div>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill <%= node.disk_percent >= thresholds.disk_critical ? 'critical' : (node.disk_percent >= thresholds.disk_warning ? 'warning' : 'ok') %>"
+                     style="width: <%= Math.min(node.disk_percent || 0, 100) %>%"></div>
+              </div>
+            </div>
+
+            <% if (node.temp_cpu !== null) { %>
+              <div class="stat-bar">
+                <div class="stat-bar-label">
+                  <span>Temp</span>
+                  <span class="stat-bar-value <%= node.temp_cpu >= thresholds.temp_critical ? 'critical' : (node.temp_cpu >= thresholds.temp_warning ? 'warning' : '') %>">
+                    <%= Math.round(node.temp_cpu) %>&deg;C
+                  </span>
+                </div>
+                <div class="stat-bar-track">
+                  <div class="stat-bar-fill <%= node.temp_cpu >= thresholds.temp_critical ? 'critical' : (node.temp_cpu >= thresholds.temp_warning ? 'warning' : 'ok') %>"
+                       style="width: <%= Math.min((node.temp_cpu / 100) * 100, 100) %>%"></div>
+                </div>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="monitoring-meta">
+            <span>Load: <%= node.load_1m %></span>
+            <% if (node.uptime_seconds) { %>
+              <span>Uptime: <%= Math.floor(node.uptime_seconds / 86400) %>d</span>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<script>
+var autoRefreshEnabled = true;
+var refreshInterval = 30;
+var countdownTimer = null;
+var countdown = refreshInterval;
+
+// Format bytes helper
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  var k = 1024;
+  var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  var i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Refresh stats via API
+function refreshStats() {
+  var btnEl = document.getElementById('btn-refresh');
+  if (btnEl) {
+    btnEl.classList.add('loading');
+    btnEl.disabled = true;
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/stats', true);
+  xhr.timeout = 30000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+
+      if (xhr.status === 200) {
+        try {
+          var response = JSON.parse(xhr.responseText);
+          if (response.success) {
+            updateGrid(response.data);
+          }
+        } catch (e) {
+          console.error('Failed to parse response:', e);
+        }
+      }
+
+      // Reset countdown
+      countdown = refreshInterval;
+      updateCountdown();
+    }
+  };
+
+  xhr.onerror = function() {
+    if (btnEl) {
+      btnEl.classList.remove('loading');
+      btnEl.disabled = false;
+    }
+  };
+
+  xhr.send();
+}
+
+// Update grid with new data (page reload for simplicity on old browser)
+function updateGrid(nodes) {
+  // For old browser compatibility, just reload the page
+  window.location.reload();
+}
+
+// Update countdown display
+function updateCountdown() {
+  var el = document.getElementById('refresh-countdown');
+  if (el) {
+    el.textContent = countdown;
+  }
+}
+
+// Toggle auto-refresh
+function toggleAutoRefresh() {
+  autoRefreshEnabled = !autoRefreshEnabled;
+  var btnEl = document.getElementById('btn-toggle-refresh');
+  if (btnEl) {
+    btnEl.textContent = autoRefreshEnabled ? 'Pausieren' : 'Fortsetzen';
+  }
+}
+
+// Countdown tick
+function tick() {
+  if (autoRefreshEnabled) {
+    countdown--;
+    if (countdown <= 0) {
+      refreshStats();
+    } else {
+      updateCountdown();
+    }
+  }
+}
+
+// Start countdown timer
+countdownTimer = setInterval(tick, 1000);
+updateCountdown();
+</script>
+
+<%- include('../partials/footer') %>
