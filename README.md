@@ -23,7 +23,25 @@ Ein leichtgewichtiges Homelab Dashboard für Raspberry Pi und Fire HD 10 Tablets
 - npm oder yarn
 - SQLite3 (wird automatisch mit better-sqlite3 kompiliert)
 
-## Installation
+## Quick Install (Raspberry Pi)
+
+**One-Shot Command** - Kopieren, einfügen, fertig:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/LL4nc33/nodepulse/main/scripts/install.sh | bash
+```
+
+Oder manuell:
+
+```bash
+git clone https://github.com/LL4nc33/nodepulse.git ~/nodepulse && cd ~/nodepulse && npm install && sudo cp scripts/nodepulse.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now nodepulse
+```
+
+Nach der Installation: `http://<raspberry-pi-ip>:3000`
+
+---
+
+## Installation (Manuell)
 
 ```bash
 # Repository klonen
@@ -40,6 +58,75 @@ cp .env.example .env
 # Starten
 npm start
 ```
+
+---
+
+## Headless Setup (Raspberry Pi)
+
+So richtest du nodepulse als Hintergrund-Service ein, der automatisch beim Booten startet.
+
+### Schritt 1: Node.js installieren (falls nicht vorhanden)
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+### Schritt 2: nodepulse installieren
+
+```bash
+cd ~
+git clone https://github.com/LL4nc33/nodepulse.git
+cd nodepulse
+npm install
+cp .env.example .env
+```
+
+### Schritt 3: systemd Service erstellen
+
+```bash
+sudo tee /etc/systemd/system/nodepulse.service > /dev/null <<EOF
+[Unit]
+Description=nodepulse Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=$HOME/nodepulse
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=10
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+### Schritt 4: Service aktivieren und starten
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable nodepulse
+sudo systemctl start nodepulse
+```
+
+### Schritt 5: Status prüfen
+
+```bash
+sudo systemctl status nodepulse
+```
+
+### Nützliche Befehle
+
+| Befehl | Beschreibung |
+|--------|--------------|
+| `sudo systemctl status nodepulse` | Status anzeigen |
+| `sudo systemctl restart nodepulse` | Neustarten |
+| `sudo systemctl stop nodepulse` | Stoppen |
+| `journalctl -u nodepulse -f` | Live-Logs anzeigen |
+| `journalctl -u nodepulse --since "1 hour ago"` | Logs der letzten Stunde |
 
 ## Konfiguration
 
