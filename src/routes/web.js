@@ -64,7 +64,7 @@ router.get('/nodes/add', (req, res) => {
 
 // Create node
 router.post('/nodes/add', asyncHandler(async (req, res) => {
-  const { name, host, ssh_port, ssh_user, ssh_key_path, notes } = req.body;
+  const { name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes } = req.body;
 
   // Validation
   if (!name || !name.trim()) {
@@ -122,6 +122,7 @@ router.post('/nodes/add', asyncHandler(async (req, res) => {
       host: host.trim(),
       ssh_port: port,
       ssh_user: ssh_user.trim(),
+      ssh_password: ssh_password ? ssh_password : null,
       ssh_key_path: ssh_key_path ? ssh_key_path.trim() : null,
       notes: notes ? notes.trim() : null,
     });
@@ -194,7 +195,7 @@ router.post('/nodes/:id/edit', asyncHandler(async (req, res) => {
     });
   }
 
-  const { name, host, ssh_port, ssh_user, ssh_key_path, notes, monitoring_enabled, monitoring_interval } = req.body;
+  const { name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes, monitoring_enabled, monitoring_interval } = req.body;
 
   // Validation
   if (!name || !name.trim()) {
@@ -258,7 +259,7 @@ router.post('/nodes/:id/edit', asyncHandler(async (req, res) => {
   }
 
   try {
-    db.nodes.update(node.id, {
+    const updateData = {
       name: name.trim(),
       host: host.trim(),
       ssh_port: port,
@@ -267,7 +268,14 @@ router.post('/nodes/:id/edit', asyncHandler(async (req, res) => {
       notes: notes ? notes.trim() : null,
       monitoring_enabled: monitoring_enabled === 'on' ? 1 : 0,
       monitoring_interval: interval,
-    });
+    };
+
+    // Only update password if a new one is provided
+    if (ssh_password && ssh_password.trim()) {
+      updateData.ssh_password = ssh_password;
+    }
+
+    db.nodes.update(node.id, updateData);
 
     res.redirect(`/nodes/${node.id}`);
   } catch (err) {

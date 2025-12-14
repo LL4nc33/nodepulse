@@ -36,16 +36,21 @@ async function testConnection(node) {
       keepaliveInterval: config.ssh.keepaliveInterval,
     };
 
-    // Use key if specified and exists
-    const keyPath = node.ssh_key_path || config.ssh.defaultKeyPath;
-    if (keyPath) {
-      try {
-        if (fs.existsSync(keyPath)) {
-          connectionConfig.privateKey = fs.readFileSync(keyPath);
+    // Priority: Password > Key
+    if (node.ssh_password) {
+      connectionConfig.password = node.ssh_password;
+    } else {
+      // Use key if specified and exists
+      const keyPath = node.ssh_key_path || config.ssh.defaultKeyPath;
+      if (keyPath) {
+        try {
+          if (fs.existsSync(keyPath)) {
+            connectionConfig.privateKey = fs.readFileSync(keyPath);
+          }
+        } catch (err) {
+          cleanup();
+          return reject(new Error(`SSH Key nicht lesbar: ${err.message}`));
         }
-      } catch (err) {
-        cleanup();
-        return reject(new Error(`SSH Key nicht lesbar: ${err.message}`));
       }
     }
 
@@ -158,16 +163,21 @@ async function execute(node, command, timeout = COMMAND_TIMEOUT) {
       keepaliveInterval: config.ssh.keepaliveInterval,
     };
 
-    // Use key if specified and exists
-    const keyPath = node.ssh_key_path || config.ssh.defaultKeyPath;
-    if (keyPath) {
-      try {
-        if (fs.existsSync(keyPath)) {
-          connectionConfig.privateKey = fs.readFileSync(keyPath);
+    // Priority: Password > Key
+    if (node.ssh_password) {
+      connectionConfig.password = node.ssh_password;
+    } else {
+      // Use key if specified and exists
+      const keyPath = node.ssh_key_path || config.ssh.defaultKeyPath;
+      if (keyPath) {
+        try {
+          if (fs.existsSync(keyPath)) {
+            connectionConfig.privateKey = fs.readFileSync(keyPath);
+          }
+        } catch (err) {
+          cleanup();
+          return reject(new Error(`SSH Key nicht lesbar: ${err.message}`));
         }
-      } catch (err) {
-        cleanup();
-        return reject(new Error(`SSH Key nicht lesbar: ${err.message}`));
       }
     }
 

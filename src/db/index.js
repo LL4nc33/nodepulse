@@ -31,6 +31,18 @@ function init() {
   const schema = fs.readFileSync(schemaPath, 'utf8');
   db.exec(schema);
 
+  // Migration: Add ssh_password column if it doesn't exist
+  try {
+    const columns = db.prepare("PRAGMA table_info(nodes)").all();
+    const hasPassword = columns.some(col => col.name === 'ssh_password');
+    if (!hasPassword) {
+      db.exec('ALTER TABLE nodes ADD COLUMN ssh_password TEXT');
+      console.log('[DB] Migration: Added ssh_password column');
+    }
+  } catch (err) {
+    console.error('[DB] Migration error:', err.message);
+  }
+
   // Run seed data
   const seedPath = path.join(__dirname, 'seed.sql');
   const seed = fs.readFileSync(seedPath, 'utf8');
@@ -120,14 +132,15 @@ const nodes = {
    */
   create(node) {
     const stmt = getDb().prepare(`
-      INSERT INTO nodes (name, host, ssh_port, ssh_user, ssh_key_path, notes)
-      VALUES (@name, @host, @ssh_port, @ssh_user, @ssh_key_path, @notes)
+      INSERT INTO nodes (name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes)
+      VALUES (@name, @host, @ssh_port, @ssh_user, @ssh_password, @ssh_key_path, @notes)
     `);
     const result = stmt.run({
       name: node.name,
       host: node.host,
       ssh_port: node.ssh_port || 22,
       ssh_user: node.ssh_user,
+      ssh_password: node.ssh_password || null,
       ssh_key_path: node.ssh_key_path || null,
       notes: node.notes || null,
     });
@@ -138,19 +151,19 @@ const nodes = {
    * Update an existing node
    */
   update(id, node) {
-    const stmt = getDb().prepare(`
-      UPDATE nodes SET
-        name = @name,
-        host = @host,
-        ssh_port = @ssh_port,
-        ssh_user = @ssh_user,
-        ssh_key_path = @ssh_key_path,
-        notes = @notes,
-        monitoring_enabled = @monitoring_enabled,
-        monitoring_interval = @monitoring_interval
-      WHERE id = @id
-    `);
-    return stmt.run({
+    // Build dynamic update query - only update ssh_password if provided
+    const fields = [
+      'name = @name',
+      'host = @host',
+      'ssh_port = @ssh_port',
+      'ssh_user = @ssh_user',
+      'ssh_key_path = @ssh_key_path',
+      'notes = @notes',
+      'monitoring_enabled = @monitoring_enabled',
+      'monitoring_interval = @monitoring_interval',
+    ];
+
+    const params = {
       id,
       name: node.name,
       host: node.host,
@@ -160,7 +173,18 @@ const nodes = {
       notes: node.notes || null,
       monitoring_enabled: node.monitoring_enabled !== undefined ? node.monitoring_enabled : 1,
       monitoring_interval: node.monitoring_interval || 30,
-    });
+    };
+
+    // Only update password if explicitly provided
+    if (node.ssh_password !== undefined) {
+      fields.push('ssh_password = @ssh_password');
+      params.ssh_password = node.ssh_password;
+    }
+
+    const stmt = getDb().prepare(`
+      UPDATE nodes SET ${fields.join(', ')} WHERE id = @id
+    `);
+    return stmt.run(params);
   },
 
   /**

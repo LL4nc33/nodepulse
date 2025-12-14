@@ -46,6 +46,15 @@
   </div>
 
   <div class="form-group">
+    <label for="ssh_password">SSH Passwort</label>
+    <input type="password" id="ssh_password" name="ssh_password"
+           value=""
+           autocomplete="new-password"
+           placeholder="<%= node.ssh_password ? '••••••••' : 'Kein Passwort gesetzt' %>">
+    <small>Leer lassen um bestehendes Passwort zu behalten</small>
+  </div>
+
+  <div class="form-group">
     <label for="ssh_key_path">SSH Key Pfad</label>
     <input type="text" id="ssh_key_path" name="ssh_key_path"
            value="<%= node.ssh_key_path || '' %>">

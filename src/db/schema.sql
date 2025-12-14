@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS nodes (
     host TEXT NOT NULL,
     ssh_port INTEGER DEFAULT 22,
     ssh_user TEXT NOT NULL,
+    ssh_password TEXT,
     ssh_key_path TEXT,
 
     -- Auto-detected, überschreibbar

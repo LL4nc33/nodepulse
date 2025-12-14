@@ -49,12 +49,21 @@
   </div>
 
   <div class="form-group">
+    <label for="ssh_password">SSH Passwort</label>
+    <input type="password" id="ssh_password" name="ssh_password"
+           value=""
+           autocomplete="new-password"
+           placeholder="Passwort oder leer für Key-Auth">
+    <small>Passwort-Auth (wird Key vorgezogen wenn beide angegeben)</small>
+  </div>
+
+  <div class="form-group">
     <label for="ssh_key_path">SSH Key Pfad</label>
     <input type="text" id="ssh_key_path" name="ssh_key_path"
            value="<%= typeof node !== 'undefined' && node.ssh_key_path ? node.ssh_key_path : '' %>"
            autocomplete="off"
            placeholder="z.B. ~/.ssh/id_rsa">
-    <small>Leer lassen fur Standard-Key</small>
+    <small>Fallback wenn kein Passwort angegeben</small>
   </div>
 
   <div class="form-group">
