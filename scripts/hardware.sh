@@ -48,8 +48,8 @@ echo "  \"vendor\": \"$(json_escape "$CPU_VENDOR")\","
 echo "  \"cores\": $CPU_CORES,"
 echo "  \"threads\": $CPU_THREADS,"
 echo "  \"max_mhz\": $CPU_MAX_MHZ,"
-echo "  \"arch\": \"$CPU_ARCH\","
-echo "  \"virt_support\": \"$VIRT_FLAG\","
+echo "  \"arch\": \"$(json_escape "$CPU_ARCH")\","
+echo "  \"virt_support\": \"$(json_escape "$VIRT_FLAG")\","
 
 # Cache
 L1=$(lscpu 2>/dev/null | grep 'L1d cache' | awk '{print $3}' || echo "")
@@ -117,14 +117,15 @@ echo "],"
 echo "\"gpu\": ["
 if command -v lspci &>/dev/null; then
     FIRST=1
-    lspci 2>/dev/null | grep -iE 'vga|3d|display' | while read -r line; do
+    while read -r line; do
+        if [ -z "$line" ]; then continue; fi
         if [ $FIRST -eq 1 ]; then
             FIRST=0
         else
             echo ","
         fi
         echo "  {\"description\": \"$(json_escape "$line")\"}"
-    done
+    done < <(lspci 2>/dev/null | grep -iE 'vga|3d|display')
 fi
 echo "]"
 

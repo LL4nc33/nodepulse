@@ -2,6 +2,11 @@
 # nodepulse Proxmox Collection Script
 # Sammelt VMs, CTs, Storage, Snapshots
 
+# Escape string for JSON (remove control characters, escape quotes/backslashes)
+json_escape() {
+    printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
 # Check if this is a Proxmox host
 if ! command -v pveversion &>/dev/null; then
     echo '{"error": "Not a Proxmox host"}'
@@ -13,7 +18,7 @@ echo "{"
 # === VMS ===
 echo '"vms": ['
 FIRST=1
-qm list 2>/dev/null | tail -n +2 | while read -r vmid name status mem bootdisk pid; do
+while read -r vmid name status mem bootdisk pid; do
     if [ -z "$vmid" ]; then continue; fi
     if [ $FIRST -eq 1 ]; then
         FIRST=0
@@ -46,7 +51,8 @@ qm list 2>/dev/null | tail -n +2 | while read -r vmid name status mem bootdisk p
     DISK_BYTES=${DISK_BYTES%.*}
 
     # Escape name for JSON
-    name=$(echo "$name" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    name=$(json_escape "$name")
+    status=$(json_escape "$status")
 
     IS_TEMPLATE=0
     if [ "$TEMPLATE" = "1" ]; then
@@ -54,13 +60,13 @@ qm list 2>/dev/null | tail -n +2 | while read -r vmid name status mem bootdisk p
     fi
 
     echo "  {\"vmid\": $vmid, \"name\": \"$name\", \"status\": \"$status\", \"cpu_cores\": ${CORES:-1}, \"memory_bytes\": ${MEM_BYTES:-0}, \"disk_bytes\": ${DISK_BYTES:-0}, \"template\": $IS_TEMPLATE}"
-done
+done < <(qm list 2>/dev/null | tail -n +2)
 echo "],"
 
 # === CONTAINERS (LXC) ===
 echo '"cts": ['
 FIRST=1
-pct list 2>/dev/null | tail -n +2 | while read -r ctid status lock name; do
+while read -r ctid status lock name; do
     if [ -z "$ctid" ]; then continue; fi
     if [ $FIRST -eq 1 ]; then
         FIRST=0
@@ -98,7 +104,8 @@ pct list 2>/dev/null | tail -n +2 | while read -r ctid status lock name; do
     fi
 
     # Escape name for JSON
-    name=$(echo "$name" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    name=$(json_escape "$name")
+    status=$(json_escape "$status")
 
     IS_TEMPLATE=0
     if [ "$TEMPLATE" = "1" ]; then
@@ -106,13 +113,13 @@ pct list 2>/dev/null | tail -n +2 | while read -r ctid status lock name; do
     fi
 
     echo "  {\"ctid\": $ctid, \"name\": \"$name\", \"status\": \"$status\", \"cpu_cores\": ${CORES:-1}, \"memory_bytes\": ${MEM_BYTES:-0}, \"disk_bytes\": ${DISK_BYTES:-0}, \"template\": $IS_TEMPLATE}"
-done
+done < <(pct list 2>/dev/null | tail -n +2)
 echo "],"
 
 # === STORAGE ===
 echo '"storage": ['
 FIRST=1
-pvesm status 2>/dev/null | tail -n +2 | while read -r name type status total used available percent; do
+while read -r name type status total used available percent; do
     if [ -z "$name" ]; then continue; fi
     if [ $FIRST -eq 1 ]; then
         FIRST=0
@@ -135,24 +142,25 @@ pvesm status 2>/dev/null | tail -n +2 | while read -r name type status total use
         AVAIL_BYTES=$((available * 1024))
     fi
 
-    # Escape name for JSON
-    name=$(echo "$name" | sed 's/\\/\\\\/g; s/"/\\"/g')
-    type=$(echo "$type" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    # Escape for JSON
+    name=$(json_escape "$name")
+    type=$(json_escape "$type")
+    status=$(json_escape "$status")
 
-    echo "  {\"name\": \"$name\", \"type\": \"$type\", \"status\": \"$status\", \"total_bytes\": $TOTAL_BYTES, \"used_bytes\": $USED_BYTES, \"available_bytes\": $AVAIL_BYTES}"
-done
+    echo "  {\"name\": \"$name\", \"type\": \"$type\", \"status\": \"$status\", \"total_bytes\": ${TOTAL_BYTES:-0}, \"used_bytes\": ${USED_BYTES:-0}, \"available_bytes\": ${AVAIL_BYTES:-0}}"
+done < <(pvesm status 2>/dev/null | tail -n +2)
 echo "],"
 
 # === SNAPSHOTS ===
+# Collect all snapshots first to handle comma placement correctly
 echo '"snapshots": ['
-FIRST=1
+SNAPSHOTS=""
 
 # VM Snapshots
-qm list 2>/dev/null | tail -n +2 | while read -r vmid name status mem bootdisk pid; do
+while read -r vmid name status mem bootdisk pid; do
     if [ -z "$vmid" ]; then continue; fi
 
-    # Get snapshots for this VM
-    qm listsnapshot "$vmid" 2>/dev/null | while read -r line; do
+    while read -r line; do
         # Skip empty lines and current state
         if [ -z "$line" ] || echo "$line" | grep -q "current"; then continue; fi
 
@@ -163,26 +171,22 @@ qm list 2>/dev/null | tail -n +2 | while read -r vmid name status mem bootdisk p
         # Get description (everything after snap name)
         DESCRIPTION=$(echo "$line" | sed "s/^['\`]*->//" | sed "s/^$SNAP_NAME//" | xargs)
 
-        if [ $FIRST -eq 1 ]; then
-            FIRST=0
-        else
-            echo ","
-        fi
-
         # Escape for JSON
-        SNAP_NAME=$(echo "$SNAP_NAME" | sed 's/\\/\\\\/g; s/"/\\"/g')
-        DESCRIPTION=$(echo "$DESCRIPTION" | sed 's/\\/\\\\/g; s/"/\\"/g')
+        SNAP_NAME=$(json_escape "$SNAP_NAME")
+        DESCRIPTION=$(json_escape "$DESCRIPTION")
 
-        echo "  {\"vmid\": $vmid, \"vm_type\": \"vm\", \"snap_name\": \"$SNAP_NAME\", \"description\": \"$DESCRIPTION\"}"
-    done
-done
+        if [ -n "$SNAPSHOTS" ]; then
+            SNAPSHOTS="$SNAPSHOTS,"$'\n'
+        fi
+        SNAPSHOTS="$SNAPSHOTS  {\"vmid\": $vmid, \"vm_type\": \"vm\", \"snap_name\": \"$SNAP_NAME\", \"description\": \"$DESCRIPTION\"}"
+    done < <(qm listsnapshot "$vmid" 2>/dev/null)
+done < <(qm list 2>/dev/null | tail -n +2)
 
 # CT Snapshots
-pct list 2>/dev/null | tail -n +2 | while read -r ctid status lock name; do
+while read -r ctid status lock name; do
     if [ -z "$ctid" ]; then continue; fi
 
-    # Get snapshots for this CT
-    pct listsnapshot "$ctid" 2>/dev/null | while read -r line; do
+    while read -r line; do
         # Skip empty lines and current state
         if [ -z "$line" ] || echo "$line" | grep -q "current"; then continue; fi
 
@@ -192,33 +196,36 @@ pct list 2>/dev/null | tail -n +2 | while read -r ctid status lock name; do
 
         DESCRIPTION=$(echo "$line" | sed "s/^['\`]*->//" | sed "s/^$SNAP_NAME//" | xargs)
 
-        if [ $FIRST -eq 1 ]; then
-            FIRST=0
-        else
-            echo ","
+        # Escape for JSON
+        SNAP_NAME=$(json_escape "$SNAP_NAME")
+        DESCRIPTION=$(json_escape "$DESCRIPTION")
+
+        if [ -n "$SNAPSHOTS" ]; then
+            SNAPSHOTS="$SNAPSHOTS,"$'\n'
         fi
+        SNAPSHOTS="$SNAPSHOTS  {\"vmid\": $ctid, \"vm_type\": \"ct\", \"snap_name\": \"$SNAP_NAME\", \"description\": \"$DESCRIPTION\"}"
+    done < <(pct listsnapshot "$ctid" 2>/dev/null)
+done < <(pct list 2>/dev/null | tail -n +2)
 
-        SNAP_NAME=$(echo "$SNAP_NAME" | sed 's/\\/\\\\/g; s/"/\\"/g')
-        DESCRIPTION=$(echo "$DESCRIPTION" | sed 's/\\/\\\\/g; s/"/\\"/g')
-
-        echo "  {\"vmid\": $ctid, \"vm_type\": \"ct\", \"snap_name\": \"$SNAP_NAME\", \"description\": \"$DESCRIPTION\"}"
-    done
-done
+# Output all snapshots
+if [ -n "$SNAPSHOTS" ]; then
+    echo "$SNAPSHOTS"
+fi
 echo "],"
 
 # === SUMMARY ===
 VM_COUNT=$(qm list 2>/dev/null | tail -n +2 | wc -l)
-VM_RUNNING=$(qm list 2>/dev/null | grep -c "running")
+VM_RUNNING=$(qm list 2>/dev/null | grep -c "running" || echo 0)
 CT_COUNT=$(pct list 2>/dev/null | tail -n +2 | wc -l)
-CT_RUNNING=$(pct list 2>/dev/null | grep -c "running")
+CT_RUNNING=$(pct list 2>/dev/null | grep -c "running" || echo 0)
 STORAGE_COUNT=$(pvesm status 2>/dev/null | tail -n +2 | wc -l)
 
 echo "\"summary\": {"
-echo "  \"vms_total\": $VM_COUNT,"
-echo "  \"vms_running\": $VM_RUNNING,"
-echo "  \"cts_total\": $CT_COUNT,"
-echo "  \"cts_running\": $CT_RUNNING,"
-echo "  \"storage_count\": $STORAGE_COUNT"
+echo "  \"vms_total\": ${VM_COUNT:-0},"
+echo "  \"vms_running\": ${VM_RUNNING:-0},"
+echo "  \"cts_total\": ${CT_COUNT:-0},"
+echo "  \"cts_running\": ${CT_RUNNING:-0},"
+echo "  \"storage_count\": ${STORAGE_COUNT:-0}"
 echo "}"
 
 echo "}"

@@ -11,7 +11,7 @@ echo "{"
 
 # Virtualization
 VIRT=$(systemd-detect-virt 2>/dev/null || echo "unknown")
-echo "\"virtualization\": \"$VIRT\","
+echo "\"virtualization\": \"$(json_escape "$VIRT")\","
 
 # Proxmox Host?
 if command -v pveversion &>/dev/null; then
@@ -24,7 +24,7 @@ if command -v pveversion &>/dev/null; then
         CLUSTER_NAME=$(pvecm status 2>/dev/null | grep "Name:" | awk '{print $2}')
         CLUSTER_NODES=$(pvecm nodes 2>/dev/null | tail -n +2 | wc -l)
         echo "\"is_proxmox_cluster\": true,"
-        echo "\"proxmox_cluster_name\": \"$CLUSTER_NAME\","
+        echo "\"proxmox_cluster_name\": \"$(json_escape "$CLUSTER_NAME")\","
         echo "\"proxmox_cluster_nodes\": $CLUSTER_NODES,"
     else
         echo "\"is_proxmox_cluster\": false,"
@@ -38,7 +38,7 @@ if command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
     DOCKER_VERSION=$(docker version --format '{{.Server.Version}}' 2>/dev/null || echo "unknown")
     CONTAINER_COUNT=$(docker ps -aq 2>/dev/null | wc -l)
     echo "\"has_docker\": true,"
-    echo "\"docker_version\": \"$DOCKER_VERSION\","
+    echo "\"docker_version\": \"$(json_escape "$DOCKER_VERSION")\","
     echo "\"docker_containers\": $CONTAINER_COUNT,"
 else
     echo "\"has_docker\": false,"
@@ -48,7 +48,7 @@ fi
 if command -v podman &>/dev/null; then
     PODMAN_VERSION=$(podman version --format '{{.Version}}' 2>/dev/null || echo "unknown")
     echo "\"has_podman\": true,"
-    echo "\"podman_version\": \"$PODMAN_VERSION\","
+    echo "\"podman_version\": \"$(json_escape "$PODMAN_VERSION")\","
 else
     echo "\"has_podman\": false,"
 fi
@@ -64,7 +64,7 @@ fi
 
 # Architecture
 ARCH=$(uname -m)
-echo "\"arch\": \"$ARCH\","
+echo "\"arch\": \"$(json_escape "$ARCH")\","
 
 # OS
 if [ -f /etc/os-release ]; then
