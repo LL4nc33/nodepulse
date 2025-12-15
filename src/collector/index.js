@@ -15,12 +15,24 @@ function getScript(name) {
 }
 
 /**
- * Parse JSON output from scripts (handles malformed JSON)
- * Uses non-greedy regex to find first complete JSON object
+ * Truncate string for error messages
  */
-function parseScriptOutput(output) {
+function truncateForError(str, maxLen = 500) {
+  if (!str) return '(empty)';
+  if (str.length <= maxLen) return str;
+  return str.substring(0, maxLen) + '... (truncated)';
+}
+
+/**
+ * Parse JSON output from scripts (handles malformed JSON)
+ * Uses balanced brace matching to find first complete JSON object
+ * Includes raw output snippet in error for debugging
+ */
+function parseScriptOutput(output, nodeName = 'unknown') {
   if (!output || typeof output !== 'string') {
-    throw new Error('Empty or invalid script output');
+    const error = new Error('Empty or invalid script output');
+    error.rawOutput = '(no output)';
+    throw error;
   }
 
   // Trim whitespace
@@ -29,7 +41,7 @@ function parseScriptOutput(output) {
   try {
     return JSON.parse(trimmed);
   } catch (e) {
-    // Try to find JSON object - use balanced brace matching instead of greedy regex
+    // Try to find JSON object - use balanced brace matching
     let braceCount = 0;
     let startIndex = -1;
     let endIndex = -1;
@@ -52,11 +64,21 @@ function parseScriptOutput(output) {
       try {
         return JSON.parse(jsonStr);
       } catch (e2) {
-        throw new Error(`Invalid JSON in output: ${e2.message}`);
+        // Include position info and raw output snippet
+        const error = new Error(`Invalid JSON in output: ${e2.message}`);
+        error.rawOutput = truncateForError(jsonStr);
+        error.position = e2.message.match(/position (\d+)/)?.[1] || 'unknown';
+        console.error(`[COLLECTOR] JSON parse error for ${nodeName}:`, e2.message);
+        console.error(`[COLLECTOR] Raw output (first 300 chars):`, trimmed.substring(0, 300));
+        throw error;
       }
     }
 
-    throw new Error(`No valid JSON found in output: ${e.message}`);
+    // No valid JSON found
+    const error = new Error(`No valid JSON found in output: ${e.message}`);
+    error.rawOutput = truncateForError(trimmed);
+    console.error(`[COLLECTOR] No JSON found for ${nodeName}. Output (first 300 chars):`, trimmed.substring(0, 300));
+    throw error;
   }
 }
 
@@ -70,10 +92,12 @@ async function runDiscovery(node) {
   const result = await ssh.executeScript(node, script, 60000);
 
   if (result.exitCode !== 0 && !result.stdout) {
-    throw new Error(result.stderr || 'Discovery script failed');
+    const errMsg = result.stderr || 'Discovery script failed';
+    db.nodes.setOnline(node.id, false, errMsg);
+    throw new Error(errMsg);
   }
 
-  const data = parseScriptOutput(result.stdout);
+  const data = parseScriptOutput(result.stdout, node.name);
 
   // Save to database
   db.discovery.save(node.id, data);
@@ -94,10 +118,11 @@ async function runHardware(node) {
   const result = await ssh.executeScript(node, script, 120000);
 
   if (result.exitCode !== 0 && !result.stdout) {
-    throw new Error(result.stderr || 'Hardware script failed');
+    const errMsg = result.stderr || 'Hardware script failed';
+    throw new Error(errMsg);
   }
 
-  const data = parseScriptOutput(result.stdout);
+  const data = parseScriptOutput(result.stdout, node.name);
 
   // Save to database
   db.hardware.save(node.id, data);
@@ -116,10 +141,22 @@ async function runStats(node, saveHistory = true) {
   const result = await ssh.executeScript(node, script, 30000);
 
   if (result.exitCode !== 0 && !result.stdout) {
-    throw new Error(result.stderr || 'Stats script failed');
+    const errMsg = result.stderr || 'Stats script failed';
+    db.nodes.setOnline(node.id, false, errMsg);
+    throw new Error(errMsg);
   }
 
-  const data = parseScriptOutput(result.stdout);
+  let data;
+  try {
+    data = parseScriptOutput(result.stdout, node.name);
+  } catch (err) {
+    // Save raw output snippet to last_error for debugging
+    const errorWithOutput = err.rawOutput
+      ? `${err.message} | Raw: ${err.rawOutput.substring(0, 200)}`
+      : err.message;
+    db.nodes.setOnline(node.id, false, errorWithOutput);
+    throw err;
+  }
 
   // Save to current stats
   db.stats.saveCurrent(node.id, data);
@@ -264,10 +301,11 @@ async function runDocker(node) {
   const result = await ssh.executeScript(node, script, 60000);
 
   if (result.exitCode !== 0 && !result.stdout) {
-    throw new Error(result.stderr || 'Docker script failed');
+    const errMsg = result.stderr || 'Docker script failed';
+    throw new Error(errMsg);
   }
 
-  const data = parseScriptOutput(result.stdout);
+  const data = parseScriptOutput(result.stdout, node.name);
 
   // Check for error in response
   if (data.error) {
@@ -310,10 +348,21 @@ async function runProxmox(node) {
   const result = await ssh.executeScript(node, script, 120000);
 
   if (result.exitCode !== 0 && !result.stdout) {
-    throw new Error(result.stderr || 'Proxmox script failed');
+    const errMsg = result.stderr || 'Proxmox script failed';
+    throw new Error(errMsg);
   }
 
-  const data = parseScriptOutput(result.stdout);
+  let data;
+  try {
+    data = parseScriptOutput(result.stdout, node.name);
+  } catch (err) {
+    // Save raw output snippet to last_error for debugging
+    const errorWithOutput = err.rawOutput
+      ? `${err.message} | Raw: ${err.rawOutput.substring(0, 200)}`
+      : err.message;
+    db.nodes.setOnline(node.id, false, errorWithOutput);
+    throw err;
+  }
 
   // Check for error in response
   if (data.error) {
