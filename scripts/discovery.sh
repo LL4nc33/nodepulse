@@ -2,6 +2,11 @@
 # nodepulse Discovery Script
 # Erkennt Node-Typ und Features
 
+# Escape string for JSON (remove control characters, escape quotes/backslashes)
+json_escape() {
+    printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
 echo "{"
 
 # Virtualization
@@ -12,7 +17,7 @@ echo "\"virtualization\": \"$VIRT\","
 if command -v pveversion &>/dev/null; then
     PVE_VERSION=$(pveversion 2>/dev/null | head -1)
     echo "\"is_proxmox_host\": true,"
-    echo "\"proxmox_version\": \"$PVE_VERSION\","
+    echo "\"proxmox_version\": \"$(json_escape "$PVE_VERSION")\","
 
     # Cluster?
     if pvecm status &>/dev/null 2>&1; then
@@ -52,7 +57,7 @@ fi
 if [ -f /sys/firmware/devicetree/base/model ]; then
     PI_MODEL=$(tr -d '\0' < /sys/firmware/devicetree/base/model)
     echo "\"is_raspberry_pi\": true,"
-    echo "\"raspberry_pi_model\": \"$PI_MODEL\","
+    echo "\"raspberry_pi_model\": \"$(json_escape "$PI_MODEL")\","
 else
     echo "\"is_raspberry_pi\": false,"
 fi
@@ -64,8 +69,8 @@ echo "\"arch\": \"$ARCH\","
 # OS
 if [ -f /etc/os-release ]; then
     . /etc/os-release
-    echo "\"os_id\": \"$ID\","
-    echo "\"os_name\": \"$PRETTY_NAME\","
+    echo "\"os_id\": \"$(json_escape "$ID")\","
+    echo "\"os_name\": \"$(json_escape "$PRETTY_NAME")\","
 else
     echo "\"os_id\": \"unknown\","
     echo "\"os_name\": \"unknown\","
@@ -79,6 +84,6 @@ else
 fi
 
 # Hostname
-echo "\"hostname\": \"$(hostname)\""
+echo "\"hostname\": \"$(json_escape "$(hostname)")\""
 
 echo "}"

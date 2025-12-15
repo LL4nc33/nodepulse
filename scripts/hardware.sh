@@ -2,6 +2,11 @@
 # nodepulse Hardware Script
 # Sammelt Hardware-Infos
 
+# Escape string for JSON (remove control characters, escape quotes/backslashes)
+json_escape() {
+    printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
 echo "{"
 
 # === SYSTEM ===
@@ -11,10 +16,10 @@ if command -v dmidecode &>/dev/null && [ "$(id -u)" -eq 0 ]; then
     PRODUCT=$(dmidecode -s system-product-name 2>/dev/null | head -1 || echo "")
     SERIAL=$(dmidecode -s system-serial-number 2>/dev/null | head -1 || echo "")
     BIOS=$(dmidecode -s bios-version 2>/dev/null | head -1 || echo "")
-    echo "  \"manufacturer\": \"$MANUFACTURER\","
-    echo "  \"product\": \"$PRODUCT\","
-    echo "  \"serial\": \"$SERIAL\","
-    echo "  \"bios_version\": \"$BIOS\","
+    echo "  \"manufacturer\": \"$(json_escape "$MANUFACTURER")\","
+    echo "  \"product\": \"$(json_escape "$PRODUCT")\","
+    echo "  \"serial\": \"$(json_escape "$SERIAL")\","
+    echo "  \"bios_version\": \"$(json_escape "$BIOS")\","
 else
     echo "  \"manufacturer\": null,"
     echo "  \"product\": null,"
@@ -38,8 +43,8 @@ CPU_MAX_MHZ=$(lscpu 2>/dev/null | grep 'CPU max MHz' | awk '{print $4}' || echo 
 CPU_ARCH=$(uname -m)
 VIRT_FLAG=$(grep -oE '(vmx|svm)' /proc/cpuinfo 2>/dev/null | head -1 || echo "none")
 
-echo "  \"model\": \"$CPU_MODEL\","
-echo "  \"vendor\": \"$CPU_VENDOR\","
+echo "  \"model\": \"$(json_escape "$CPU_MODEL")\","
+echo "  \"vendor\": \"$(json_escape "$CPU_VENDOR")\","
 echo "  \"cores\": $CPU_CORES,"
 echo "  \"threads\": $CPU_THREADS,"
 echo "  \"max_mhz\": $CPU_MAX_MHZ,"
@@ -50,9 +55,9 @@ echo "  \"virt_support\": \"$VIRT_FLAG\","
 L1=$(lscpu 2>/dev/null | grep 'L1d cache' | awk '{print $3}' || echo "")
 L2=$(lscpu 2>/dev/null | grep 'L2 cache' | awk '{print $3}' || echo "")
 L3=$(lscpu 2>/dev/null | grep 'L3 cache' | awk '{print $3}' || echo "")
-echo "  \"cache_l1\": \"$L1\","
-echo "  \"cache_l2\": \"$L2\","
-echo "  \"cache_l3\": \"$L3\""
+echo "  \"cache_l1\": \"$(json_escape "$L1")\","
+echo "  \"cache_l2\": \"$(json_escape "$L2")\","
+echo "  \"cache_l3\": \"$(json_escape "$L3")\""
 echo "},"
 
 # === MEMORY ===
@@ -66,7 +71,7 @@ if command -v dmidecode &>/dev/null && [ "$(id -u)" -eq 0 ]; then
     RAM_TYPE=$(dmidecode -t memory 2>/dev/null | grep -m1 "Type:" | grep -v "Error" | awk '{print $2}' || echo "")
     RAM_SPEED=$(dmidecode -t memory 2>/dev/null | grep -m1 "Speed:" | grep -v "Unknown" | awk '{print $2}' || echo "")
     if [ -n "$RAM_TYPE" ]; then
-        echo "  ,\"type\": \"$RAM_TYPE\""
+        echo "  ,\"type\": \"$(json_escape "$RAM_TYPE")\""
     fi
     if [ -n "$RAM_SPEED" ]; then
         echo "  ,\"speed_mhz\": $RAM_SPEED"
@@ -118,7 +123,7 @@ if command -v lspci &>/dev/null; then
         else
             echo ","
         fi
-        echo "  {\"description\": \"$line\"}"
+        echo "  {\"description\": \"$(json_escape "$line")\"}"
     done
 fi
 echo "]"
