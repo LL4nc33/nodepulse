@@ -79,13 +79,22 @@ function close() {
 // Node Operations
 // =====================================================
 
+// Safe columns for API responses (excludes credentials)
+const NODE_SAFE_COLUMNS = `
+  n.id, n.name, n.host, n.ssh_port, n.ssh_user,
+  n.node_type, n.node_type_locked, n.auto_discovery,
+  n.monitoring_enabled, n.monitoring_interval,
+  n.online, n.last_seen, n.last_error, n.notes,
+  n.created_at, n.updated_at
+`;
+
 const nodes = {
   /**
-   * Get all nodes
+   * Get all nodes (safe - no credentials)
    */
   getAll() {
     const stmt = getDb().prepare(`
-      SELECT n.*,
+      SELECT ${NODE_SAFE_COLUMNS},
         GROUP_CONCAT(t.name) as tags
       FROM nodes n
       LEFT JOIN node_tags nt ON n.id = nt.node_id
@@ -97,9 +106,26 @@ const nodes = {
   },
 
   /**
-   * Get a single node by ID
+   * Get a single node by ID (safe - no credentials)
    */
   getById(id) {
+    const stmt = getDb().prepare(`
+      SELECT ${NODE_SAFE_COLUMNS},
+        GROUP_CONCAT(t.name) as tags
+      FROM nodes n
+      LEFT JOIN node_tags nt ON n.id = nt.node_id
+      LEFT JOIN tags t ON nt.tag_id = t.id
+      WHERE n.id = ?
+      GROUP BY n.id
+    `);
+    return stmt.get(id);
+  },
+
+  /**
+   * Get a single node by ID WITH credentials (internal use only!)
+   * Use this ONLY for SSH connections, never for API responses
+   */
+  getByIdWithCredentials(id) {
     const stmt = getDb().prepare(`
       SELECT n.*,
         GROUP_CONCAT(t.name) as tags
@@ -113,11 +139,11 @@ const nodes = {
   },
 
   /**
-   * Get a single node by name
+   * Get a single node by name (safe - no credentials)
    */
   getByName(name) {
     const stmt = getDb().prepare(`
-      SELECT n.*,
+      SELECT ${NODE_SAFE_COLUMNS},
         GROUP_CONCAT(t.name) as tags
       FROM nodes n
       LEFT JOIN node_tags nt ON n.id = nt.node_id

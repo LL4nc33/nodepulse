@@ -196,7 +196,8 @@ router.delete('/nodes/:id', asyncHandler(async (req, res) => {
 
 // Test SSH connection
 router.post('/nodes/:id/test', asyncHandler(async (req, res) => {
-  const node = db.nodes.getById(req.params.id);
+  // Need credentials for SSH connection
+  const node = db.nodes.getByIdWithCredentials(req.params.id);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -222,7 +223,8 @@ router.post('/nodes/:id/discover', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
   }
 
-  const node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  const node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -269,7 +271,8 @@ router.get('/nodes/:id/hardware', asyncHandler(async (req, res) => {
 
 // Refresh hardware data for a node
 router.post('/nodes/:id/hardware', asyncHandler(async (req, res) => {
-  const node = db.nodes.getById(req.params.id);
+  // Need credentials for SSH connection
+  const node = db.nodes.getByIdWithCredentials(req.params.id);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -353,7 +356,8 @@ router.post('/nodes/:id/stats', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
   }
 
-  const node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  const node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -401,7 +405,8 @@ router.post('/nodes/:id/docker', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -451,7 +456,8 @@ router.post('/nodes/:id/docker/containers/:containerId/:action', asyncHandler(as
     return apiResponse(res, 400, null, { code: 'INVALID_ACTION', message: 'Ungueltige Aktion. Erlaubt: ' + validActions.join(', ') });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -491,7 +497,8 @@ router.get('/nodes/:id/docker/containers/:containerId/logs', asyncHandler(async 
     return apiResponse(res, 400, null, { code: 'INVALID_CONTAINER_ID', message: 'Ungueltige Container-ID' });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -577,7 +584,8 @@ router.post('/nodes/:id/docker/prune/:type', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_TYPE', message: 'Ungueltiger Prune-Typ. Erlaubt: ' + validTypes.join(', ') });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -649,7 +657,8 @@ router.post('/nodes/:id/proxmox', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -752,7 +761,8 @@ router.post('/nodes/:id/proxmox/vms/:vmid/:action', asyncHandler(async (req, res
     return apiResponse(res, 400, null, { code: 'INVALID_ACTION', message: 'Ungueltige Aktion. Erlaubt: ' + validActions.join(', ') });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -804,7 +814,8 @@ router.post('/nodes/:id/proxmox/cts/:ctid/:action', asyncHandler(async (req, res
     return apiResponse(res, 400, null, { code: 'INVALID_ACTION', message: 'Ungueltige Aktion. Erlaubt: ' + validActions.join(', ') });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -875,7 +886,8 @@ router.post('/nodes/:id/proxmox/snapshots', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung darf nur Buchstaben, Zahlen, Leerzeichen, - _ . , enthalten' });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -947,7 +959,8 @@ router.delete('/nodes/:id/proxmox/snapshots/:vmType/:vmid/:snapName', asyncHandl
     return apiResponse(res, 400, null, { code: 'INVALID_SNAP_NAME', message: 'Ungueltiger Snapshot-Name' });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -1152,7 +1165,8 @@ router.post('/nodes/:id/commands', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'BLOCKED_COMMAND', message: 'Dieser Befehl ist aus Sicherheitsgruenden blockiert' });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -1244,7 +1258,8 @@ router.get('/nodes/:id/services', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
@@ -1323,7 +1338,8 @@ router.post('/nodes/:id/services/:service/:action', asyncHandler(async (req, res
     return apiResponse(res, 400, null, { code: 'INVALID_SERVICE', message: 'Ungueltiger Service-Name (max. 255 Zeichen)' });
   }
 
-  var node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  var node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }

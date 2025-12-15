@@ -75,7 +75,9 @@ async function tick() {
     for (var i = 0; i < nodesToCollect.length; i++) {
       if (!isRunning) break;
 
-      var node = nodesToCollect[i];
+      // Get node with credentials for SSH connection
+      var node = db.nodes.getByIdWithCredentials(nodesToCollect[i].id);
+      if (!node) continue;
       await collectNode(node);
       // Set timestamp AFTER successful collection
       lastCollectionTime.set(node.id, Date.now());
@@ -156,7 +158,8 @@ function stop() {
  * @returns {Promise<{success: boolean, data?: Object, error?: string}>}
  */
 async function collectNow(nodeId) {
-  const node = db.nodes.getById(nodeId);
+  // Need credentials for SSH connection
+  const node = db.nodes.getByIdWithCredentials(nodeId);
   if (!node) {
     return { success: false, error: 'Node not found' };
   }
