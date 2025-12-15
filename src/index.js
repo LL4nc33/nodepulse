@@ -4,11 +4,13 @@ const config = require('./config');
 const db = require('./db');
 const scheduler = require('./collector/scheduler');
 
-// Initialize database
-db.init();
+// Main startup (async for sql.js initialization)
+(async () => {
+  // Initialize database (async for sql.js)
+  await db.init();
 
-// Create Express app
-const app = express();
+  // Create Express app
+  const app = express();
 
 // Security: Input size limits (prevent DoS)
 app.use(express.json({ limit: '1mb' }));
@@ -115,3 +117,8 @@ const shutdown = (signal) => {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+
+})().catch(err => {
+  console.error('[FATAL] Startup failed:', err);
+  process.exit(1);
+});

@@ -1,64 +1,64 @@
-const Database = require('better-sqlite3');
+const SqlJsWrapper = require('./sqljs-wrapper');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
 
 let db = null;
+let initPromise = null;
 
 /**
  * Initialize the database connection and create tables if needed
+ * @returns {Promise<SqlJsWrapper>}
  */
-function init() {
+async function init() {
   if (db) return db;
+  if (initPromise) return initPromise;
 
-  // Ensure data directory exists
-  const dbDir = path.dirname(config.dbPath);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
+  initPromise = (async () => {
+    // Create wrapper and initialize
+    const wrapper = new SqlJsWrapper();
+    db = await wrapper.init(config.dbPath);
 
-  // Create/open database
-  db = new Database(config.dbPath);
+    // Enable foreign keys (WAL mode ignored by wrapper - not needed for in-memory)
+    db.pragma('foreign_keys = ON');
 
-  // Enable foreign keys
-  db.pragma('foreign_keys = ON');
+    // Run schema
+    const schemaPath = path.join(__dirname, 'schema.sql');
+    const schema = fs.readFileSync(schemaPath, 'utf8');
+    db.exec(schema);
 
-  // Enable WAL mode for better performance
-  db.pragma('journal_mode = WAL');
-
-  // Run schema
-  const schemaPath = path.join(__dirname, 'schema.sql');
-  const schema = fs.readFileSync(schemaPath, 'utf8');
-  db.exec(schema);
-
-  // Migration: Add ssh_password column if it doesn't exist
-  try {
-    const columns = db.prepare("PRAGMA table_info(nodes)").all();
-    const hasPassword = columns.some(col => col.name === 'ssh_password');
-    if (!hasPassword) {
-      db.exec('ALTER TABLE nodes ADD COLUMN ssh_password TEXT');
-      console.log('[DB] Migration: Added ssh_password column');
+    // Migration: Add ssh_password column if it doesn't exist
+    try {
+      const columns = db.prepare("PRAGMA table_info(nodes)").all();
+      const hasPassword = columns.some(col => col.name === 'ssh_password');
+      if (!hasPassword) {
+        db.exec('ALTER TABLE nodes ADD COLUMN ssh_password TEXT');
+        console.log('[DB] Migration: Added ssh_password column');
+      }
+    } catch (err) {
+      console.error('[DB] Migration error:', err.message);
     }
-  } catch (err) {
-    console.error('[DB] Migration error:', err.message);
-  }
 
-  // Run seed data
-  const seedPath = path.join(__dirname, 'seed.sql');
-  const seed = fs.readFileSync(seedPath, 'utf8');
-  db.exec(seed);
+    // Run seed data
+    const seedPath = path.join(__dirname, 'seed.sql');
+    const seed = fs.readFileSync(seedPath, 'utf8');
+    db.exec(seed);
 
-  console.log('[DB] Database initialized at', config.dbPath);
+    console.log('[DB] Database initialized at', config.dbPath);
 
-  return db;
+    return db;
+  })();
+
+  return initPromise;
 }
 
 /**
- * Get the database instance
+ * Get the database instance (sync after init)
+ * @returns {SqlJsWrapper}
  */
 function getDb() {
   if (!db) {
-    return init();
+    throw new Error('Database not initialized. Call await init() first.');
   }
   return db;
 }
@@ -70,6 +70,7 @@ function close() {
   if (db) {
     db.close();
     db = null;
+    initPromise = null;
     console.log('[DB] Database connection closed');
   }
 }

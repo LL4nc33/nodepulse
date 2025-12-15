@@ -6,6 +6,18 @@ const config = require('../config');
 const COMMAND_TIMEOUT = 30000;
 
 /**
+ * Wrap command for login shell execution
+ * Non-interactive SSH doesn't load profile, so programs like neofetch aren't found
+ * @param {string} command - Command to wrap
+ * @returns {string} - Wrapped command
+ */
+function wrapForLoginShell(command) {
+  // Escape single quotes: ' becomes '\''
+  const escaped = command.replace(/'/g, "'\\''");
+  return `bash -l -c '${escaped}'`;
+}
+
+/**
  * Test SSH connection to a node
  * @param {Object} node - Node object with host, ssh_port, ssh_user, ssh_key_path
  * @returns {Promise<{hostname: string}>}
@@ -64,7 +76,7 @@ async function testConnection(node) {
         }
       }, COMMAND_TIMEOUT);
 
-      conn.exec('hostname', (err, stream) => {
+      conn.exec(wrapForLoginShell('hostname'), (err, stream) => {
         if (err) {
           if (!resolved) {
             resolved = true;
@@ -191,7 +203,7 @@ async function execute(node, command, timeout = COMMAND_TIMEOUT) {
         }
       }, timeout);
 
-      conn.exec(command, (err, stream) => {
+      conn.exec(wrapForLoginShell(command), (err, stream) => {
         if (err) {
           if (!resolved) {
             resolved = true;
