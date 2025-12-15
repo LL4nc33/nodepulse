@@ -139,7 +139,32 @@ router.get('/metrics', asyncHandler(async (req, res) => {
 // =====================================================
 
 // Get all nodes
+// Query params:
+//   ?hierarchy=true - include parent/child info and child_count
+//   ?tree=true - return full hierarchy tree structure
+//   ?roots=true - only return root nodes (no parent)
 router.get('/nodes', asyncHandler(async (req, res) => {
+  const { hierarchy, tree, roots } = req.query;
+
+  if (tree === 'true') {
+    // Return full hierarchy tree
+    const treeData = db.nodes.getHierarchyTree();
+    return apiResponse(res, 200, treeData);
+  }
+
+  if (roots === 'true') {
+    // Return only root nodes
+    const rootNodes = db.nodes.getRootNodes();
+    return apiResponse(res, 200, rootNodes);
+  }
+
+  if (hierarchy === 'true') {
+    // Return all nodes with hierarchy info
+    const nodes = db.nodes.getAllWithHierarchy();
+    return apiResponse(res, 200, nodes);
+  }
+
+  // Default: return all nodes without hierarchy
   const nodes = db.nodes.getAll();
   apiResponse(res, 200, nodes);
 }));
@@ -249,6 +274,214 @@ router.delete('/nodes/:id', asyncHandler(async (req, res) => {
 
   db.nodes.delete(node.id);
   apiResponse(res, 200, { deleted: true, id: node.id });
+}));
+
+// =====================================================
+// Node Hierarchy API
+// =====================================================
+
+// Get node with children
+router.get('/nodes/:id/children', asyncHandler(async (req, res) => {
+  const node = db.nodes.getById(req.params.id);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  const children = db.nodes.getChildren(node.id);
+  apiResponse(res, 200, children);
+}));
+
+// Set parent for a node
+router.patch('/nodes/:id/parent', asyncHandler(async (req, res) => {
+  const node = db.nodes.getById(req.params.id);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  const { parent_id } = req.body;
+
+  // Validate parent_id
+  if (parent_id !== null && parent_id !== undefined) {
+    const parentId = parseInt(parent_id, 10);
+
+    // Check if parent exists
+    const parent = db.nodes.getById(parentId);
+    if (!parent) {
+      return apiResponse(res, 400, null, { code: 'INVALID_PARENT', message: 'Parent-Node nicht gefunden' });
+    }
+
+    // Prevent self-reference
+    if (parentId === node.id) {
+      return apiResponse(res, 400, null, { code: 'INVALID_PARENT', message: 'Node kann nicht sein eigener Parent sein' });
+    }
+
+    // Prevent circular references (check if parent is a child of this node)
+    const isCircular = (nodeId, targetId) => {
+      const children = db.nodes.getChildren(nodeId);
+      for (const child of children) {
+        if (child.id === targetId) return true;
+        if (isCircular(child.id, targetId)) return true;
+      }
+      return false;
+    };
+
+    if (isCircular(node.id, parentId)) {
+      return apiResponse(res, 400, null, { code: 'CIRCULAR_REF', message: 'Zirkuläre Referenz nicht erlaubt' });
+    }
+
+    db.nodes.setParent(node.id, parentId);
+  } else {
+    // Remove parent (set to null)
+    db.nodes.setParent(node.id, null);
+  }
+
+  const updated = db.nodes.getById(node.id);
+  apiResponse(res, 200, updated);
+}));
+
+// Import Proxmox VMs/CTs as child nodes
+router.post('/nodes/:id/import-children', asyncHandler(async (req, res) => {
+  const node = db.nodes.getByIdWithCredentials(req.params.id);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Check if this is a Proxmox host
+  const discovery = db.discovery.getForNode(node.id);
+  if (!discovery || !discovery.is_proxmox_host) {
+    return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
+  }
+
+  // Get Proxmox VMs and CTs
+  const proxmoxData = db.proxmox.getAllForNode(node.id);
+  const imported = [];
+  const skipped = [];
+
+  // Import VMs
+  for (const vm of proxmoxData.vms || []) {
+    // Skip templates
+    if (vm.template === 1) {
+      skipped.push({ type: 'vm', id: vm.vmid, name: vm.name, reason: 'Template' });
+      continue;
+    }
+
+    // Check if already exists as node
+    const vmNodeName = `${node.name}-vm-${vm.vmid}`;
+    const existing = db.nodes.getByName(vmNodeName);
+
+    if (existing) {
+      skipped.push({ type: 'vm', id: vm.vmid, name: vm.name, reason: 'Existiert bereits' });
+      continue;
+    }
+
+    // For Proxmox VMs, we'd need the VM's IP - use placeholder for now
+    // In real implementation, you'd get the IP from qm guest exec or cloud-init
+    imported.push({
+      type: 'vm',
+      vmid: vm.vmid,
+      name: vm.name,
+      suggested_node_name: vmNodeName,
+      status: vm.status,
+      needs_ip: true,
+    });
+  }
+
+  // Import CTs
+  for (const ct of proxmoxData.cts || []) {
+    // Skip templates
+    if (ct.template === 1) {
+      skipped.push({ type: 'ct', id: ct.ctid, name: ct.name, reason: 'Template' });
+      continue;
+    }
+
+    const ctNodeName = `${node.name}-ct-${ct.ctid}`;
+    const existing = db.nodes.getByName(ctNodeName);
+
+    if (existing) {
+      skipped.push({ type: 'ct', id: ct.ctid, name: ct.name, reason: 'Existiert bereits' });
+      continue;
+    }
+
+    imported.push({
+      type: 'ct',
+      ctid: ct.ctid,
+      name: ct.name,
+      suggested_node_name: ctNodeName,
+      status: ct.status,
+      needs_ip: true,
+    });
+  }
+
+  apiResponse(res, 200, {
+    parent_node: { id: node.id, name: node.name },
+    available_for_import: imported,
+    skipped: skipped,
+    message: `${imported.length} VMs/CTs können importiert werden. ${skipped.length} übersprungen.`,
+  });
+}));
+
+// Create child node from Proxmox VM/CT
+router.post('/nodes/:id/create-child', asyncHandler(async (req, res) => {
+  const parentNode = db.nodes.getByIdWithCredentials(req.params.id);
+  if (!parentNode) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Parent-Node nicht gefunden' });
+  }
+
+  const { type, vmid, name, host, ssh_user, ssh_port, ssh_key_path, ssh_password } = req.body;
+
+  // Validation
+  if (!type || !['vm', 'ct'].includes(type)) {
+    return apiResponse(res, 400, null, { code: 'VALIDATION_ERROR', message: 'type muss "vm" oder "ct" sein' });
+  }
+
+  if (!vmid) {
+    return apiResponse(res, 400, null, { code: 'VALIDATION_ERROR', message: 'vmid ist erforderlich' });
+  }
+
+  if (!name || !name.trim()) {
+    return apiResponse(res, 400, null, { code: 'VALIDATION_ERROR', message: 'name ist erforderlich' });
+  }
+
+  if (!host || !host.trim()) {
+    return apiResponse(res, 400, null, { code: 'VALIDATION_ERROR', message: 'host (IP-Adresse) ist erforderlich' });
+  }
+
+  if (!ssh_user || !ssh_user.trim()) {
+    return apiResponse(res, 400, null, { code: 'VALIDATION_ERROR', message: 'ssh_user ist erforderlich' });
+  }
+
+  // Check duplicate name
+  const existing = db.nodes.getByName(name.trim());
+  if (existing) {
+    return apiResponse(res, 409, null, { code: 'DUPLICATE', message: 'Node mit diesem Namen existiert bereits' });
+  }
+
+  try {
+    // Create the child node
+    const nodeType = type === 'vm' ? 'proxmox-vm' : 'proxmox-ct';
+    const id = db.nodes.create({
+      name: name.trim(),
+      host: host.trim(),
+      ssh_port: parseInt(ssh_port, 10) || 22,
+      ssh_user: ssh_user.trim(),
+      ssh_password: ssh_password || null,
+      ssh_key_path: ssh_key_path ? ssh_key_path.trim() : null,
+      notes: `Auto-imported from ${parentNode.name} (${type.toUpperCase()} ${vmid})`,
+    });
+
+    // Set parent relationship and auto_discovered_from
+    db.nodes.setParent(id, parentNode.id);
+    db.nodes.setAutoDiscoveredFrom(id, parentNode.id);
+
+    // Set node type
+    const dbInstance = db.getDb();
+    dbInstance.prepare('UPDATE nodes SET node_type = ?, node_type_locked = 1 WHERE id = ?').run(nodeType, id);
+
+    const childNode = db.nodes.getById(id);
+    apiResponse(res, 201, childNode);
+  } catch (err) {
+    apiResponse(res, 500, null, { code: 'DB_ERROR', message: err.message });
+  }
 }));
 
 // Test SSH connection
@@ -626,6 +859,213 @@ router.get('/nodes/:id/docker/networks', asyncHandler(async (req, res) => {
   apiResponse(res, 200, networks);
 }));
 
+// =====================================================
+// Docker DELETE Operations (mit force Option)
+// =====================================================
+
+// Delete a container
+router.delete('/nodes/:id/docker/containers/:containerId', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  var containerId = req.params.containerId;
+  var force = req.query.force === 'true';
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate container ID (hex, 12-64 chars)
+  if (!/^[a-f0-9]{12,64}$/i.test(containerId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CONTAINER_ID', message: 'Ungueltige Container-ID (hex, 12-64 Zeichen)' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    var command = force ? 'docker rm -f ' + containerId : 'docker rm ' + containerId;
+    var result = await collector.runDockerCommand(node, command, 30000);
+
+    if (result.exitCode !== 0) {
+      var errMsg = result.stderr || 'Container konnte nicht geloescht werden';
+      // Check for specific errors
+      if (errMsg.includes('is running')) {
+        return apiResponse(res, 409, null, { code: 'CONTAINER_RUNNING', message: 'Container laeuft noch. Nutze force=true oder stoppe den Container zuerst.' });
+      }
+      return apiResponse(res, 500, null, { code: 'DOCKER_ERROR', message: errMsg });
+    }
+
+    // Refresh Docker data
+    try {
+      await collector.runDocker(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      containerId: containerId,
+      deleted: true,
+      forced: force,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'DOCKER_ERROR', message: err.message });
+  }
+}));
+
+// Delete an image
+router.delete('/nodes/:id/docker/images/:imageId', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  var imageId = req.params.imageId;
+  var force = req.query.force === 'true';
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate image ID (hex sha256, 12-64 chars) or name:tag format
+  var isValidHex = /^[a-f0-9]{12,64}$/i.test(imageId);
+  var isValidNameTag = /^[a-z0-9][a-z0-9._\/-]*(:[\w][\w.-]*)?$/i.test(imageId);
+  if (!isValidHex && !isValidNameTag) {
+    return apiResponse(res, 400, null, { code: 'INVALID_IMAGE_ID', message: 'Ungueltige Image-ID oder Name:Tag' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    var command = force ? 'docker rmi -f ' + imageId : 'docker rmi ' + imageId;
+    var result = await collector.runDockerCommand(node, command, 60000);
+
+    if (result.exitCode !== 0) {
+      var errMsg = result.stderr || 'Image konnte nicht geloescht werden';
+      if (errMsg.includes('image is being used') || errMsg.includes('image has dependent')) {
+        return apiResponse(res, 409, null, { code: 'IMAGE_IN_USE', message: 'Image wird von Container(n) verwendet. Nutze force=true fuer forciertes Loeschen.' });
+      }
+      return apiResponse(res, 500, null, { code: 'DOCKER_ERROR', message: errMsg });
+    }
+
+    // Refresh Docker data
+    try {
+      await collector.runDocker(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      imageId: imageId,
+      deleted: true,
+      forced: force,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'DOCKER_ERROR', message: err.message });
+  }
+}));
+
+// Delete a volume
+router.delete('/nodes/:id/docker/volumes/:volumeName', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  var volumeName = req.params.volumeName;
+  var force = req.query.force === 'true';
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate volume name (alphanumeric, underscore, dash, dots)
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(volumeName)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_VOLUME_NAME', message: 'Ungueltiger Volume-Name' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    // Note: docker volume rm has no -f flag, volumes in use cannot be force-deleted
+    var command = 'docker volume rm ' + volumeName;
+    var result = await collector.runDockerCommand(node, command, 30000);
+
+    if (result.exitCode !== 0) {
+      var errMsg = result.stderr || 'Volume konnte nicht geloescht werden';
+      if (errMsg.includes('volume is in use')) {
+        return apiResponse(res, 409, null, { code: 'VOLUME_IN_USE', message: 'Volume wird von Container(n) verwendet und kann nicht geloescht werden.' });
+      }
+      return apiResponse(res, 500, null, { code: 'DOCKER_ERROR', message: errMsg });
+    }
+
+    // Refresh Docker data
+    try {
+      await collector.runDocker(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      volumeName: volumeName,
+      deleted: true,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'DOCKER_ERROR', message: err.message });
+  }
+}));
+
+// Delete a network
+router.delete('/nodes/:id/docker/networks/:networkId', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  var networkId = req.params.networkId;
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate network ID (hex, 12-64 chars) or name format
+  var isValidHex = /^[a-f0-9]{12,64}$/i.test(networkId);
+  var isValidName = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(networkId);
+  if (!isValidHex && !isValidName) {
+    return apiResponse(res, 400, null, { code: 'INVALID_NETWORK_ID', message: 'Ungueltige Network-ID oder Name' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    var command = 'docker network rm ' + networkId;
+    var result = await collector.runDockerCommand(node, command, 30000);
+
+    if (result.exitCode !== 0) {
+      var errMsg = result.stderr || 'Network konnte nicht geloescht werden';
+      if (errMsg.includes('has active endpoints') || errMsg.includes('network is in use')) {
+        return apiResponse(res, 409, null, { code: 'NETWORK_IN_USE', message: 'Network wird von Container(n) verwendet und kann nicht geloescht werden.' });
+      }
+      // Prevent deletion of default networks
+      if (errMsg.includes('bridge') || errMsg.includes('host') || errMsg.includes('none')) {
+        return apiResponse(res, 403, null, { code: 'NETWORK_PROTECTED', message: 'Standard-Netzwerke (bridge, host, none) koennen nicht geloescht werden.' });
+      }
+      return apiResponse(res, 500, null, { code: 'DOCKER_ERROR', message: errMsg });
+    }
+
+    // Refresh Docker data
+    try {
+      await collector.runDocker(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      networkId: networkId,
+      deleted: true,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'DOCKER_ERROR', message: err.message });
+  }
+}));
+
 // Docker prune commands
 router.post('/nodes/:id/docker/prune/:type', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.id, 10);
@@ -893,6 +1333,546 @@ router.post('/nodes/:id/proxmox/cts/:ctid/:action', asyncHandler(async (req, res
     }
 
     apiResponse(res, 200, { action: action, ctid: ctid, type: 'ct', success: true });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// =====================================================
+// Proxmox Config & Resize (CPU/RAM/Disk)
+// =====================================================
+
+// Update VM config (CPU, RAM)
+router.patch('/nodes/:id/proxmox/vms/:vmid/config', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  var cores = req.body.cores;
+  var memory = req.body.memory;
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate vmid
+  if (!/^\d+$/.test(req.params.vmid)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'VMID muss numerisch sein' });
+  }
+  var vmid = parseInt(req.params.vmid, 10);
+  if (vmid < 100 || vmid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID (muss 100-999999 sein)' });
+  }
+
+  // Validate at least one config parameter is provided
+  if (cores === undefined && memory === undefined) {
+    return apiResponse(res, 400, null, { code: 'MISSING_PARAMS', message: 'Mindestens cores oder memory muss angegeben werden' });
+  }
+
+  // Validate cores (1-128)
+  if (cores !== undefined) {
+    cores = parseInt(cores, 10);
+    if (isNaN(cores) || cores < 1 || cores > 128) {
+      return apiResponse(res, 400, null, { code: 'INVALID_CORES', message: 'cores muss zwischen 1 und 128 liegen' });
+    }
+  }
+
+  // Validate memory (512-1048576 MB)
+  if (memory !== undefined) {
+    memory = parseInt(memory, 10);
+    if (isNaN(memory) || memory < 512 || memory > 1048576) {
+      return apiResponse(res, 400, null, { code: 'INVALID_MEMORY', message: 'memory muss zwischen 512 und 1048576 MB liegen' });
+    }
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    // Build qm set command
+    var command = 'qm set ' + vmid;
+    if (cores !== undefined) {
+      command += ' -cores ' + cores;
+    }
+    if (memory !== undefined) {
+      command += ' -memory ' + memory;
+    }
+
+    var result = await collector.runProxmoxCommand(node, command, 60000);
+
+    if (result.exitCode !== 0) {
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Config-Aenderung fehlgeschlagen' });
+    }
+
+    // Refresh Proxmox data
+    try {
+      await collector.runProxmox(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      vmid: vmid,
+      type: 'vm',
+      cores: cores,
+      memory: memory,
+      success: true,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Update CT config (CPU, RAM)
+router.patch('/nodes/:id/proxmox/cts/:ctid/config', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  var cores = req.body.cores;
+  var memory = req.body.memory;
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate ctid
+  if (!/^\d+$/.test(req.params.ctid)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'CTID muss numerisch sein' });
+  }
+  var ctid = parseInt(req.params.ctid, 10);
+  if (ctid < 100 || ctid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungueltige CTID (muss 100-999999 sein)' });
+  }
+
+  // Validate at least one config parameter is provided
+  if (cores === undefined && memory === undefined) {
+    return apiResponse(res, 400, null, { code: 'MISSING_PARAMS', message: 'Mindestens cores oder memory muss angegeben werden' });
+  }
+
+  // Validate cores (1-128)
+  if (cores !== undefined) {
+    cores = parseInt(cores, 10);
+    if (isNaN(cores) || cores < 1 || cores > 128) {
+      return apiResponse(res, 400, null, { code: 'INVALID_CORES', message: 'cores muss zwischen 1 und 128 liegen' });
+    }
+  }
+
+  // Validate memory (64-1048576 MB) - CTs can have less memory
+  if (memory !== undefined) {
+    memory = parseInt(memory, 10);
+    if (isNaN(memory) || memory < 64 || memory > 1048576) {
+      return apiResponse(res, 400, null, { code: 'INVALID_MEMORY', message: 'memory muss zwischen 64 und 1048576 MB liegen' });
+    }
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    // Build pct set command
+    var command = 'pct set ' + ctid;
+    if (cores !== undefined) {
+      command += ' -cores ' + cores;
+    }
+    if (memory !== undefined) {
+      command += ' -memory ' + memory;
+    }
+
+    var result = await collector.runProxmoxCommand(node, command, 60000);
+
+    if (result.exitCode !== 0) {
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Config-Aenderung fehlgeschlagen' });
+    }
+
+    // Refresh Proxmox data
+    try {
+      await collector.runProxmox(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      ctid: ctid,
+      type: 'ct',
+      cores: cores,
+      memory: memory,
+      success: true,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Resize VM disk (only enlarging supported!)
+router.post('/nodes/:id/proxmox/vms/:vmid/resize', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  var disk = req.body.disk;
+  var size = req.body.size;
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate vmid
+  if (!/^\d+$/.test(req.params.vmid)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'VMID muss numerisch sein' });
+  }
+  var vmid = parseInt(req.params.vmid, 10);
+  if (vmid < 100 || vmid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID (muss 100-999999 sein)' });
+  }
+
+  // Validate disk parameter (scsi0, virtio0, ide0, etc.)
+  if (!disk || !/^(scsi|virtio|ide|sata)\d+$/.test(disk)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_DISK', message: 'disk muss ein gueltiger Disk-Name sein (z.B. scsi0, virtio0)' });
+  }
+
+  // Validate size parameter (only +XG or +XM format allowed for safety)
+  if (!size || !/^\+\d+[GM]$/i.test(size)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_SIZE', message: 'size muss im Format +XG oder +XM sein (nur Vergroesserung erlaubt!)' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    var command = 'qm resize ' + vmid + ' ' + disk + ' ' + size;
+    var result = await collector.runProxmoxCommand(node, command, 120000);
+
+    if (result.exitCode !== 0) {
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Disk-Resize fehlgeschlagen' });
+    }
+
+    // Refresh Proxmox data
+    try {
+      await collector.runProxmox(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      vmid: vmid,
+      type: 'vm',
+      disk: disk,
+      size: size,
+      success: true,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Resize CT disk (rootfs only, only enlarging supported!)
+router.post('/nodes/:id/proxmox/cts/:ctid/resize', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  var disk = req.body.disk || 'rootfs';
+  var size = req.body.size;
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate ctid
+  if (!/^\d+$/.test(req.params.ctid)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'CTID muss numerisch sein' });
+  }
+  var ctid = parseInt(req.params.ctid, 10);
+  if (ctid < 100 || ctid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungueltige CTID (muss 100-999999 sein)' });
+  }
+
+  // Validate disk parameter (rootfs or mpX)
+  if (!/^(rootfs|mp\d+)$/.test(disk)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_DISK', message: 'disk muss rootfs oder mpX sein' });
+  }
+
+  // Validate size parameter (only +XG or +XM format allowed for safety)
+  if (!size || !/^\+\d+[GM]$/i.test(size)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_SIZE', message: 'size muss im Format +XG oder +XM sein (nur Vergroesserung erlaubt!)' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    var command = 'pct resize ' + ctid + ' ' + disk + ' ' + size;
+    var result = await collector.runProxmoxCommand(node, command, 120000);
+
+    if (result.exitCode !== 0) {
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Disk-Resize fehlgeschlagen' });
+    }
+
+    // Refresh Proxmox data
+    try {
+      await collector.runProxmox(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      ctid: ctid,
+      type: 'ct',
+      disk: disk,
+      size: size,
+      success: true,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// =====================================================
+// Proxmox Clone & Template
+// =====================================================
+
+// Clone VM
+router.post('/nodes/:id/proxmox/vms/:vmid/clone', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  var newid = req.body.newid;
+  var name = req.body.name;
+  var full = req.body.full !== false; // Default to full clone
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate source vmid
+  if (!/^\d+$/.test(req.params.vmid)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'VMID muss numerisch sein' });
+  }
+  var vmid = parseInt(req.params.vmid, 10);
+  if (vmid < 100 || vmid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID (muss 100-999999 sein)' });
+  }
+
+  // Validate newid (required)
+  if (!newid) {
+    return apiResponse(res, 400, null, { code: 'MISSING_NEWID', message: 'newid (neue VMID) ist erforderlich' });
+  }
+  newid = parseInt(newid, 10);
+  if (isNaN(newid) || newid < 100 || newid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_NEWID', message: 'newid muss zwischen 100 und 999999 liegen' });
+  }
+
+  // Validate name (optional, but if provided must be valid)
+  if (name && !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_NAME', message: 'Name darf nur Buchstaben, Zahlen, ., - und _ enthalten' });
+  }
+  if (name && name.length > 63) {
+    return apiResponse(res, 400, null, { code: 'INVALID_NAME', message: 'Name darf maximal 63 Zeichen lang sein' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    var command = 'qm clone ' + vmid + ' ' + newid;
+    if (name) {
+      command += ' --name ' + name;
+    }
+    if (full) {
+      command += ' --full';
+    }
+
+    var result = await collector.runProxmoxCommand(node, command, 600000); // 10 min timeout for clone
+
+    if (result.exitCode !== 0) {
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Clone fehlgeschlagen' });
+    }
+
+    // Refresh Proxmox data
+    try {
+      await collector.runProxmox(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      source_vmid: vmid,
+      new_vmid: newid,
+      name: name || null,
+      full_clone: full,
+      type: 'vm',
+      success: true,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Clone CT
+router.post('/nodes/:id/proxmox/cts/:ctid/clone', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  var newid = req.body.newid;
+  var hostname = req.body.hostname;
+  var full = req.body.full !== false; // Default to full clone
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate source ctid
+  if (!/^\d+$/.test(req.params.ctid)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'CTID muss numerisch sein' });
+  }
+  var ctid = parseInt(req.params.ctid, 10);
+  if (ctid < 100 || ctid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungueltige CTID (muss 100-999999 sein)' });
+  }
+
+  // Validate newid (required)
+  if (!newid) {
+    return apiResponse(res, 400, null, { code: 'MISSING_NEWID', message: 'newid (neue CTID) ist erforderlich' });
+  }
+  newid = parseInt(newid, 10);
+  if (isNaN(newid) || newid < 100 || newid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_NEWID', message: 'newid muss zwischen 100 und 999999 liegen' });
+  }
+
+  // Validate hostname (optional, but if provided must be valid)
+  if (hostname && !/^[a-zA-Z0-9][a-zA-Z0-9-]*$/.test(hostname)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_HOSTNAME', message: 'Hostname darf nur Buchstaben, Zahlen und - enthalten' });
+  }
+  if (hostname && hostname.length > 63) {
+    return apiResponse(res, 400, null, { code: 'INVALID_HOSTNAME', message: 'Hostname darf maximal 63 Zeichen lang sein' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    var command = 'pct clone ' + ctid + ' ' + newid;
+    if (hostname) {
+      command += ' --hostname ' + hostname;
+    }
+    if (full) {
+      command += ' --full';
+    }
+
+    var result = await collector.runProxmoxCommand(node, command, 600000); // 10 min timeout for clone
+
+    if (result.exitCode !== 0) {
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Clone fehlgeschlagen' });
+    }
+
+    // Refresh Proxmox data
+    try {
+      await collector.runProxmox(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      source_ctid: ctid,
+      new_ctid: newid,
+      hostname: hostname || null,
+      full_clone: full,
+      type: 'ct',
+      success: true,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Convert VM to Template
+router.post('/nodes/:id/proxmox/vms/:vmid/template', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate vmid
+  if (!/^\d+$/.test(req.params.vmid)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'VMID muss numerisch sein' });
+  }
+  var vmid = parseInt(req.params.vmid, 10);
+  if (vmid < 100 || vmid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID (muss 100-999999 sein)' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    var command = 'qm template ' + vmid;
+    var result = await collector.runProxmoxCommand(node, command, 120000);
+
+    if (result.exitCode !== 0) {
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Template-Konvertierung fehlgeschlagen' });
+    }
+
+    // Refresh Proxmox data
+    try {
+      await collector.runProxmox(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      vmid: vmid,
+      type: 'vm',
+      template: true,
+      success: true,
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Convert CT to Template
+router.post('/nodes/:id/proxmox/cts/:ctid/template', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  // Validate ctid
+  if (!/^\d+$/.test(req.params.ctid)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'CTID muss numerisch sein' });
+  }
+  var ctid = parseInt(req.params.ctid, 10);
+  if (ctid < 100 || ctid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungueltige CTID (muss 100-999999 sein)' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    var command = 'pct template ' + ctid;
+    var result = await collector.runProxmoxCommand(node, command, 120000);
+
+    if (result.exitCode !== 0) {
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Template-Konvertierung fehlgeschlagen' });
+    }
+
+    // Refresh Proxmox data
+    try {
+      await collector.runProxmox(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 200, {
+      ctid: ctid,
+      type: 'ct',
+      template: true,
+      success: true,
+    });
   } catch (err) {
     apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
   }

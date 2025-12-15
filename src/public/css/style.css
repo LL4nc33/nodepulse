@@ -2110,7 +2110,12 @@ a:focus {
 .icon-start,
 .icon-stop,
 .icon-restart,
-.icon-logs {
+.icon-logs,
+.icon-delete,
+.icon-shutdown,
+.icon-edit,
+.icon-clone,
+.icon-template {
   display: inline-block;
   width: 18px;
   height: 18px;
@@ -2182,6 +2187,208 @@ a:focus {
   width: 6px;
   height: 2px;
   background: var(--color-text-muted);
+}
+
+/* Delete icon - trash can shape */
+.icon-delete {
+  width: 14px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top: none;
+  border-radius: 0 0 3px 3px;
+  position: relative;
+}
+
+.icon-delete::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.icon-delete::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+  transform: translateX(-50%);
+  width: 6px;
+  height: 3px;
+  border: 2px solid currentColor;
+  border-bottom: none;
+  border-radius: 2px 2px 0 0;
+}
+
+/* Shutdown icon - power symbol */
+.icon-shutdown {
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--color-warning);
+  border-radius: 50%;
+  border-top-color: transparent;
+  position: relative;
+}
+
+.icon-shutdown::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+  transform: translateX(-50%);
+  width: 3px;
+  height: 10px;
+  background: var(--color-warning);
+}
+
+/* Edit icon - pencil shape */
+.icon-edit {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 2px;
+  position: relative;
+}
+
+.icon-edit::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 6px;
+  height: 2px;
+  background: var(--color-text-muted);
+}
+
+.icon-edit::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 2px;
+  width: 4px;
+  height: 2px;
+  background: var(--color-text-muted);
+}
+
+/* Clone icon - two overlapping squares */
+.icon-clone {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 2px;
+  position: relative;
+}
+
+.icon-clone::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 2px;
+  background: var(--color-bg-elevated);
+}
+
+/* Template icon - document with corner fold */
+.icon-template {
+  width: 12px;
+  height: 14px;
+  border: 2px solid var(--color-warning);
+  border-radius: 2px;
+  position: relative;
+}
+
+.icon-template::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 6px 6px 0;
+  border-color: transparent var(--color-bg-elevated) transparent transparent;
+}
+
+.icon-template::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  border-bottom: 2px solid var(--color-warning);
+  border-left: 2px solid var(--color-warning);
+}
+
+/* Delete Confirmation Modal Styles */
+.modal-danger .modal-header {
+  border-bottom-color: var(--color-error);
+}
+
+.modal-danger .modal-header h3 {
+  color: var(--color-error-text);
+}
+
+.delete-warning {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.warning-icon {
+  font-size: 2rem;
+  color: var(--color-error-text);
+  line-height: 1;
+}
+
+.checkbox-label {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.checkbox-label.danger {
+  color: var(--color-error-text);
+}
+
+.text-danger {
+  color: var(--color-error-text) !important;
+}
+
+.text-muted {
+  color: var(--color-text-muted) !important;
+}
+
+.modal-info {
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
 }
 
 /* Dropdown Menu */

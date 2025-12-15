@@ -39,6 +39,24 @@ async function init() {
       console.error('[DB] Migration error:', err.message);
     }
 
+    // Migration: Add parent_id and auto_discovered_from columns for Node Hierarchy
+    try {
+      const columns = db.prepare("PRAGMA table_info(nodes)").all();
+      const hasParentId = columns.some(col => col.name === 'parent_id');
+      const hasAutoDiscovered = columns.some(col => col.name === 'auto_discovered_from');
+
+      if (!hasParentId) {
+        db.exec('ALTER TABLE nodes ADD COLUMN parent_id INTEGER REFERENCES nodes(id)');
+        console.log('[DB] Migration: Added parent_id column');
+      }
+      if (!hasAutoDiscovered) {
+        db.exec('ALTER TABLE nodes ADD COLUMN auto_discovered_from INTEGER REFERENCES nodes(id)');
+        console.log('[DB] Migration: Added auto_discovered_from column');
+      }
+    } catch (err) {
+      console.error('[DB] Migration error (hierarchy):', err.message);
+    }
+
     // Run seed data
     const seedPath = path.join(__dirname, 'seed.sql');
     const seed = fs.readFileSync(seedPath, 'utf8');
@@ -85,6 +103,7 @@ const NODE_SAFE_COLUMNS = `
   n.node_type, n.node_type_locked, n.auto_discovery,
   n.monitoring_enabled, n.monitoring_interval,
   n.online, n.last_seen, n.last_error, n.notes,
+  n.parent_id, n.auto_discovered_from,
   n.created_at, n.updated_at
 `;
 
@@ -244,6 +263,140 @@ const nodes = {
       UPDATE nodes SET node_type = ? WHERE id = ? AND node_type_locked = 0
     `);
     return stmt.run(nodeType, id);
+  },
+
+  // =====================================================
+  // Node Hierarchy Methods
+  // =====================================================
+
+  /**
+   * Get all nodes with hierarchy info (safe - no credentials)
+   * Returns nodes with parent info and child count
+   */
+  getAllWithHierarchy() {
+    const stmt = getDb().prepare(`
+      SELECT ${NODE_SAFE_COLUMNS},
+        GROUP_CONCAT(DISTINCT t.name) as tags,
+        p.name as parent_name,
+        (SELECT COUNT(*) FROM nodes c WHERE c.parent_id = n.id) as child_count
+      FROM nodes n
+      LEFT JOIN node_tags nt ON n.id = nt.node_id
+      LEFT JOIN tags t ON nt.tag_id = t.id
+      LEFT JOIN nodes p ON n.parent_id = p.id
+      GROUP BY n.id
+      ORDER BY COALESCE(n.parent_id, n.id), n.parent_id IS NOT NULL, n.name
+    `);
+    return stmt.all();
+  },
+
+  /**
+   * Get root nodes only (nodes without parent)
+   */
+  getRootNodes() {
+    const stmt = getDb().prepare(`
+      SELECT ${NODE_SAFE_COLUMNS},
+        GROUP_CONCAT(t.name) as tags,
+        (SELECT COUNT(*) FROM nodes c WHERE c.parent_id = n.id) as child_count
+      FROM nodes n
+      LEFT JOIN node_tags nt ON n.id = nt.node_id
+      LEFT JOIN tags t ON nt.tag_id = t.id
+      WHERE n.parent_id IS NULL
+      GROUP BY n.id
+      ORDER BY n.name
+    `);
+    return stmt.all();
+  },
+
+  /**
+   * Get children of a node
+   */
+  getChildren(parentId) {
+    const stmt = getDb().prepare(`
+      SELECT ${NODE_SAFE_COLUMNS},
+        GROUP_CONCAT(t.name) as tags,
+        (SELECT COUNT(*) FROM nodes c WHERE c.parent_id = n.id) as child_count
+      FROM nodes n
+      LEFT JOIN node_tags nt ON n.id = nt.node_id
+      LEFT JOIN tags t ON nt.tag_id = t.id
+      WHERE n.parent_id = ?
+      GROUP BY n.id
+      ORDER BY n.name
+    `);
+    return stmt.all(parentId);
+  },
+
+  /**
+   * Get a node with all its children (one level deep)
+   */
+  getWithChildren(id) {
+    const node = this.getById(id);
+    if (!node) return null;
+    node.children = this.getChildren(id);
+    return node;
+  },
+
+  /**
+   * Set parent for a node
+   */
+  setParent(id, parentId) {
+    const stmt = getDb().prepare(`
+      UPDATE nodes SET parent_id = ? WHERE id = ?
+    `);
+    return stmt.run(parentId, id);
+  },
+
+  /**
+   * Set auto_discovered_from for a node
+   */
+  setAutoDiscoveredFrom(id, discoveredFromId) {
+    const stmt = getDb().prepare(`
+      UPDATE nodes SET auto_discovered_from = ? WHERE id = ?
+    `);
+    return stmt.run(discoveredFromId, id);
+  },
+
+  /**
+   * Get nodes that were auto-discovered from a specific host
+   */
+  getAutoDiscoveredFrom(hostNodeId) {
+    const stmt = getDb().prepare(`
+      SELECT ${NODE_SAFE_COLUMNS},
+        GROUP_CONCAT(t.name) as tags
+      FROM nodes n
+      LEFT JOIN node_tags nt ON n.id = nt.node_id
+      LEFT JOIN tags t ON nt.tag_id = t.id
+      WHERE n.auto_discovered_from = ?
+      GROUP BY n.id
+      ORDER BY n.name
+    `);
+    return stmt.all(hostNodeId);
+  },
+
+  /**
+   * Build full hierarchy tree (recursive)
+   * Returns nodes structured as a tree
+   */
+  getHierarchyTree() {
+    const allNodes = this.getAllWithHierarchy();
+    const nodeMap = new Map();
+    const roots = [];
+
+    // First pass: create map
+    for (const node of allNodes) {
+      node.children = [];
+      nodeMap.set(node.id, node);
+    }
+
+    // Second pass: build tree
+    for (const node of allNodes) {
+      if (node.parent_id && nodeMap.has(node.parent_id)) {
+        nodeMap.get(node.parent_id).children.push(node);
+      } else {
+        roots.push(node);
+      }
+    }
+
+    return roots;
   },
 };
 

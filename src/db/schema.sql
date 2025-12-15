@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS nodes (
     -- Typen: proxmox-host, proxmox-vm, proxmox-ct, docker-host, bare-metal, raspberry-pi
     node_type_locked INTEGER DEFAULT 0,
 
+    -- Hierarchy (Parent-Child Relationships)
+    parent_id INTEGER REFERENCES nodes(id),
+    auto_discovered_from INTEGER REFERENCES nodes(id),
+
     -- Settings
     auto_discovery INTEGER DEFAULT 1,
     monitoring_enabled INTEGER DEFAULT 1,
