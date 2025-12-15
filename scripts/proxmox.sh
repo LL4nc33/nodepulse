@@ -43,12 +43,15 @@ while read -r vmid name status mem bootdisk pid; do
     if echo "$bootdisk" | grep -qE '[0-9.]+'; then
         DISK_NUM=$(echo "$bootdisk" | grep -oE '[0-9.]+' | head -1)
         if echo "$bootdisk" | grep -qi 'g'; then
-            DISK_BYTES=$(echo "$DISK_NUM * 1073741824" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
+            DISK_BYTES=$(echo "$DISK_NUM * 1073741824" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./')
         elif echo "$bootdisk" | grep -qi 't'; then
-            DISK_BYTES=$(echo "$DISK_NUM * 1099511627776" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
+            DISK_BYTES=$(echo "$DISK_NUM * 1099511627776" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./')
         fi
     fi
+    # Remove decimal part and ensure valid number
     DISK_BYTES=${DISK_BYTES%.*}
+    DISK_BYTES=${DISK_BYTES:-0}
+    if ! [[ "$DISK_BYTES" =~ ^[0-9]+$ ]]; then DISK_BYTES=0; fi
 
     # Escape name for JSON
     name=$(json_escape "$name")
@@ -59,7 +62,13 @@ while read -r vmid name status mem bootdisk pid; do
         IS_TEMPLATE=1
     fi
 
-    echo "  {\"vmid\": $vmid, \"name\": \"$name\", \"status\": \"$status\", \"cpu_cores\": ${CORES:-1}, \"memory_bytes\": ${MEM_BYTES:-0}, \"disk_bytes\": ${DISK_BYTES:-0}, \"template\": $IS_TEMPLATE}"
+    # Ensure all numeric values are valid
+    CORES=${CORES:-1}
+    if ! [[ "$CORES" =~ ^[0-9]+$ ]]; then CORES=1; fi
+    MEM_BYTES=${MEM_BYTES:-0}
+    if ! [[ "$MEM_BYTES" =~ ^[0-9]+$ ]]; then MEM_BYTES=0; fi
+
+    echo "  {\"vmid\": $vmid, \"name\": \"$name\", \"status\": \"$status\", \"cpu_cores\": $CORES, \"memory_bytes\": $MEM_BYTES, \"disk_bytes\": $DISK_BYTES, \"template\": $IS_TEMPLATE}"
 done < <(qm list 2>/dev/null | tail -n +2)
 echo "],"
 
@@ -102,6 +111,9 @@ while read -r ctid status lock name; do
             DISK_BYTES=$((DISK_NUM * 1073741824))
         fi
     fi
+    # Ensure DISK_BYTES is valid
+    DISK_BYTES=${DISK_BYTES:-0}
+    if ! [[ "$DISK_BYTES" =~ ^[0-9]+$ ]]; then DISK_BYTES=0; fi
 
     # Escape name for JSON
     name=$(json_escape "$name")
@@ -112,7 +124,13 @@ while read -r ctid status lock name; do
         IS_TEMPLATE=1
     fi
 
-    echo "  {\"ctid\": $ctid, \"name\": \"$name\", \"status\": \"$status\", \"cpu_cores\": ${CORES:-1}, \"memory_bytes\": ${MEM_BYTES:-0}, \"disk_bytes\": ${DISK_BYTES:-0}, \"template\": $IS_TEMPLATE}"
+    # Ensure all numeric values are valid
+    CORES=${CORES:-1}
+    if ! [[ "$CORES" =~ ^[0-9]+$ ]]; then CORES=1; fi
+    MEM_BYTES=${MEM_BYTES:-0}
+    if ! [[ "$MEM_BYTES" =~ ^[0-9]+$ ]]; then MEM_BYTES=0; fi
+
+    echo "  {\"ctid\": $ctid, \"name\": \"$name\", \"status\": \"$status\", \"cpu_cores\": $CORES, \"memory_bytes\": $MEM_BYTES, \"disk_bytes\": $DISK_BYTES, \"template\": $IS_TEMPLATE}"
 done < <(pct list 2>/dev/null | tail -n +2)
 echo "],"
 
@@ -132,13 +150,13 @@ while read -r name type status total used available percent; do
     USED_BYTES=0
     AVAIL_BYTES=0
 
-    if [ -n "$total" ] && [ "$total" != "0" ]; then
+    if [ -n "$total" ] && [[ "$total" =~ ^[0-9]+$ ]]; then
         TOTAL_BYTES=$((total * 1024))
     fi
-    if [ -n "$used" ] && [ "$used" != "0" ]; then
+    if [ -n "$used" ] && [[ "$used" =~ ^[0-9]+$ ]]; then
         USED_BYTES=$((used * 1024))
     fi
-    if [ -n "$available" ] && [ "$available" != "0" ]; then
+    if [ -n "$available" ] && [[ "$available" =~ ^[0-9]+$ ]]; then
         AVAIL_BYTES=$((available * 1024))
     fi
 
@@ -147,7 +165,12 @@ while read -r name type status total used available percent; do
     type=$(json_escape "$type")
     status=$(json_escape "$status")
 
-    echo "  {\"name\": \"$name\", \"type\": \"$type\", \"status\": \"$status\", \"total_bytes\": ${TOTAL_BYTES:-0}, \"used_bytes\": ${USED_BYTES:-0}, \"available_bytes\": ${AVAIL_BYTES:-0}}"
+    # Ensure numeric values are valid
+    TOTAL_BYTES=${TOTAL_BYTES:-0}
+    USED_BYTES=${USED_BYTES:-0}
+    AVAIL_BYTES=${AVAIL_BYTES:-0}
+
+    echo "  {\"name\": \"$name\", \"type\": \"$type\", \"status\": \"$status\", \"total_bytes\": $TOTAL_BYTES, \"used_bytes\": $USED_BYTES, \"available_bytes\": $AVAIL_BYTES}"
 done < <(pvesm status 2>/dev/null | tail -n +2)
 echo "],"
 
@@ -214,18 +237,25 @@ fi
 echo "],"
 
 # === SUMMARY ===
-VM_COUNT=$(qm list 2>/dev/null | tail -n +2 | wc -l)
-VM_RUNNING=$(qm list 2>/dev/null | grep -c "running" || echo 0)
-CT_COUNT=$(pct list 2>/dev/null | tail -n +2 | wc -l)
-CT_RUNNING=$(pct list 2>/dev/null | grep -c "running" || echo 0)
-STORAGE_COUNT=$(pvesm status 2>/dev/null | tail -n +2 | wc -l)
+VM_COUNT=$(qm list 2>/dev/null | tail -n +2 | wc -l | tr -d ' ')
+VM_RUNNING=$(qm list 2>/dev/null | grep -c "running" 2>/dev/null || echo 0)
+CT_COUNT=$(pct list 2>/dev/null | tail -n +2 | wc -l | tr -d ' ')
+CT_RUNNING=$(pct list 2>/dev/null | grep -c "running" 2>/dev/null || echo 0)
+STORAGE_COUNT=$(pvesm status 2>/dev/null | tail -n +2 | wc -l | tr -d ' ')
+
+# Ensure all counts are valid numbers
+VM_COUNT=${VM_COUNT:-0}; if ! [[ "$VM_COUNT" =~ ^[0-9]+$ ]]; then VM_COUNT=0; fi
+VM_RUNNING=${VM_RUNNING:-0}; if ! [[ "$VM_RUNNING" =~ ^[0-9]+$ ]]; then VM_RUNNING=0; fi
+CT_COUNT=${CT_COUNT:-0}; if ! [[ "$CT_COUNT" =~ ^[0-9]+$ ]]; then CT_COUNT=0; fi
+CT_RUNNING=${CT_RUNNING:-0}; if ! [[ "$CT_RUNNING" =~ ^[0-9]+$ ]]; then CT_RUNNING=0; fi
+STORAGE_COUNT=${STORAGE_COUNT:-0}; if ! [[ "$STORAGE_COUNT" =~ ^[0-9]+$ ]]; then STORAGE_COUNT=0; fi
 
 echo "\"summary\": {"
-echo "  \"vms_total\": ${VM_COUNT:-0},"
-echo "  \"vms_running\": ${VM_RUNNING:-0},"
-echo "  \"cts_total\": ${CT_COUNT:-0},"
-echo "  \"cts_running\": ${CT_RUNNING:-0},"
-echo "  \"storage_count\": ${STORAGE_COUNT:-0}"
+echo "  \"vms_total\": $VM_COUNT,"
+echo "  \"vms_running\": $VM_RUNNING,"
+echo "  \"cts_total\": $CT_COUNT,"
+echo "  \"cts_running\": $CT_RUNNING,"
+echo "  \"storage_count\": $STORAGE_COUNT"
 echo "}"
 
 echo "}"
