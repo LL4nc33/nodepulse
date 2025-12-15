@@ -45,9 +45,9 @@ VIRT_FLAG=$(grep -oE '(vmx|svm)' /proc/cpuinfo 2>/dev/null | head -1 || echo "no
 
 echo "  \"model\": \"$(json_escape "$CPU_MODEL")\","
 echo "  \"vendor\": \"$(json_escape "$CPU_VENDOR")\","
-echo "  \"cores\": $CPU_CORES,"
-echo "  \"threads\": $CPU_THREADS,"
-echo "  \"max_mhz\": $CPU_MAX_MHZ,"
+echo "  \"cores\": ${CPU_CORES:-1},"
+echo "  \"threads\": ${CPU_THREADS:-1},"
+echo "  \"max_mhz\": ${CPU_MAX_MHZ:-null},"
 echo "  \"arch\": \"$(json_escape "$CPU_ARCH")\","
 echo "  \"virt_support\": \"$(json_escape "$VIRT_FLAG")\","
 
@@ -64,8 +64,8 @@ echo "},"
 echo "\"memory\": {"
 MEM_TOTAL=$(free -b 2>/dev/null | awk '/Mem:/ {print $2}' || echo 0)
 SWAP_TOTAL=$(free -b 2>/dev/null | awk '/Swap:/ {print $2}' || echo 0)
-echo "  \"total_bytes\": $MEM_TOTAL,"
-echo "  \"swap_total_bytes\": $SWAP_TOTAL"
+echo "  \"total_bytes\": ${MEM_TOTAL:-0},"
+echo "  \"swap_total_bytes\": ${SWAP_TOTAL:-0}"
 
 if command -v dmidecode &>/dev/null && [ "$(id -u)" -eq 0 ]; then
     RAM_TYPE=$(dmidecode -t memory 2>/dev/null | grep -m1 "Type:" | grep -v "Error" | awk '{print $2}' || echo "")
@@ -73,7 +73,7 @@ if command -v dmidecode &>/dev/null && [ "$(id -u)" -eq 0 ]; then
     if [ -n "$RAM_TYPE" ]; then
         echo "  ,\"type\": \"$(json_escape "$RAM_TYPE")\""
     fi
-    if [ -n "$RAM_SPEED" ]; then
+    if [ -n "$RAM_SPEED" ] && [[ "$RAM_SPEED" =~ ^[0-9]+$ ]]; then
         echo "  ,\"speed_mhz\": $RAM_SPEED"
     fi
 fi

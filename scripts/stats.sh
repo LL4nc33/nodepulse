@@ -11,9 +11,9 @@ echo "\"timestamp\": $(date +%s),"
 LOAD_1=$(awk '{print $1}' /proc/loadavg)
 LOAD_5=$(awk '{print $2}' /proc/loadavg)
 LOAD_15=$(awk '{print $3}' /proc/loadavg)
-echo "\"load_1m\": $LOAD_1,"
-echo "\"load_5m\": $LOAD_5,"
-echo "\"load_15m\": $LOAD_15,"
+echo "\"load_1m\": ${LOAD_1:-0},"
+echo "\"load_5m\": ${LOAD_5:-0},"
+echo "\"load_15m\": ${LOAD_15:-0},"
 
 # CPU Usage
 CPU_LINE=$(top -bn1 2>/dev/null | grep "Cpu(s)" | head -1)
@@ -27,7 +27,7 @@ if [ -n "$CPU_LINE" ]; then
 else
     CPU_USED=0
 fi
-echo "\"cpu_percent\": $CPU_USED,"
+echo "\"cpu_percent\": ${CPU_USED:-0},"
 
 # Memory
 MEM_TOTAL=$(free -b 2>/dev/null | awk '/Mem:/ {print $2}' || echo 0)
@@ -42,12 +42,12 @@ else
     MEM_PERCENT=0
 fi
 
-echo "\"ram_total_bytes\": $MEM_TOTAL,"
-echo "\"ram_used_bytes\": $MEM_USED,"
-echo "\"ram_available_bytes\": $MEM_AVAIL,"
-echo "\"ram_percent\": $MEM_PERCENT,"
-echo "\"swap_total_bytes\": $SWAP_TOTAL,"
-echo "\"swap_used_bytes\": $SWAP_USED,"
+echo "\"ram_total_bytes\": ${MEM_TOTAL:-0},"
+echo "\"ram_used_bytes\": ${MEM_USED:-0},"
+echo "\"ram_available_bytes\": ${MEM_AVAIL:-0},"
+echo "\"ram_percent\": ${MEM_PERCENT:-0},"
+echo "\"swap_total_bytes\": ${SWAP_TOTAL:-0},"
+echo "\"swap_used_bytes\": ${SWAP_USED:-0},"
 
 # Disk (root)
 DISK_INFO=$(df -B1 / 2>/dev/null | tail -1)
@@ -70,8 +70,8 @@ while read -r line; do
     NET_RX=$((NET_RX + RX))
     NET_TX=$((NET_TX + TX))
 done < <(tail -n +3 /proc/net/dev 2>/dev/null)
-echo "\"net_rx_bytes\": $NET_RX,"
-echo "\"net_tx_bytes\": $NET_TX,"
+echo "\"net_rx_bytes\": ${NET_RX:-0},"
+echo "\"net_tx_bytes\": ${NET_TX:-0},"
 
 # Temperature
 TEMP=null
@@ -85,10 +85,10 @@ echo "\"temp_cpu\": $TEMP,"
 
 # Uptime
 UPTIME=$(awk '{print int($1)}' /proc/uptime 2>/dev/null || echo 0)
-echo "\"uptime_seconds\": $UPTIME,"
+echo "\"uptime_seconds\": ${UPTIME:-0},"
 
 # Processes
 PROCS=$(ps aux 2>/dev/null | wc -l || echo 0)
-echo "\"processes\": $PROCS"
+echo "\"processes\": ${PROCS:-0}"
 
 echo "}"

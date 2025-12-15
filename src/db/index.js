@@ -768,7 +768,7 @@ const docker = {
   saveContainers(nodeId, containers) {
     const deleteStmt = getDb().prepare('DELETE FROM docker_containers WHERE node_id = ?');
     const insertStmt = getDb().prepare(`
-      INSERT INTO docker_containers (node_id, container_id, name, image, status, state, ports_json, created_at)
+      INSERT OR REPLACE INTO docker_containers (node_id, container_id, name, image, status, state, ports_json, created_at)
       VALUES (@node_id, @container_id, @name, @image, @status, @state, @ports_json, @created_at)
     `);
 
@@ -808,7 +808,7 @@ const docker = {
   saveImages(nodeId, images) {
     const deleteStmt = getDb().prepare('DELETE FROM docker_images WHERE node_id = ?');
     const insertStmt = getDb().prepare(`
-      INSERT INTO docker_images (node_id, image_id, repository, tag, size_bytes, created_at)
+      INSERT OR REPLACE INTO docker_images (node_id, image_id, repository, tag, size_bytes, created_at)
       VALUES (@node_id, @image_id, @repository, @tag, @size_bytes, @created_at)
     `);
 
@@ -846,7 +846,7 @@ const docker = {
   saveVolumes(nodeId, volumes) {
     const deleteStmt = getDb().prepare('DELETE FROM docker_volumes WHERE node_id = ?');
     const insertStmt = getDb().prepare(`
-      INSERT INTO docker_volumes (node_id, name, driver, mountpoint, in_use)
+      INSERT OR REPLACE INTO docker_volumes (node_id, name, driver, mountpoint, in_use)
       VALUES (@node_id, @name, @driver, @mountpoint, @in_use)
     `);
 
@@ -883,7 +883,7 @@ const docker = {
   saveNetworks(nodeId, networks) {
     const deleteStmt = getDb().prepare('DELETE FROM docker_networks WHERE node_id = ?');
     const insertStmt = getDb().prepare(`
-      INSERT INTO docker_networks (node_id, network_id, name, driver, scope)
+      INSERT OR REPLACE INTO docker_networks (node_id, network_id, name, driver, scope)
       VALUES (@node_id, @network_id, @name, @driver, @scope)
     `);
 
@@ -995,7 +995,7 @@ const proxmox = {
   saveVMs(nodeId, vms) {
     const deleteStmt = getDb().prepare('DELETE FROM proxmox_vms WHERE node_id = ?');
     const insertStmt = getDb().prepare(`
-      INSERT INTO proxmox_vms (node_id, vmid, name, status, cpu_cores, memory_bytes, disk_bytes, template)
+      INSERT OR REPLACE INTO proxmox_vms (node_id, vmid, name, status, cpu_cores, memory_bytes, disk_bytes, template)
       VALUES (@node_id, @vmid, @name, @status, @cpu_cores, @memory_bytes, @disk_bytes, @template)
     `);
 
@@ -1045,7 +1045,7 @@ const proxmox = {
   saveCTs(nodeId, cts) {
     const deleteStmt = getDb().prepare('DELETE FROM proxmox_cts WHERE node_id = ?');
     const insertStmt = getDb().prepare(`
-      INSERT INTO proxmox_cts (node_id, ctid, name, status, cpu_cores, memory_bytes, disk_bytes, template)
+      INSERT OR REPLACE INTO proxmox_cts (node_id, ctid, name, status, cpu_cores, memory_bytes, disk_bytes, template)
       VALUES (@node_id, @ctid, @name, @status, @cpu_cores, @memory_bytes, @disk_bytes, @template)
     `);
 
@@ -1085,7 +1085,7 @@ const proxmox = {
   saveStorage(nodeId, storage) {
     const deleteStmt = getDb().prepare('DELETE FROM proxmox_storage WHERE node_id = ?');
     const insertStmt = getDb().prepare(`
-      INSERT INTO proxmox_storage (node_id, storage_name, storage_type, total_bytes, used_bytes, available_bytes)
+      INSERT OR REPLACE INTO proxmox_storage (node_id, storage_name, storage_type, total_bytes, used_bytes, available_bytes)
       VALUES (@node_id, @storage_name, @storage_type, @total_bytes, @used_bytes, @available_bytes)
     `);
 
@@ -1133,7 +1133,7 @@ const proxmox = {
   saveSnapshots(nodeId, snapshots) {
     const deleteStmt = getDb().prepare('DELETE FROM proxmox_snapshots WHERE node_id = ?');
     const insertStmt = getDb().prepare(`
-      INSERT INTO proxmox_snapshots (node_id, vmid, vm_type, snap_name, description)
+      INSERT OR REPLACE INTO proxmox_snapshots (node_id, vmid, vm_type, snap_name, description)
       VALUES (@node_id, @vmid, @vm_type, @snap_name, @description)
     `);
 
