@@ -193,10 +193,178 @@ function refreshStats() {
   xhr.send();
 }
 
-// Update grid with new data (page reload for simplicity on old browser)
+// Thresholds from server (for live updates)
+var thresholds = {
+  cpu_warning: <%= thresholds.cpu_warning %>,
+  cpu_critical: <%= thresholds.cpu_critical %>,
+  ram_warning: <%= thresholds.ram_warning %>,
+  ram_critical: <%= thresholds.ram_critical %>,
+  disk_warning: <%= thresholds.disk_warning %>,
+  disk_critical: <%= thresholds.disk_critical %>,
+  temp_warning: <%= thresholds.temp_warning %>,
+  temp_critical: <%= thresholds.temp_critical %>
+};
+
+// Previous values for trend tracking
+var previousValues = {};
+
+// Get trend indicator
+function getTrend(nodeId, metric, newValue) {
+  var key = nodeId + '_' + metric;
+  var prevValue = previousValues[key];
+  previousValues[key] = newValue;
+
+  if (typeof prevValue === 'undefined') return 'stable';
+  if (newValue > prevValue + 2) return 'up';
+  if (newValue < prevValue - 2) return 'down';
+  return 'stable';
+}
+
+// Get CSS class for value
+function getValueClass(value, warningThreshold, criticalThreshold) {
+  if (value >= criticalThreshold) return 'critical';
+  if (value >= warningThreshold) return 'warning';
+  return '';
+}
+
+// Get CSS class for bar fill
+function getBarClass(value, warningThreshold, criticalThreshold) {
+  if (value >= criticalThreshold) return 'critical';
+  if (value >= warningThreshold) return 'warning';
+  return 'ok';
+}
+
+// Get card alert level class
+function getAlertLevel(node) {
+  if (!node.online) return 'offline';
+  if (!node.timestamp) return 'unknown';
+
+  if (node.cpu_percent >= thresholds.cpu_critical ||
+      node.ram_percent >= thresholds.ram_critical ||
+      node.disk_percent >= thresholds.disk_critical ||
+      (node.temp_cpu && node.temp_cpu >= thresholds.temp_critical)) {
+    return 'critical';
+  }
+  if (node.cpu_percent >= thresholds.cpu_warning ||
+      node.ram_percent >= thresholds.ram_warning ||
+      node.disk_percent >= thresholds.disk_warning ||
+      (node.temp_cpu && node.temp_cpu >= thresholds.temp_warning)) {
+    return 'warning';
+  }
+  return 'ok';
+}
+
+// Smooth DOM update (no page reload!)
 function updateGrid(nodes) {
-  // For old browser compatibility, just reload the page
-  window.location.reload();
+  if (!nodes || !nodes.length) return;
+
+  for (var i = 0; i < nodes.length; i++) {
+    var node = nodes[i];
+    var card = document.querySelector('[data-node-id="' + node.id + '"]');
+    if (!card) continue;
+
+    // Update card alert level class
+    var alertLevel = getAlertLevel(node);
+    card.className = 'monitoring-card ' + alertLevel;
+
+    // Update status badge
+    var statusBadge = card.querySelector('.monitoring-status');
+    if (statusBadge) {
+      statusBadge.className = 'monitoring-status ' + (node.online ? 'online' : 'offline');
+      statusBadge.textContent = node.online ? 'Online' : 'Offline';
+    }
+
+    // Find stat bars
+    var statBars = card.querySelectorAll('.stat-bar');
+
+    // Update CPU (index 0)
+    if (statBars[0] && typeof node.cpu_percent !== 'undefined') {
+      var cpuValue = Math.round(node.cpu_percent || 0);
+      var cpuTrend = getTrend(node.id, 'cpu', cpuValue);
+      var cpuValueEl = statBars[0].querySelector('.stat-bar-value');
+      var cpuFill = statBars[0].querySelector('.stat-bar-fill');
+
+      if (cpuValueEl) {
+        cpuValueEl.className = 'stat-bar-value ' + getValueClass(cpuValue, thresholds.cpu_warning, thresholds.cpu_critical);
+        cpuValueEl.innerHTML = cpuValue + '%<span class="trend-indicator trend-' + cpuTrend + '"></span>';
+      }
+      if (cpuFill) {
+        cpuFill.className = 'stat-bar-fill ' + getBarClass(cpuValue, thresholds.cpu_warning, thresholds.cpu_critical);
+        cpuFill.style.width = Math.min(cpuValue, 100) + '%';
+      }
+    }
+
+    // Update RAM (index 1)
+    if (statBars[1] && typeof node.ram_percent !== 'undefined') {
+      var ramValue = Math.round(node.ram_percent || 0);
+      var ramTrend = getTrend(node.id, 'ram', ramValue);
+      var ramValueEl = statBars[1].querySelector('.stat-bar-value');
+      var ramFill = statBars[1].querySelector('.stat-bar-fill');
+
+      if (ramValueEl) {
+        ramValueEl.className = 'stat-bar-value ' + getValueClass(ramValue, thresholds.ram_warning, thresholds.ram_critical);
+        ramValueEl.innerHTML = ramValue + '%<span class="trend-indicator trend-' + ramTrend + '"></span>';
+      }
+      if (ramFill) {
+        ramFill.className = 'stat-bar-fill ' + getBarClass(ramValue, thresholds.ram_warning, thresholds.ram_critical);
+        ramFill.style.width = Math.min(ramValue, 100) + '%';
+      }
+    }
+
+    // Update Disk (index 2)
+    if (statBars[2] && typeof node.disk_percent !== 'undefined') {
+      var diskValue = Math.round(node.disk_percent || 0);
+      var diskTrend = getTrend(node.id, 'disk', diskValue);
+      var diskValueEl = statBars[2].querySelector('.stat-bar-value');
+      var diskFill = statBars[2].querySelector('.stat-bar-fill');
+
+      if (diskValueEl) {
+        diskValueEl.className = 'stat-bar-value ' + getValueClass(diskValue, thresholds.disk_warning, thresholds.disk_critical);
+        diskValueEl.innerHTML = diskValue + '%<span class="trend-indicator trend-' + diskTrend + '"></span>';
+      }
+      if (diskFill) {
+        diskFill.className = 'stat-bar-fill ' + getBarClass(diskValue, thresholds.disk_warning, thresholds.disk_critical);
+        diskFill.style.width = Math.min(diskValue, 100) + '%';
+      }
+    }
+
+    // Update Temp (index 3 if exists)
+    if (statBars[3] && typeof node.temp_cpu !== 'undefined' && node.temp_cpu !== null) {
+      var tempValue = Math.round(node.temp_cpu);
+      var tempTrend = getTrend(node.id, 'temp', tempValue);
+      var tempValueEl = statBars[3].querySelector('.stat-bar-value');
+      var tempFill = statBars[3].querySelector('.stat-bar-fill');
+
+      if (tempValueEl) {
+        tempValueEl.className = 'stat-bar-value ' + getValueClass(tempValue, thresholds.temp_warning, thresholds.temp_critical);
+        tempValueEl.innerHTML = tempValue + '&deg;C<span class="trend-indicator trend-' + tempTrend + '"></span>';
+      }
+      if (tempFill) {
+        tempFill.className = 'stat-bar-fill ' + getBarClass(tempValue, thresholds.temp_warning, thresholds.temp_critical);
+        tempFill.style.width = Math.min(tempValue, 100) + '%';
+      }
+    }
+
+    // Update meta info
+    var metaEl = card.querySelector('.monitoring-meta');
+    if (metaEl) {
+      var loadText = 'Load: ' + (node.load_1m || '-');
+      var uptimeText = '';
+      if (node.uptime_seconds) {
+        uptimeText = 'Uptime: ' + Math.floor(node.uptime_seconds / 86400) + 'd';
+      }
+      metaEl.innerHTML = '<span>' + loadText + '</span>' + (uptimeText ? '<span>' + uptimeText + '</span>' : '');
+    }
+  }
+
+  // Flash update indicator
+  var refreshStatus = document.getElementById('auto-refresh-status');
+  if (refreshStatus) {
+    refreshStatus.classList.add('updated');
+    setTimeout(function() {
+      refreshStatus.classList.remove('updated');
+    }, 500);
+  }
 }
 
 // Update countdown display

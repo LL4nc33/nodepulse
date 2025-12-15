@@ -89,24 +89,34 @@
 
   <!-- Main Content -->
   <main class="main-panel">
-    <!-- Inline Stats Bar -->
-    <div class="stats-bar">
-      <div class="stats-bar-item">
-        <span class="stats-bar-value"><%= stats.total %></span>
-        <span>Nodes</span>
+    <!-- Stats Cards -->
+    <div class="stats-cards">
+      <div class="stats-card">
+        <span class="stats-card-value"><%= stats.total %></span>
+        <span class="stats-card-label">Nodes</span>
       </div>
-      <span class="stats-bar-sep">·</span>
-      <div class="stats-bar-item">
-        <span class="stats-bar-value online"><%= stats.online %></span>
-        <span>Online</span>
+      <div class="stats-card stats-card-online">
+        <span class="stats-card-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#10B981"/>
+            <path d="M8 12L11 15L16 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="stats-card-value online"><%= stats.online %></span>
+        <span class="stats-card-label">Online</span>
       </div>
-      <span class="stats-bar-sep">·</span>
-      <div class="stats-bar-item">
-        <span class="stats-bar-value offline"><%= stats.offline %></span>
-        <span>Offline</span>
+      <div class="stats-card stats-card-offline">
+        <span class="stats-card-icon">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#EF4444"/>
+            <path d="M15 9L9 15M9 9L15 15" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="stats-card-value offline"><%= stats.offline %></span>
+        <span class="stats-card-label">Offline</span>
       </div>
-      <div class="stats-bar-actions">
-        <a href="/nodes/add" class="btn btn-primary btn-sm">+ Node</a>
+      <div class="stats-cards-actions">
+        <a href="/nodes/add" class="btn btn-primary">+ Node</a>
       </div>
     </div>
 
@@ -116,10 +126,29 @@
         <a href="/nodes/add" class="btn btn-primary">Ersten Node hinzufügen</a>
       </div>
     <% } else { %>
+      <!-- Search/Filter Bar -->
+      <div class="node-list-filter">
+        <input type="text" id="nodeSearchInput" class="node-list-search" placeholder="Nodes suchen..." onkeyup="filterNodes()">
+        <select id="nodeTypeFilter" class="node-list-type-select" onchange="filterNodes()">
+          <option value="">Alle Typen</option>
+          <option value="proxmox-host">Proxmox</option>
+          <option value="docker-host">Docker</option>
+          <option value="raspberry-pi">Raspberry Pi</option>
+          <option value="linux">Linux</option>
+          <option value="windows">Windows</option>
+        </select>
+        <select id="nodeStatusFilter" class="node-list-status-select" onchange="filterNodes()">
+          <option value="">Alle Status</option>
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+        </select>
+      </div>
+
       <!-- Flat Node List with Hierarchy -->
-      <div class="node-list">
+      <div class="node-list" id="nodeList">
         <div class="node-list-header">
           <div class="node-list-col-status"></div>
+          <div class="node-list-col-icon"></div>
           <div class="node-list-col-name">Name</div>
           <div class="node-list-col-host">Host</div>
           <div class="node-list-col-type">Typ</div>
@@ -131,16 +160,22 @@
         function renderNodeList(nodeList, level) {
           nodeList.forEach(function(node) {
         %>
-          <div class="node-list-row<%= level > 0 ? ' child-level-' + level : '' %>">
+          <div class="node-list-row<%= level > 0 ? ' child-level-' + level : '' %>"
+               data-name="<%= node.name.toLowerCase() %>"
+               data-type="<%= node.node_type || 'unknown' %>"
+               data-status="<%= node.online ? 'online' : 'offline' %>">
             <div class="node-list-status">
               <span class="node-list-status-dot <%= node.online ? 'online' : 'offline' %>"></span>
+            </div>
+            <div class="node-list-icon">
+              <%- include('partials/node-type-icon', { nodeType: node.node_type || 'unknown', size: 22 }) %>
             </div>
             <div class="node-list-name">
               <a href="/nodes/<%= node.id %>"><%= node.name %></a>
               <span class="node-list-host-mobile"><%= node.host %></span>
             </div>
             <div class="node-list-host"><%= node.host %></div>
-            <div class="node-list-type"><%= node.node_type || 'unknown' %></div>
+            <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
             <div class="node-list-actions">
               <a href="/nodes/<%= node.id %>" class="node-list-action" title="Details">
                 <span class="icon-arrow"></span>
@@ -161,16 +196,22 @@
           // Fallback: flat list
           nodes.forEach(function(node) {
         %>
-          <div class="node-list-row">
+          <div class="node-list-row"
+               data-name="<%= node.name.toLowerCase() %>"
+               data-type="<%= node.node_type || 'unknown' %>"
+               data-status="<%= node.online ? 'online' : 'offline' %>">
             <div class="node-list-status">
               <span class="node-list-status-dot <%= node.online ? 'online' : 'offline' %>"></span>
+            </div>
+            <div class="node-list-icon">
+              <%- include('partials/node-type-icon', { nodeType: node.node_type || 'unknown', size: 22 }) %>
             </div>
             <div class="node-list-name">
               <a href="/nodes/<%= node.id %>"><%= node.name %></a>
               <span class="node-list-host-mobile"><%= node.host %></span>
             </div>
             <div class="node-list-host"><%= node.host %></div>
-            <div class="node-list-type"><%= node.node_type || 'unknown' %></div>
+            <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
             <div class="node-list-actions">
               <a href="/nodes/<%= node.id %>" class="node-list-action" title="Details">
                 <span class="icon-arrow"></span>
@@ -182,6 +223,49 @@
         }
         %>
       </div>
+
+      <!-- Filter Results Counter -->
+      <div class="node-list-counter" id="nodeListCounter">
+        <span id="visibleCount"><%= nodes.length %></span> / <%= nodes.length %> Nodes
+      </div>
+
+<script>
+// ES5 Node Filter Function
+function filterNodes() {
+  var searchInput = document.getElementById('nodeSearchInput');
+  var typeFilter = document.getElementById('nodeTypeFilter');
+  var statusFilter = document.getElementById('nodeStatusFilter');
+  var rows = document.querySelectorAll('.node-list-row');
+  var visibleCount = 0;
+
+  var searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+  var typeValue = typeFilter ? typeFilter.value : '';
+  var statusValue = statusFilter ? statusFilter.value : '';
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var name = row.getAttribute('data-name') || '';
+    var type = row.getAttribute('data-type') || '';
+    var status = row.getAttribute('data-status') || '';
+
+    var matchesSearch = name.indexOf(searchTerm) > -1;
+    var matchesType = !typeValue || type === typeValue;
+    var matchesStatus = !statusValue || status === statusValue;
+
+    if (matchesSearch && matchesType && matchesStatus) {
+      row.style.display = '';
+      visibleCount++;
+    } else {
+      row.style.display = 'none';
+    }
+  }
+
+  var counterEl = document.getElementById('visibleCount');
+  if (counterEl) {
+    counterEl.textContent = visibleCount;
+  }
+}
+</script>
     <% } %>
   </main>
 </div>
