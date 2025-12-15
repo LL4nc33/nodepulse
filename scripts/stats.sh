@@ -20,7 +20,7 @@ CPU_LINE=$(top -bn1 2>/dev/null | grep "Cpu(s)" | head -1)
 if [ -n "$CPU_LINE" ]; then
     CPU_IDLE=$(echo "$CPU_LINE" | awk -F',' '{for(i=1;i<=NF;i++) if($i ~ /id/) print $i}' | grep -oE '[0-9.]+' | head -1)
     if [ -n "$CPU_IDLE" ]; then
-        CPU_USED=$(echo "100 - $CPU_IDLE" | bc 2>/dev/null || echo "0")
+        CPU_USED=$(echo "100 - $CPU_IDLE" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
     else
         CPU_USED=0
     fi
@@ -37,7 +37,7 @@ SWAP_TOTAL=$(free -b 2>/dev/null | awk '/Swap:/ {print $2}' || echo 0)
 SWAP_USED=$(free -b 2>/dev/null | awk '/Swap:/ {print $3}' || echo 0)
 
 if [ "$MEM_TOTAL" -gt 0 ]; then
-    MEM_PERCENT=$(echo "scale=1; $MEM_USED * 100 / $MEM_TOTAL" | bc 2>/dev/null || echo 0)
+    MEM_PERCENT=$(echo "scale=1; $MEM_USED * 100 / $MEM_TOTAL" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo 0)
 else
     MEM_PERCENT=0
 fi
@@ -78,7 +78,7 @@ TEMP=null
 if [ -f /sys/class/thermal/thermal_zone0/temp ]; then
     TEMP_RAW=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null)
     if [ -n "$TEMP_RAW" ]; then
-        TEMP=$(echo "scale=1; $TEMP_RAW / 1000" | bc 2>/dev/null || echo "null")
+        TEMP=$(echo "scale=1; $TEMP_RAW / 1000" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "null")
     fi
 fi
 echo "\"temp_cpu\": $TEMP,"

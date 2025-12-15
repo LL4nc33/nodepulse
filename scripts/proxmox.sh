@@ -38,9 +38,9 @@ qm list 2>/dev/null | tail -n +2 | while read -r vmid name status mem bootdisk p
     if echo "$bootdisk" | grep -qE '[0-9.]+'; then
         DISK_NUM=$(echo "$bootdisk" | grep -oE '[0-9.]+' | head -1)
         if echo "$bootdisk" | grep -qi 'g'; then
-            DISK_BYTES=$(echo "$DISK_NUM * 1073741824" | bc 2>/dev/null || echo "0")
+            DISK_BYTES=$(echo "$DISK_NUM * 1073741824" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
         elif echo "$bootdisk" | grep -qi 't'; then
-            DISK_BYTES=$(echo "$DISK_NUM * 1099511627776" | bc 2>/dev/null || echo "0")
+            DISK_BYTES=$(echo "$DISK_NUM * 1099511627776" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
         fi
     fi
     DISK_BYTES=${DISK_BYTES%.*}

@@ -41,13 +41,13 @@ docker images --format '{{.ID}}|{{.Repository}}|{{.Tag}}|{{.Size}}|{{.CreatedAt}
     size_bytes=0
     if echo "$size" | grep -qE '[0-9.]+GB'; then
         size_num=$(echo "$size" | grep -oE '[0-9.]+')
-        size_bytes=$(echo "$size_num * 1073741824" | bc 2>/dev/null || echo "0")
+        size_bytes=$(echo "$size_num * 1073741824" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
     elif echo "$size" | grep -qE '[0-9.]+MB'; then
         size_num=$(echo "$size" | grep -oE '[0-9.]+')
-        size_bytes=$(echo "$size_num * 1048576" | bc 2>/dev/null || echo "0")
+        size_bytes=$(echo "$size_num * 1048576" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
     elif echo "$size" | grep -qE '[0-9.]+KB'; then
         size_num=$(echo "$size" | grep -oE '[0-9.]+')
-        size_bytes=$(echo "$size_num * 1024" | bc 2>/dev/null || echo "0")
+        size_bytes=$(echo "$size_num * 1024" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
     fi
     size_bytes=${size_bytes%.*}
     repo=$(echo "$repo" | sed 's/\\/\\\\/g; s/"/\\"/g')
