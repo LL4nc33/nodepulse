@@ -4948,6 +4948,7 @@ a:focus {
   letter-spacing: 0.03em;
   background: var(--color-bg-elevated);
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .node-type-badge.proxmox-host,
