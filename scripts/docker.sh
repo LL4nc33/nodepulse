@@ -46,19 +46,19 @@ while IFS='|' read -r id repo tag size created; do
     else
         echo ","
     fi
-    # Convert size to bytes (approximate)
+    # Convert size to bytes (approximate) - use awk, bc might not be installed
     size_bytes=0
     if echo "$size" | grep -qE '[0-9.]+GB'; then
         size_num=$(echo "$size" | grep -oE '[0-9.]+')
-        size_bytes=$(echo "$size_num * 1073741824" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
+        size_bytes=$(awk "BEGIN {printf \"%.0f\", $size_num * 1073741824}" 2>/dev/null)
     elif echo "$size" | grep -qE '[0-9.]+MB'; then
         size_num=$(echo "$size" | grep -oE '[0-9.]+')
-        size_bytes=$(echo "$size_num * 1048576" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
+        size_bytes=$(awk "BEGIN {printf \"%.0f\", $size_num * 1048576}" 2>/dev/null)
     elif echo "$size" | grep -qE '[0-9.]+KB'; then
         size_num=$(echo "$size" | grep -oE '[0-9.]+')
-        size_bytes=$(echo "$size_num * 1024" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
+        size_bytes=$(awk "BEGIN {printf \"%.0f\", $size_num * 1024}" 2>/dev/null)
     fi
-    size_bytes=${size_bytes%.*}
+    size_bytes=${size_bytes:-0}
     # Escape all string fields
     repo=$(json_escape "$repo")
     tag=$(json_escape "$tag")

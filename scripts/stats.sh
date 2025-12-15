@@ -20,7 +20,11 @@ CPU_LINE=$(top -bn1 2>/dev/null | grep "Cpu(s)" | head -1)
 if [ -n "$CPU_LINE" ]; then
     CPU_IDLE=$(echo "$CPU_LINE" | awk -F',' '{for(i=1;i<=NF;i++) if($i ~ /id/) print $i}' | grep -oE '[0-9.]+' | head -1)
     if [ -n "$CPU_IDLE" ]; then
-        CPU_USED=$(echo "100 - $CPU_IDLE" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "0")
+        # Use awk instead of bc (bc might not be installed)
+        CPU_USED=$(awk "BEGIN {printf \"%.1f\", 100 - $CPU_IDLE}" 2>/dev/null)
+        if [ -z "$CPU_USED" ] || ! [[ "$CPU_USED" =~ ^[0-9.]+$ ]]; then
+            CPU_USED=0
+        fi
     else
         CPU_USED=0
     fi
@@ -36,8 +40,12 @@ MEM_AVAIL=$(free -b 2>/dev/null | awk '/Mem:/ {print $7}' || echo 0)
 SWAP_TOTAL=$(free -b 2>/dev/null | awk '/Swap:/ {print $2}' || echo 0)
 SWAP_USED=$(free -b 2>/dev/null | awk '/Swap:/ {print $3}' || echo 0)
 
-if [ "$MEM_TOTAL" -gt 0 ]; then
-    MEM_PERCENT=$(echo "scale=1; $MEM_USED * 100 / $MEM_TOTAL" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo 0)
+if [ "$MEM_TOTAL" -gt 0 ] 2>/dev/null; then
+    # Use awk instead of bc (bc might not be installed)
+    MEM_PERCENT=$(awk "BEGIN {printf \"%.1f\", $MEM_USED * 100 / $MEM_TOTAL}" 2>/dev/null)
+    if [ -z "$MEM_PERCENT" ] || ! [[ "$MEM_PERCENT" =~ ^[0-9.]+$ ]]; then
+        MEM_PERCENT=0
+    fi
 else
     MEM_PERCENT=0
 fi
@@ -77,8 +85,18 @@ echo "\"net_tx_bytes\": ${NET_TX:-0},"
 TEMP=null
 if [ -f /sys/class/thermal/thermal_zone0/temp ]; then
     TEMP_RAW=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null)
-    if [ -n "$TEMP_RAW" ]; then
-        TEMP=$(echo "scale=1; $TEMP_RAW / 1000" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./' || echo "null")
+    if [ -n "$TEMP_RAW" ] && [[ "$TEMP_RAW" =~ ^[0-9]+$ ]]; then
+        # Try bc first, fallback to awk (bc might not be installed)
+        if command -v bc &>/dev/null; then
+            TEMP=$(echo "scale=1; $TEMP_RAW / 1000" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./')
+        else
+            # Fallback: use awk or simple shell math
+            TEMP=$(awk "BEGIN {printf \"%.1f\", $TEMP_RAW / 1000}" 2>/dev/null)
+        fi
+        # Ensure TEMP is a valid number, otherwise use null
+        if [ -z "$TEMP" ] || ! [[ "$TEMP" =~ ^-?[0-9]+\.?[0-9]*$ ]]; then
+            TEMP=null
+        fi
     fi
 fi
 echo "\"temp_cpu\": $TEMP,"

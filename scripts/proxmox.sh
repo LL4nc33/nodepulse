@@ -38,18 +38,17 @@ while read -r vmid name status mem bootdisk pid; do
         MEM_BYTES=$((MEMORY * 1048576))
     fi
 
-    # Convert bootdisk size (e.g., "32.00 GiB" -> bytes)
+    # Convert bootdisk size (e.g., "32.00 GiB" -> bytes) - use awk, bc might not be installed
     DISK_BYTES=0
     if echo "$bootdisk" | grep -qE '[0-9.]+'; then
         DISK_NUM=$(echo "$bootdisk" | grep -oE '[0-9.]+' | head -1)
         if echo "$bootdisk" | grep -qi 'g'; then
-            DISK_BYTES=$(echo "$DISK_NUM * 1073741824" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./')
+            DISK_BYTES=$(awk "BEGIN {printf \"%.0f\", $DISK_NUM * 1073741824}" 2>/dev/null)
         elif echo "$bootdisk" | grep -qi 't'; then
-            DISK_BYTES=$(echo "$DISK_NUM * 1099511627776" | bc 2>/dev/null | sed 's/^\./0./; s/^-\./-0./')
+            DISK_BYTES=$(awk "BEGIN {printf \"%.0f\", $DISK_NUM * 1099511627776}" 2>/dev/null)
         fi
     fi
-    # Remove decimal part and ensure valid number
-    DISK_BYTES=${DISK_BYTES%.*}
+    # Ensure valid number
     DISK_BYTES=${DISK_BYTES:-0}
     if ! [[ "$DISK_BYTES" =~ ^[0-9]+$ ]]; then DISK_BYTES=0; fi
 
