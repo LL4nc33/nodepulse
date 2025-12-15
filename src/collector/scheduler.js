@@ -12,9 +12,20 @@ let isCollecting = false;
 let collectionTimer = null;
 let cleanupTimer = null;
 let initialCollectionTimer = null;
+let startTime = null;
 
 // Track last collection time per node
 const lastCollectionTime = new Map();
+
+// Collection statistics
+const stats = {
+  totalCollections: 0,
+  successfulCollections: 0,
+  failedCollections: 0,
+  totalDurationMs: 0,
+  lastRunTime: null,
+  errorsLastHour: [],
+};
 
 // Minimum interval between collections (in ms)
 const MIN_INTERVAL = 10000; // 10 seconds
@@ -28,11 +39,19 @@ const TICK_INTERVAL = 5000; // 5 seconds
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 async function collectNode(node) {
+  const startMs = Date.now();
+  stats.totalCollections++;
+
   try {
     await collector.runStats(node, true);
-    console.log(`[SCHEDULER] Stats collected for ${node.name}`);
-    return { success: true };
+    const durationMs = Date.now() - startMs;
+    stats.successfulCollections++;
+    stats.totalDurationMs += durationMs;
+    console.log(`[SCHEDULER] Stats collected for ${node.name} (${durationMs}ms)`);
+    return { success: true, durationMs };
   } catch (err) {
+    stats.failedCollections++;
+    stats.errorsLastHour.push({ time: Date.now(), node: node.name, error: err.message });
     console.error(`[SCHEDULER] Stats collection failed for ${node.name}:`, err.message);
     try {
       db.nodes.setOnline(node.id, false, err.message);
@@ -50,6 +69,12 @@ async function tick() {
   if (!isRunning || isCollecting) return;
 
   isCollecting = true;
+  stats.lastRunTime = new Date().toISOString();
+
+  // Cleanup errors older than 1 hour
+  const oneHourAgo = Date.now() - 3600000;
+  stats.errorsLastHour = stats.errorsLastHour.filter(e => e.time > oneHourAgo);
+
   try {
     const now = Date.now();
     var nodes;
@@ -112,6 +137,7 @@ function start() {
   }
 
   isRunning = true;
+  startTime = Date.now();
   console.log('[SCHEDULER] Starting background collector');
 
   // Start collection tick
@@ -184,10 +210,32 @@ function getStatus() {
   };
 }
 
+/**
+ * Get collection statistics for metrics
+ */
+function getStats() {
+  const avgDurationMs = stats.totalCollections > 0
+    ? Math.round(stats.totalDurationMs / stats.totalCollections)
+    : 0;
+  const successRate = stats.totalCollections > 0
+    ? Math.round((stats.successfulCollections / stats.totalCollections) * 1000) / 10
+    : 100;
+
+  return {
+    success_rate: successRate,
+    avg_duration_ms: avgDurationMs,
+    errors_last_hour: stats.errorsLastHour.length,
+    last_run: stats.lastRunTime,
+    total_collections: stats.totalCollections,
+    uptime_seconds: startTime ? Math.floor((Date.now() - startTime) / 1000) : 0,
+  };
+}
+
 module.exports = {
   start,
   stop,
   collectNow,
   getStatus,
+  getStats,
   tick, // Exported for testing
 };
