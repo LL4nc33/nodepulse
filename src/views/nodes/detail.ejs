@@ -1,5 +1,8 @@
 <%- include('../partials/header', { currentPath: '/nodes' }) %>
 
+<main class="container">
+  <div class="main-content">
+
 <nav class="breadcrumb" aria-label="Breadcrumb">
   <a href="/nodes">Nodes</a> / <span><%= node.name %></span>
 </nav>
@@ -2719,5 +2722,8 @@ if (servicesTabBtn && !servicesTabBtn.hasAttribute('data-services-listener')) {
   servicesTabBtn.setAttribute('data-services-listener', 'true');
 }
 </script>
+
+  </div>
+</main>
 
 <%- include('../partials/footer') %>

@@ -19,16 +19,24 @@
 <body>
 <header class="header">
   <div class="header-inner">
-    <a href="/" class="logo">
-      <img src="/static/img/logo.png" alt="nodepulse" class="logo-img">
-      <span class="logo-text">nodepulse</span>
-    </a>
+    <div class="header-left">
+      <button type="button" class="panel-toggle" id="panelToggle" aria-label="Panel ein/ausblenden" title="Panel ein/ausblenden">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <a href="/" class="logo">
+        <img src="/static/img/logo.png" alt="nodepulse" class="logo-img">
+        <span class="logo-text">nodepulse</span>
+      </a>
+    </div>
     <nav class="nav" role="navigation" aria-label="Hauptnavigation">
       <a href="/" class="nav-link<%= currentPath === '/' ? ' active' : '' %>">Dashboard</a>
       <a href="/nodes" class="nav-link<%= currentPath === '/nodes' ? ' active' : '' %>">Nodes</a>
       <a href="/monitoring" class="nav-link<%= currentPath === '/monitoring' ? ' active' : '' %>">Monitoring</a>
       <a href="/settings" class="nav-link<%= currentPath === '/settings' ? ' active' : '' %>">Settings</a>
-      <a href="/about" class="nav-link<%= currentPath === '/about' ? ' active' : '' %>">About</a>
       <button type="button" class="theme-toggle" id="themeToggle" aria-label="Theme wechseln" title="Theme wechseln">
         <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="5"/>
@@ -48,5 +56,3 @@
     </nav>
   </div>
 </header>
-<main class="container" role="main">
-  <div class="main-content">

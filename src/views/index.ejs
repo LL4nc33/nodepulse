@@ -1,46 +1,189 @@
 <%- include('partials/header', { currentPath: '/' }) %>
 
-<div class="page-header">
-  <h1>Dashboard</h1>
-</div>
+<div class="app-layout">
+  <!-- Side Panel (Desktop: sichtbar, Mobile: hidden) -->
+  <aside class="side-panel" id="sidePanel">
+    <div class="side-panel-section">
+      <div class="side-panel-section-header">Nodes (<%= stats.total %>)</div>
+      <div class="side-panel-section-content">
+        <ul class="node-tree">
+          <%
+          // Render node tree recursively
+          function renderNodeTree(nodeList, level) {
+            nodeList.forEach(function(node, index) {
+              var isLast = index === nodeList.length - 1;
+          %>
+            <li class="node-tree-item">
+              <a href="/nodes/<%= node.id %>" class="node-tree-row" data-level="<%= level %>">
+                <span class="node-tree-status <%= node.online ? 'online' : 'offline' %>"></span>
+                <span class="node-tree-name"><%= node.name %></span>
+                <% if (node.child_count > 0) { %>
+                  <span class="node-tree-children-count"><%= node.child_count %></span>
+                <% } %>
+              </a>
+              <% if (node.children && node.children.length > 0) { %>
+                <ul class="node-tree">
+                  <% renderNodeTree(node.children, level + 1); %>
+                </ul>
+              <% } %>
+            </li>
+          <%
+            });
+          }
 
-<div class="stats-grid">
-  <div class="stat-card">
-    <div class="stat-value"><%= stats.total %></div>
-    <div class="stat-label">Nodes</div>
-  </div>
-  <div class="stat-card stat-online">
-    <div class="stat-value"><%= stats.online %></div>
-    <div class="stat-label">Online</div>
-  </div>
-  <div class="stat-card stat-offline">
-    <div class="stat-value"><%= stats.offline %></div>
-    <div class="stat-label">Offline</div>
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-header">
-    <h2>Nodes</h2>
-    <a href="/nodes/add" class="btn btn-primary">+ Node hinzufügen</a>
-  </div>
-
-  <% if (nodes.length === 0) { %>
-    <p class="empty-state">Noch keine Nodes vorhanden. <a href="/nodes/add">Ersten Node hinzufügen</a></p>
-  <% } else { %>
-    <div class="node-grid">
-      <% nodes.forEach(function(node) { %>
-        <div class="node-card <%= node.online ? 'online' : 'offline' %>">
-          <div class="node-status" aria-label="Status: <%= node.online ? 'Online' : 'Offline' %>"></div>
-          <div class="node-info">
-            <a href="/nodes/<%= node.id %>" class="node-name" title="<%= node.name %>"><%= node.name %></a>
-            <div class="node-host"><%= node.host %></div>
-            <div class="node-type"><%= node.node_type || 'unknown' %></div>
-          </div>
-        </div>
-      <% }); %>
+          // Use tree structure if available, otherwise flat list
+          if (typeof nodeTree !== 'undefined' && nodeTree.length > 0) {
+            renderNodeTree(nodeTree, 0);
+          } else {
+            nodes.forEach(function(node) {
+          %>
+            <li class="node-tree-item">
+              <a href="/nodes/<%= node.id %>" class="node-tree-row" data-level="0">
+                <span class="node-tree-status <%= node.online ? 'online' : 'offline' %>"></span>
+                <span class="node-tree-name"><%= node.name %></span>
+              </a>
+            </li>
+          <%
+            });
+          }
+          %>
+        </ul>
+      </div>
     </div>
-  <% } %>
+
+    <div class="side-panel-section">
+      <div class="side-panel-section-header">Tags</div>
+      <div class="side-panel-section-content">
+        <div style="padding: 0.5rem 1rem;">
+          <% if (typeof tags !== 'undefined' && tags.length > 0) { %>
+            <% tags.forEach(function(tag) { %>
+              <span class="tag" style="background-color: <%= tag.color %>20; border: 1px solid <%= tag.color %>; margin: 0.25rem;"><%= tag.name %></span>
+            <% }); %>
+          <% } else { %>
+            <span class="empty">Keine Tags</span>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-panel-section">
+      <div class="side-panel-section-header">Quick Links</div>
+      <div class="side-panel-section-content">
+        <ul class="node-tree">
+          <li class="node-tree-item">
+            <a href="/nodes/add" class="node-tree-row">
+              <span style="margin-right: 0.5rem;">+</span>
+              <span class="node-tree-name">Node hinzufügen</span>
+            </a>
+          </li>
+          <li class="node-tree-item">
+            <a href="/settings" class="node-tree-row">
+              <span style="margin-right: 0.5rem;">⚙</span>
+              <span class="node-tree-name">Einstellungen</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-panel">
+    <!-- Inline Stats Bar -->
+    <div class="stats-bar">
+      <div class="stats-bar-item">
+        <span class="stats-bar-value"><%= stats.total %></span>
+        <span>Nodes</span>
+      </div>
+      <span class="stats-bar-sep">·</span>
+      <div class="stats-bar-item">
+        <span class="stats-bar-value online"><%= stats.online %></span>
+        <span>Online</span>
+      </div>
+      <span class="stats-bar-sep">·</span>
+      <div class="stats-bar-item">
+        <span class="stats-bar-value offline"><%= stats.offline %></span>
+        <span>Offline</span>
+      </div>
+      <div class="stats-bar-actions">
+        <a href="/nodes/add" class="btn btn-primary btn-sm">+ Node</a>
+      </div>
+    </div>
+
+    <% if (nodes.length === 0) { %>
+      <div class="empty-state" style="text-align: center; padding: 3rem;">
+        <p style="color: var(--color-text-muted); margin-bottom: 1rem;">Noch keine Nodes vorhanden.</p>
+        <a href="/nodes/add" class="btn btn-primary">Ersten Node hinzufügen</a>
+      </div>
+    <% } else { %>
+      <!-- Flat Node List with Hierarchy -->
+      <div class="node-list">
+        <div class="node-list-header">
+          <div class="node-list-col-status"></div>
+          <div class="node-list-col-name">Name</div>
+          <div class="node-list-col-host">Host</div>
+          <div class="node-list-col-type">Typ</div>
+          <div class="node-list-col-actions"></div>
+        </div>
+
+        <%
+        // Render flat list with hierarchy indication
+        function renderNodeList(nodeList, level) {
+          nodeList.forEach(function(node) {
+        %>
+          <div class="node-list-row<%= level > 0 ? ' child-level-' + level : '' %>">
+            <div class="node-list-status">
+              <span class="node-list-status-dot <%= node.online ? 'online' : 'offline' %>"></span>
+            </div>
+            <div class="node-list-name">
+              <a href="/nodes/<%= node.id %>"><%= node.name %></a>
+              <span class="node-list-host-mobile"><%= node.host %></span>
+            </div>
+            <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-type"><%= node.node_type || 'unknown' %></div>
+            <div class="node-list-actions">
+              <a href="/nodes/<%= node.id %>" class="node-list-action" title="Details">
+                <span class="icon-arrow"></span>
+              </a>
+            </div>
+          </div>
+          <%
+            if (node.children && node.children.length > 0) {
+              renderNodeList(node.children, level + 1);
+            }
+          });
+        }
+
+        // Use tree structure if available
+        if (typeof nodeTree !== 'undefined' && nodeTree.length > 0) {
+          renderNodeList(nodeTree, 0);
+        } else {
+          // Fallback: flat list
+          nodes.forEach(function(node) {
+        %>
+          <div class="node-list-row">
+            <div class="node-list-status">
+              <span class="node-list-status-dot <%= node.online ? 'online' : 'offline' %>"></span>
+            </div>
+            <div class="node-list-name">
+              <a href="/nodes/<%= node.id %>"><%= node.name %></a>
+              <span class="node-list-host-mobile"><%= node.host %></span>
+            </div>
+            <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-type"><%= node.node_type || 'unknown' %></div>
+            <div class="node-list-actions">
+              <a href="/nodes/<%= node.id %>" class="node-list-action" title="Details">
+                <span class="icon-arrow"></span>
+              </a>
+            </div>
+          </div>
+        <%
+          });
+        }
+        %>
+      </div>
+    <% } %>
+  </main>
 </div>
 
 <%- include('partials/footer') %>

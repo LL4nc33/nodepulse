@@ -1,5 +1,8 @@
 <%- include('../partials/header', { currentPath: '/monitoring' }) %>
 
+<main class="container">
+  <div class="main-content">
+
 <nav class="breadcrumb" aria-label="Breadcrumb">
   <a href="/monitoring">Monitoring</a> / <span><%= node.name %></span>
 </nav>
@@ -243,5 +246,8 @@ function tick() {
 countdownTimer = setInterval(tick, 1000);
 updateCountdown();
 </script>
+
+  </div>
+</main>
 
 <%- include('../partials/footer') %>

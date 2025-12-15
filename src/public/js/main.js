@@ -203,6 +203,87 @@
   }
 
   // =====================================================
+  // Side Panel Toggle
+  // =====================================================
+
+  function setupPanelToggle() {
+    var panelToggle = document.getElementById('panelToggle');
+    var sidePanel = document.getElementById('sidePanel');
+
+    if (!panelToggle || !sidePanel) return;
+
+    // Load saved state
+    var panelState = localStorage.getItem('nodepulse-panel');
+    if (panelState === 'collapsed') {
+      sidePanel.classList.add('collapsed');
+    }
+
+    panelToggle.addEventListener('click', function() {
+      // Mobile: toggle mobile-open class
+      if (window.innerWidth < 768) {
+        sidePanel.classList.remove('collapsed'); // Clear desktop state
+        sidePanel.classList.toggle('mobile-open');
+      } else {
+        // Desktop/Tablet: toggle collapsed class
+        sidePanel.classList.remove('mobile-open'); // Clear mobile state
+        sidePanel.classList.toggle('collapsed');
+
+        // Save state
+        if (sidePanel.classList.contains('collapsed')) {
+          localStorage.setItem('nodepulse-panel', 'collapsed');
+        } else {
+          localStorage.setItem('nodepulse-panel', 'open');
+        }
+      }
+    });
+
+    // Mobile: close panel when clicking outside
+    document.addEventListener('click', function(e) {
+      if (window.innerWidth < 768 && sidePanel.classList.contains('mobile-open')) {
+        if (!sidePanel.contains(e.target) && !panelToggle.contains(e.target)) {
+          sidePanel.classList.remove('mobile-open');
+        }
+      }
+    });
+  }
+
+  // =====================================================
+  // Theme Toggle
+  // =====================================================
+
+  function setupThemeToggle() {
+    var themeToggle = document.getElementById('themeToggle');
+
+    if (!themeToggle) return;
+
+    themeToggle.addEventListener('click', function() {
+      document.documentElement.classList.toggle('light-mode');
+
+      // Save preference
+      if (document.documentElement.classList.contains('light-mode')) {
+        localStorage.setItem('nodepulse-theme', 'light');
+      } else {
+        localStorage.setItem('nodepulse-theme', 'dark');
+      }
+    });
+  }
+
+  // =====================================================
+  // Collapsible Sections
+  // =====================================================
+
+  function setupCollapsibleSections() {
+    var sectionHeaders = document.querySelectorAll('.side-panel-section-header');
+
+    for (var i = 0; i < sectionHeaders.length; i++) {
+      sectionHeaders[i].addEventListener('click', function() {
+        var section = this.parentElement;
+        section.classList.toggle('collapsed');
+      });
+    }
+  }
+
+  // =====================================================
   // Initialize
   // =====================================================
 
@@ -210,6 +291,9 @@
     setupDeleteConfirmation();
     setupAutoRefresh();
     setupFormValidation();
+    setupPanelToggle();
+    setupThemeToggle();
+    setupCollapsibleSections();
   }
 
   // Run on DOM ready

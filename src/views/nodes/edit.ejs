@@ -1,5 +1,8 @@
 <%- include('../partials/header', { currentPath: '/nodes' }) %>
 
+<main class="container">
+  <div class="main-content">
+
 <nav class="breadcrumb" aria-label="Breadcrumb">
   <a href="/nodes">Nodes</a> / <a href="/nodes/<%= node.id %>"><%= node.name %></a> / <span>Bearbeiten</span>
 </nav>
@@ -85,5 +88,8 @@
     <a href="/nodes/<%= node.id %>" class="btn">Abbrechen</a>
   </div>
 </form>
+
+  </div>
+</main>
 
 <%- include('../partials/footer') %>

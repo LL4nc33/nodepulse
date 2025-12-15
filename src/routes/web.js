@@ -24,12 +24,16 @@ const asyncHandler = (fn) => (req, res, next) => {
 
 router.get('/', asyncHandler(async (req, res) => {
   const nodes = db.nodes.getAll();
+  const nodeTree = db.nodes.getHierarchyTree();
+  const tags = db.tags.getAll();
   const onlineCount = nodes.filter(n => n.online).length;
 
   res.render('index', {
     title: 'Dashboard',
     currentPath: '/',
     nodes,
+    nodeTree,
+    tags,
     stats: {
       total: nodes.length,
       online: onlineCount,

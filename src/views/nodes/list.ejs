@@ -1,44 +1,48 @@
 <%- include('../partials/header', { currentPath: '/nodes' }) %>
 
-<div class="page-header">
-  <h1>Nodes</h1>
-  <a href="/nodes/add" class="btn btn-primary">+ Node hinzufügen</a>
-</div>
+<main class="container">
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Nodes</h1>
+      <a href="/nodes/add" class="btn btn-primary">+ Node hinzufügen</a>
+    </div>
 
-<% if (nodes.length === 0) { %>
-  <p class="empty-state">Noch keine Nodes vorhanden. <a href="/nodes/add">Ersten Node hinzufügen</a></p>
-<% } else { %>
-  <div class="table-wrapper">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Status</th>
-          <th>Name</th>
-          <th>Host</th>
-          <th>Typ</th>
-          <th>Zuletzt gesehen</th>
-          <th>Aktionen</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% nodes.forEach(function(node) { %>
-          <tr class="<%= node.online ? 'online' : 'offline' %>">
-            <td>
-              <span class="status-dot <%= node.online ? 'online' : 'offline' %>"
-                    aria-label="<%= node.online ? 'Online' : 'Offline' %>"></span>
-            </td>
-            <td><a href="/nodes/<%= node.id %>"><%= node.name %></a></td>
-            <td><%= node.host %>:<%= node.ssh_port %></td>
-            <td><%= node.node_type || '-' %></td>
-            <td><%= node.last_seen || 'Nie' %></td>
-            <td>
-              <a href="/nodes/<%= node.id %>/edit" class="btn btn-sm">Bearbeiten</a>
-            </td>
-          </tr>
-        <% }); %>
-      </tbody>
-    </table>
+    <% if (nodes.length === 0) { %>
+      <p class="empty-state">Noch keine Nodes vorhanden. <a href="/nodes/add">Ersten Node hinzufügen</a></p>
+    <% } else { %>
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Name</th>
+              <th>Host</th>
+              <th>Typ</th>
+              <th>Zuletzt gesehen</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% nodes.forEach(function(node) { %>
+              <tr class="<%= node.online ? 'online' : 'offline' %>">
+                <td>
+                  <span class="status-dot <%= node.online ? 'online' : 'offline' %>"
+                        aria-label="<%= node.online ? 'Online' : 'Offline' %>"></span>
+                </td>
+                <td><a href="/nodes/<%= node.id %>"><%= node.name %></a></td>
+                <td><%= node.host %>:<%= node.ssh_port %></td>
+                <td><%= node.node_type || '-' %></td>
+                <td><%= node.last_seen || 'Nie' %></td>
+                <td>
+                  <a href="/nodes/<%= node.id %>/edit" class="btn btn-sm">Bearbeiten</a>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
   </div>
-<% } %>
+</main>
 
 <%- include('../partials/footer') %>

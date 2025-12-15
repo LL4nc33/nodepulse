@@ -1,5 +1,8 @@
 <%- include('partials/header', { currentPath: '' }) %>
 
+<main class="container">
+  <div class="main-content">
+
 <div class="error-page">
   <div class="error-icon">
     <% if (typeof statusCode !== 'undefined' && statusCode === 404) { %>
@@ -23,5 +26,8 @@
     <a href="/" class="btn btn-primary">Dashboard</a>
   </div>
 </div>
+
+  </div>
+</main>
 
 <%- include('partials/footer') %>
