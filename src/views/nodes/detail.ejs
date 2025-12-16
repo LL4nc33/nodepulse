@@ -1241,27 +1241,58 @@ function formatBytes(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// Tab switching
+// Tab switching with URL hash persistence
 var tabBtns = document.querySelectorAll('.tab-btn');
 var tabContents = document.querySelectorAll('.tab-content');
 
+function selectTab(tabId) {
+  // Update buttons
+  for (var j = 0; j < tabBtns.length; j++) {
+    tabBtns[j].classList.remove('active');
+    if (tabBtns[j].getAttribute('data-tab') === tabId) {
+      tabBtns[j].classList.add('active');
+    }
+  }
+
+  // Update content
+  for (var k = 0; k < tabContents.length; k++) {
+    tabContents[k].classList.remove('active');
+  }
+  var tabContent = document.getElementById('tab-' + tabId);
+  if (tabContent) {
+    tabContent.classList.add('active');
+  }
+
+  // Save to URL hash (preserves state on reload)
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState(null, null, '#' + tabId);
+  } else {
+    window.location.hash = tabId;
+  }
+}
+
+// Attach click handlers
 for (var i = 0; i < tabBtns.length; i++) {
   tabBtns[i].addEventListener('click', function() {
-    var tabId = this.getAttribute('data-tab');
-
-    // Update buttons
-    for (var j = 0; j < tabBtns.length; j++) {
-      tabBtns[j].classList.remove('active');
-    }
-    this.classList.add('active');
-
-    // Update content
-    for (var k = 0; k < tabContents.length; k++) {
-      tabContents[k].classList.remove('active');
-    }
-    document.getElementById('tab-' + tabId).classList.add('active');
+    selectTab(this.getAttribute('data-tab'));
   });
 }
+
+// Restore tab from URL hash on page load
+(function restoreTabState() {
+  var hash = window.location.hash.replace('#', '');
+  if (hash && document.getElementById('tab-' + hash)) {
+    selectTab(hash);
+  }
+})();
+
+// Handle browser back/forward
+window.addEventListener('hashchange', function() {
+  var hash = window.location.hash.replace('#', '');
+  if (hash && document.getElementById('tab-' + hash)) {
+    selectTab(hash);
+  }
+});
 
 // =====================================================
 // Docker Container Filter & Search
