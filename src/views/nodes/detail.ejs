@@ -35,8 +35,6 @@
 
 <!-- Tab Contents -->
 <%- include('../partials/node-detail/overview-tab') %>
-<%- include('../partials/node-detail/hardware-tab') %>
-<%- include('../partials/node-detail/discovery-tab') %>
 
 <% if (discovery && discovery.has_docker) { %>
   <%- include('../partials/node-detail/docker-tab') %>
@@ -50,7 +48,6 @@
   <%- include('../partials/node-detail/services-tab') %>
 <% } %>
 
-<%- include('../partials/node-detail/system-tab') %>
 <%- include('../partials/node-detail/network-tab') %>
 <%- include('../partials/node-detail/terminal-tab') %>
 

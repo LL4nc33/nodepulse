@@ -3029,7 +3029,8 @@ a:focus {
   margin-bottom: 1rem;
 }
 
-/* Collapsible Sections (Proxmox, Docker, etc.) */
+/* Collapsible Sections (Overview, Proxmox, Docker, etc.) */
+.overview-section,
 .proxmox-section,
 .docker-section,
 .collapsible-section {
@@ -3040,6 +3041,7 @@ a:focus {
   overflow: hidden;
 }
 
+.overview-section.collapsible .section-header,
 .proxmox-section.collapsible .section-header,
 .docker-section.collapsible .section-header,
 .collapsible-section .section-header {
@@ -3063,18 +3065,21 @@ a:focus {
   min-height: 44px;
 }
 
+.overview-section.collapsible .section-header:hover,
 .proxmox-section.collapsible .section-header:hover,
 .docker-section.collapsible .section-header:hover,
 .collapsible-section .section-header:hover {
   background: var(--color-bg-input);
 }
 
+.overview-section.collapsible.collapsed .section-header,
 .proxmox-section.collapsible.collapsed .section-header,
 .docker-section.collapsible.collapsed .section-header,
 .collapsible-section.collapsed .section-header {
   border-bottom: none;
 }
 
+.overview-section .section-toggle,
 .proxmox-section .section-toggle,
 .docker-section .section-toggle,
 .collapsible-section .section-toggle {
@@ -3093,6 +3098,7 @@ a:focus {
   transition: transform 0.2s ease;
 }
 
+.overview-section .section-toggle svg,
 .proxmox-section .section-toggle svg,
 .docker-section .section-toggle svg,
 .collapsible-section .section-toggle svg {
@@ -3103,6 +3109,7 @@ a:focus {
   fill: none;
 }
 
+.overview-section.collapsed .section-toggle,
 .proxmox-section.collapsed .section-toggle,
 .docker-section.collapsed .section-toggle,
 .collapsible-section.collapsed .section-toggle {
@@ -3110,6 +3117,7 @@ a:focus {
   transform: rotate(-90deg);
 }
 
+.overview-section .section-count,
 .proxmox-section .section-count,
 .docker-section .section-count,
 .collapsible-section .section-count {
@@ -3119,18 +3127,21 @@ a:focus {
   margin-left: auto;
 }
 
+.overview-section .section-content,
 .proxmox-section .section-content,
 .docker-section .section-content,
 .collapsible-section .section-content {
   padding: 1rem;
 }
 
+.overview-section.collapsed .section-content,
 .proxmox-section.collapsed .section-content,
 .docker-section.collapsed .section-content,
 .collapsible-section.collapsed .section-content {
   display: none;
 }
 
+.overview-section h3,
 .proxmox-section h3,
 .docker-section h3,
 .collapsible-section h3 {

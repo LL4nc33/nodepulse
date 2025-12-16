@@ -1,20 +1,7 @@
-<!-- Overview Tab -->
+<!-- Overview Tab (erweitert mit Hardware & Discovery) -->
 <div class="tab-content active" id="tab-overview">
+  <!-- Status & Verbindung -->
   <div class="detail-grid">
-    <div class="detail-card">
-      <h3>Verbindung</h3>
-      <dl>
-        <dt>Host</dt>
-        <dd><%= node.host %></dd>
-        <dt>SSH Port</dt>
-        <dd><%= node.ssh_port %></dd>
-        <dt>SSH User</dt>
-        <dd><%= node.ssh_user %></dd>
-        <dt>SSH Key</dt>
-        <dd><%= node.ssh_key_path || 'Standard' %></dd>
-      </dl>
-    </div>
-
     <div class="detail-card">
       <h3>Status</h3>
       <dl>
@@ -26,6 +13,20 @@
         <dd><span class="node-type-badge"><%= node.node_type || 'Unbekannt' %></span></dd>
         <dt>Letzter Fehler</dt>
         <dd class="<%= node.last_error ? 'text-error' : '' %>"><%= node.last_error || '-' %></dd>
+      </dl>
+    </div>
+
+    <div class="detail-card">
+      <h3>Verbindung</h3>
+      <dl>
+        <dt>Host</dt>
+        <dd><%= node.host %></dd>
+        <dt>SSH Port</dt>
+        <dd><%= node.ssh_port %></dd>
+        <dt>SSH User</dt>
+        <dd><%= node.ssh_user %></dd>
+        <dt>SSH Key</dt>
+        <dd><%= node.ssh_key_path || 'Standard' %></dd>
       </dl>
     </div>
 
@@ -61,4 +62,203 @@
       <p><%= node.notes %></p>
     </div>
   <% } %>
+
+  <!-- Hardware Section (Collapsible) -->
+  <div class="overview-section collapsible">
+    <h2 class="section-header" onclick="toggleSection(this)">
+      <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+      Hardware
+    </h2>
+    <div class="section-content">
+      <% if (!hardware) { %>
+        <div class="empty-state">
+          <p>Keine Hardware-Daten vorhanden.</p>
+          <button class="btn btn-primary btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
+            <span class="btn-text">Discovery starten</span>
+            <span class="btn-loading"><span class="spinner"></span> Scanne...</span>
+          </button>
+        </div>
+      <% } else { %>
+        <div class="detail-grid">
+          <!-- CPU -->
+          <div class="detail-card">
+            <h3>CPU</h3>
+            <dl>
+              <dt>Modell</dt>
+              <dd><%= hardware.cpu_model || '-' %></dd>
+              <dt>Kerne / Threads</dt>
+              <dd><%= hardware.cpu_cores || '-' %> / <%= hardware.cpu_threads || '-' %></dd>
+              <dt>Architektur</dt>
+              <dd><%= hardware.cpu_arch || '-' %></dd>
+              <dt>Virtualisierung</dt>
+              <dd><%= hardware.cpu_virt_support || '-' %></dd>
+            </dl>
+          </div>
+
+          <!-- RAM -->
+          <div class="detail-card">
+            <h3>Arbeitsspeicher</h3>
+            <% if (typeof currentStats !== 'undefined' && currentStats && currentStats.ram_percent) { %>
+              <div class="hardware-progress">
+                <div class="hardware-progress-header">
+                  <span>RAM Auslastung</span>
+                  <span class="hardware-progress-value <%= currentStats.ram_percent >= 90 ? 'critical' : (currentStats.ram_percent >= 75 ? 'warning' : '') %>"><%= Math.round(currentStats.ram_percent) %>%</span>
+                </div>
+                <div class="hardware-progress-bar">
+                  <div class="hardware-progress-fill <%= currentStats.ram_percent >= 90 ? 'critical' : (currentStats.ram_percent >= 75 ? 'warning' : 'ok') %>" style="width: <%= Math.min(currentStats.ram_percent, 100) %>%"></div>
+                </div>
+                <div class="hardware-progress-label">
+                  <%= currentStats.ram_used_bytes ? formatBytes(currentStats.ram_used_bytes) : '-' %> / <%= hardware.ram_total_bytes ? formatBytes(hardware.ram_total_bytes) : '-' %> verwendet
+                </div>
+              </div>
+            <% } %>
+            <dl>
+              <dt>RAM Total</dt>
+              <dd><%= hardware.ram_total_bytes ? formatBytes(hardware.ram_total_bytes) : '-' %></dd>
+              <dt>RAM Typ</dt>
+              <dd><%= hardware.ram_type || '-' %></dd>
+            </dl>
+          </div>
+
+          <!-- Disk -->
+          <div class="detail-card">
+            <h3>Festplatten</h3>
+            <% if (typeof currentStats !== 'undefined' && currentStats && currentStats.disk_percent) { %>
+              <div class="hardware-progress">
+                <div class="hardware-progress-header">
+                  <span>Disk Auslastung (Root)</span>
+                  <span class="hardware-progress-value <%= currentStats.disk_percent >= 90 ? 'critical' : (currentStats.disk_percent >= 75 ? 'warning' : '') %>"><%= Math.round(currentStats.disk_percent) %>%</span>
+                </div>
+                <div class="hardware-progress-bar">
+                  <div class="hardware-progress-fill <%= currentStats.disk_percent >= 90 ? 'critical' : (currentStats.disk_percent >= 75 ? 'warning' : 'ok') %>" style="width: <%= Math.min(currentStats.disk_percent, 100) %>%"></div>
+                </div>
+                <div class="hardware-progress-label">
+                  <%= currentStats.disk_used_bytes ? formatBytes(currentStats.disk_used_bytes) : '-' %> / <%= currentStats.disk_total_bytes ? formatBytes(currentStats.disk_total_bytes) : '-' %> verwendet
+                </div>
+              </div>
+            <% } %>
+            <%
+              var disks = [];
+              try { disks = JSON.parse(hardware.disks_json || '[]'); } catch(e) {}
+            %>
+            <% if (disks.length > 0) { %>
+              <div class="disk-list">
+                <% disks.slice(0, 3).forEach(function(disk) { %>
+                  <div class="disk-item">
+                    <strong><%= disk.name || disk.NAME || '-' %></strong>
+                    <% var size = disk.size || disk.SIZE; %>
+                    <span class="disk-size"><%= size ? formatBytes(size) : '-' %></span>
+                    <span class="disk-type"><%= (disk.rota || disk.ROTA) === 1 ? 'HDD' : 'SSD' %></span>
+                  </div>
+                <% }); %>
+                <% if (disks.length > 3) { %>
+                  <small class="disk-more">... und <%= disks.length - 3 %> weitere</small>
+                <% } %>
+              </div>
+            <% } %>
+          </div>
+
+          <!-- System -->
+          <div class="detail-card">
+            <h3>System</h3>
+            <dl>
+              <dt>Hersteller</dt>
+              <dd><%= hardware.system_manufacturer || '-' %></dd>
+              <dt>Produkt</dt>
+              <dd><%= hardware.system_product || '-' %></dd>
+              <dt>BIOS</dt>
+              <dd><%= hardware.bios_version || '-' %></dd>
+            </dl>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Discovery Section (Collapsible) -->
+  <div class="overview-section collapsible">
+    <h2 class="section-header" onclick="toggleSection(this)">
+      <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+      Discovery & Umgebung
+    </h2>
+    <div class="section-content">
+      <% if (!discovery) { %>
+        <div class="empty-state">
+          <p>Keine Discovery-Daten vorhanden.</p>
+          <button class="btn btn-primary btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
+            <span class="btn-text">Discovery starten</span>
+            <span class="btn-loading"><span class="spinner"></span> Scanne...</span>
+          </button>
+        </div>
+      <% } else { %>
+        <div class="detail-grid">
+          <!-- System Info -->
+          <div class="detail-card">
+            <h3>Betriebssystem</h3>
+            <dl>
+              <dt>Hostname</dt>
+              <dd><%= discovery.hostname || '-' %></dd>
+              <dt>OS</dt>
+              <dd><%= discovery.os_name || '-' %></dd>
+              <dt>Architektur</dt>
+              <dd><%= discovery.arch || '-' %></dd>
+              <dt>Virtualisierung</dt>
+              <dd><%= discovery.virtualization || 'none' %></dd>
+            </dl>
+          </div>
+
+          <!-- Proxmox -->
+          <% if (discovery.is_proxmox_host) { %>
+            <div class="detail-card">
+              <h3>Proxmox</h3>
+              <dl>
+                <dt>Version</dt>
+                <dd><%= discovery.proxmox_version || '-' %></dd>
+                <dt>Cluster</dt>
+                <dd><%= discovery.is_proxmox_cluster ? 'Ja' : 'Nein' %></dd>
+                <% if (discovery.is_proxmox_cluster) { %>
+                  <dt>Cluster Name</dt>
+                  <dd><%= discovery.proxmox_cluster_name || '-' %></dd>
+                <% } %>
+              </dl>
+            </div>
+          <% } %>
+
+          <!-- Container Runtimes -->
+          <div class="detail-card">
+            <h3>Container & Virtualisierung</h3>
+            <dl>
+              <% if (discovery.is_proxmox_host) { %>
+                <dt>Proxmox Host</dt>
+                <dd>Ja</dd>
+              <% } %>
+              <dt>Docker</dt>
+              <dd><%= discovery.has_docker ? discovery.docker_version || 'Ja' : 'Nein' %></dd>
+              <% if (discovery.has_podman) { %>
+                <dt>Podman</dt>
+                <dd><%= discovery.podman_version || 'Ja' %></dd>
+              <% } %>
+              <% if (discovery.is_raspberry_pi) { %>
+                <dt>Raspberry Pi</dt>
+                <dd><%= discovery.raspberry_pi_model || 'Ja' %></dd>
+              <% } %>
+            </dl>
+          </div>
+
+          <!-- Systemd -->
+          <% if (discovery.has_systemd) { %>
+            <div class="detail-card">
+              <h3>System</h3>
+              <dl>
+                <dt>Systemd</dt>
+                <dd>Verfügbar</dd>
+                <dt>Zuletzt gescannt</dt>
+                <dd><%= discovery.discovered_at || '-' %></dd>
+              </dl>
+            </div>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+  </div>
 </div>
