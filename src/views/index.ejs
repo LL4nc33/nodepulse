@@ -53,8 +53,8 @@
     <% } else { %>
       <!-- Search/Filter Bar -->
       <div class="node-list-filter">
-        <input type="text" id="nodeSearchInput" class="node-list-search" placeholder="Nodes suchen..." onkeyup="filterNodes()">
-        <select id="nodeTypeFilter" class="node-list-type-select" onchange="filterNodes()">
+        <input type="text" id="nodeSearchInput" class="node-list-search" placeholder="Nodes suchen..." onkeyup="filterNodesAndCards()">
+        <select id="nodeTypeFilter" class="node-list-type-select" onchange="filterNodesAndCards()">
           <option value="">Alle Typen</option>
           <option value="proxmox-host">Proxmox</option>
           <option value="docker-host">Docker</option>
@@ -62,7 +62,7 @@
           <option value="linux">Linux</option>
           <option value="windows">Windows</option>
         </select>
-        <select id="nodeStatusFilter" class="node-list-status-select" onchange="filterNodes()">
+        <select id="nodeStatusFilter" class="node-list-status-select" onchange="filterNodesAndCards()">
           <option value="">Alle Status</option>
           <option value="online">Online</option>
           <option value="offline">Offline</option>
@@ -72,6 +72,12 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
               <line x1="3" y1="6" x2="3" y2="6"/><line x1="3" y1="12" x2="3" y2="12"/><line x1="3" y1="18" x2="3" y2="18"/>
+            </svg>
+          </button>
+          <button type="button" class="view-toggle" id="btnCardsView" onclick="setViewMode('cards')" title="Karten">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
             </svg>
           </button>
           <button type="button" class="view-toggle" id="btnTreeView" onclick="setViewMode('tree')" title="Baum">
@@ -162,6 +168,115 @@
         %>
       </div>
 
+      <!-- Cards View (Monitoring-Style) -->
+      <div class="node-cards-view" id="nodeCardsView" style="display: none;">
+        <% if (typeof nodesWithStats !== 'undefined' && nodesWithStats.length > 0) { %>
+          <div class="monitoring-grid">
+            <% nodesWithStats.forEach(function(node) {
+              // Determine status class
+              var statusClass = 'offline';
+              if (node.online) {
+                var maxPercent = Math.max(node.cpu_percent || 0, node.ram_percent || 0, node.disk_percent || 0);
+                if (maxPercent >= thresholds.cpu_critical || maxPercent >= thresholds.ram_critical || maxPercent >= thresholds.disk_critical) {
+                  statusClass = 'critical';
+                } else if (maxPercent >= thresholds.cpu_warning || maxPercent >= thresholds.ram_warning || maxPercent >= thresholds.disk_warning) {
+                  statusClass = 'warning';
+                } else {
+                  statusClass = 'ok';
+                }
+              }
+            %>
+            <div class="monitoring-card <%= statusClass %>"
+                 data-name="<%= node.name.toLowerCase() %>"
+                 data-type="<%= node.node_type || 'unknown' %>"
+                 data-status="<%= node.online ? 'online' : 'offline' %>">
+              <div class="monitoring-header">
+                <a href="/nodes/<%= node.id %>" class="monitoring-name"><%= node.name %></a>
+                <span class="monitoring-status <%= node.online ? 'online' : 'offline' %>">
+                  <%= node.online ? 'Online' : 'Offline' %>
+                </span>
+              </div>
+
+              <% if (node.online && (node.cpu_percent !== null || node.ram_percent !== null)) { %>
+              <div class="monitoring-stats">
+                <!-- CPU -->
+                <div class="stat-bar">
+                  <div class="stat-bar-label">
+                    <span>CPU</span>
+                    <span class="stat-bar-value <%= (node.cpu_percent || 0) >= thresholds.cpu_critical ? 'critical' : ((node.cpu_percent || 0) >= thresholds.cpu_warning ? 'warning' : '') %>">
+                      <%= node.cpu_percent !== null ? Math.round(node.cpu_percent) + '%' : '-' %>
+                    </span>
+                  </div>
+                  <div class="stat-bar-track">
+                    <div class="stat-bar-fill <%= (node.cpu_percent || 0) >= thresholds.cpu_critical ? 'critical' : ((node.cpu_percent || 0) >= thresholds.cpu_warning ? 'warning' : 'ok') %>"
+                         style="width: <%= Math.min(node.cpu_percent || 0, 100) %>%"></div>
+                  </div>
+                </div>
+
+                <!-- RAM -->
+                <div class="stat-bar">
+                  <div class="stat-bar-label">
+                    <span>RAM</span>
+                    <span class="stat-bar-value <%= (node.ram_percent || 0) >= thresholds.ram_critical ? 'critical' : ((node.ram_percent || 0) >= thresholds.ram_warning ? 'warning' : '') %>">
+                      <%= node.ram_percent !== null ? Math.round(node.ram_percent) + '%' : '-' %>
+                    </span>
+                  </div>
+                  <div class="stat-bar-track">
+                    <div class="stat-bar-fill <%= (node.ram_percent || 0) >= thresholds.ram_critical ? 'critical' : ((node.ram_percent || 0) >= thresholds.ram_warning ? 'warning' : 'ok') %>"
+                         style="width: <%= Math.min(node.ram_percent || 0, 100) %>%"></div>
+                  </div>
+                </div>
+
+                <!-- Disk -->
+                <div class="stat-bar">
+                  <div class="stat-bar-label">
+                    <span>Disk</span>
+                    <span class="stat-bar-value <%= (node.disk_percent || 0) >= thresholds.disk_critical ? 'critical' : ((node.disk_percent || 0) >= thresholds.disk_warning ? 'warning' : '') %>">
+                      <%= node.disk_percent !== null ? Math.round(node.disk_percent) + '%' : '-' %>
+                    </span>
+                  </div>
+                  <div class="stat-bar-track">
+                    <div class="stat-bar-fill <%= (node.disk_percent || 0) >= thresholds.disk_critical ? 'critical' : ((node.disk_percent || 0) >= thresholds.disk_warning ? 'warning' : 'ok') %>"
+                         style="width: <%= Math.min(node.disk_percent || 0, 100) %>%"></div>
+                  </div>
+                </div>
+
+                <% if (node.temp_cpu !== null) { %>
+                <!-- Temperature -->
+                <div class="stat-bar">
+                  <div class="stat-bar-label">
+                    <span>Temp</span>
+                    <span class="stat-bar-value <%= (node.temp_cpu || 0) >= thresholds.temp_critical ? 'critical' : ((node.temp_cpu || 0) >= thresholds.temp_warning ? 'warning' : '') %>">
+                      <%= Math.round(node.temp_cpu) %>&deg;C
+                    </span>
+                  </div>
+                </div>
+                <% } %>
+              </div>
+
+              <div class="monitoring-meta">
+                <% if (node.load_1m !== null) { %>
+                <span>Load: <%= node.load_1m %></span>
+                <% } %>
+                <% if (node.uptime_seconds) { %>
+                <span>Up: <%= Math.floor(node.uptime_seconds / 86400) %>d</span>
+                <% } %>
+              </div>
+              <% } else { %>
+              <div class="monitoring-stats monitoring-stats-offline">
+                <p class="monitoring-no-data">Keine Daten verfuegbar</p>
+              </div>
+              <% } %>
+            </div>
+            <% }); %>
+          </div>
+        <% } else { %>
+          <div class="empty-state">
+            <p>Keine Monitoring-Daten verfuegbar.</p>
+          </div>
+        <% } %>
+      </div>
+
       <!-- Filter Results Counter -->
       <div class="node-list-counter" id="nodeListCounter">
         <span id="visibleCount"><%= nodes.length %></span> / <%= nodes.length %> Nodes
@@ -204,35 +319,90 @@ function filterNodes() {
   }
 }
 
-// View Mode Toggle (List vs Tree)
+// View Mode Toggle (List vs Cards vs Tree)
 var currentViewMode = 'list';
 
 function setViewMode(mode) {
   currentViewMode = mode;
   var nodeList = document.getElementById('nodeList');
+  var nodeCardsView = document.getElementById('nodeCardsView');
+  var nodeListCounter = document.getElementById('nodeListCounter');
   var btnList = document.getElementById('btnListView');
+  var btnCards = document.getElementById('btnCardsView');
   var btnTree = document.getElementById('btnTreeView');
 
-  if (mode === 'tree') {
-    nodeList.classList.add('tree-view');
-    if (btnList) btnList.classList.remove('active');
+  // Reset all buttons
+  if (btnList) btnList.classList.remove('active');
+  if (btnCards) btnCards.classList.remove('active');
+  if (btnTree) btnTree.classList.remove('active');
+
+  // Reset views
+  if (nodeList) {
+    nodeList.style.display = 'none';
+    nodeList.classList.remove('tree-view');
+  }
+  if (nodeCardsView) nodeCardsView.style.display = 'none';
+  if (nodeListCounter) nodeListCounter.style.display = 'none';
+
+  if (mode === 'cards') {
+    if (nodeCardsView) nodeCardsView.style.display = 'block';
+    if (btnCards) btnCards.classList.add('active');
+  } else if (mode === 'tree') {
+    if (nodeList) {
+      nodeList.style.display = 'block';
+      nodeList.classList.add('tree-view');
+    }
+    if (nodeListCounter) nodeListCounter.style.display = 'block';
     if (btnTree) btnTree.classList.add('active');
   } else {
-    nodeList.classList.remove('tree-view');
+    // Default: list
+    if (nodeList) nodeList.style.display = 'block';
+    if (nodeListCounter) nodeListCounter.style.display = 'block';
     if (btnList) btnList.classList.add('active');
-    if (btnTree) btnTree.classList.remove('active');
   }
 
   // Save preference
   try { localStorage.setItem('dashboard-view-mode', mode); } catch (e) {}
 }
 
+// Filter also works on cards
+function filterNodesAndCards() {
+  filterNodes();
+
+  // Also filter cards view
+  var searchInput = document.getElementById('nodeSearchInput');
+  var typeFilter = document.getElementById('nodeTypeFilter');
+  var statusFilter = document.getElementById('nodeStatusFilter');
+  var cards = document.querySelectorAll('.monitoring-card');
+
+  var searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+  var typeValue = typeFilter ? typeFilter.value : '';
+  var statusValue = statusFilter ? statusFilter.value : '';
+
+  for (var i = 0; i < cards.length; i++) {
+    var card = cards[i];
+    var name = card.getAttribute('data-name') || '';
+    var type = card.getAttribute('data-type') || '';
+    var status = card.getAttribute('data-status') || '';
+
+    var matchesSearch = name.indexOf(searchTerm) > -1;
+    var matchesType = !typeValue || type === typeValue;
+    var matchesStatus = !statusValue || status === statusValue;
+
+    if (matchesSearch && matchesType && matchesStatus) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  }
+}
+
 // Restore view mode on load
 (function() {
   try {
     var savedMode = localStorage.getItem('dashboard-view-mode');
-    if (savedMode === 'tree') {
-      setViewMode('tree');
+    if (savedMode === 'cards' || savedMode === 'tree') {
+      setViewMode(savedMode);
     }
   } catch (e) {}
 })();

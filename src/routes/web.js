@@ -28,17 +28,40 @@ router.get('/', asyncHandler(async (req, res) => {
   const tags = db.tags.getAll();
   const onlineCount = nodes.filter(n => n.online).length;
 
+  // Load stats for each node (for monitoring cards view)
+  const nodesWithStats = db.stats.getAllNodesWithStats();
+  const settings = db.settings.getAll();
+
+  // Alert thresholds
+  const thresholds = {
+    cpu_warning: parseInt(settings.alert_cpu_warning, 10) || 80,
+    cpu_critical: parseInt(settings.alert_cpu_critical, 10) || 95,
+    ram_warning: parseInt(settings.alert_ram_warning, 10) || 85,
+    ram_critical: parseInt(settings.alert_ram_critical, 10) || 95,
+    disk_warning: parseInt(settings.alert_disk_warning, 10) || 80,
+    disk_critical: parseInt(settings.alert_disk_critical, 10) || 95,
+    temp_warning: parseInt(settings.alert_temp_warning, 10) || 70,
+    temp_critical: parseInt(settings.alert_temp_critical, 10) || 85,
+  };
+
+  // Tag filter from query
+  const tagFilter = req.query.tag || null;
+
   res.render('index', {
     title: 'Dashboard',
     currentPath: '/',
     nodes,
     nodeTree,
+    nodesWithStats,
     tags,
+    tagFilter,
+    thresholds,
     stats: {
       total: nodes.length,
       online: onlineCount,
       offline: nodes.length - onlineCount,
     },
+    formatBytes,
   });
 }));
 

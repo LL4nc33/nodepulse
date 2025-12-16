@@ -1781,6 +1781,22 @@ a:focus {
   margin-right: 0;
 }
 
+.monitoring-stats-offline {
+  padding: 1rem 0;
+}
+
+.monitoring-no-data {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  text-align: center;
+  margin: 0;
+}
+
+/* Dashboard Cards View */
+.node-cards-view {
+  margin-top: 1rem;
+}
+
 /* Monitoring Detail */
 .monitoring-detail-card {
   text-align: center;
