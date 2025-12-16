@@ -86,6 +86,17 @@
             </svg>
           </button>
         </div>
+        <div class="auto-refresh-control">
+          <button type="button" class="btn btn-sm btn-icon" id="btnToggleRefresh" onclick="toggleAutoRefresh()" title="Auto-Refresh pausieren">
+            <svg id="iconRefreshPause" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+            </svg>
+            <svg id="iconRefreshPlay" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+          </button>
+          <span class="refresh-countdown" id="refreshCountdown">30s</span>
+        </div>
       </div>
 
       <!-- Flat Node List with Hierarchy -->
@@ -466,6 +477,86 @@ function filterNodesAndCards() {
       setViewMode(savedMode);
     }
   } catch (e) {}
+})();
+
+// Auto-Refresh (ES5)
+var autoRefreshInterval = null;
+var autoRefreshCountdown = 30;
+var autoRefreshPaused = false;
+var countdownInterval = null;
+
+function updateCountdownDisplay() {
+  var el = document.getElementById('refreshCountdown');
+  if (el) {
+    el.textContent = autoRefreshCountdown + 's';
+  }
+}
+
+function startAutoRefresh() {
+  autoRefreshPaused = false;
+  autoRefreshCountdown = 30;
+  updateCountdownDisplay();
+
+  // Update icons
+  var pauseIcon = document.getElementById('iconRefreshPause');
+  var playIcon = document.getElementById('iconRefreshPlay');
+  var btn = document.getElementById('btnToggleRefresh');
+  if (pauseIcon) pauseIcon.style.display = '';
+  if (playIcon) playIcon.style.display = 'none';
+  if (btn) btn.title = 'Auto-Refresh pausieren';
+
+  // Clear existing intervals
+  if (countdownInterval) clearInterval(countdownInterval);
+  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+
+  // Countdown every second
+  countdownInterval = setInterval(function() {
+    if (!autoRefreshPaused) {
+      autoRefreshCountdown--;
+      updateCountdownDisplay();
+      if (autoRefreshCountdown <= 0) {
+        window.location.reload();
+      }
+    }
+  }, 1000);
+}
+
+function pauseAutoRefresh() {
+  autoRefreshPaused = true;
+
+  // Update icons
+  var pauseIcon = document.getElementById('iconRefreshPause');
+  var playIcon = document.getElementById('iconRefreshPlay');
+  var btn = document.getElementById('btnToggleRefresh');
+  var countdownEl = document.getElementById('refreshCountdown');
+  if (pauseIcon) pauseIcon.style.display = 'none';
+  if (playIcon) playIcon.style.display = '';
+  if (btn) btn.title = 'Auto-Refresh fortsetzen';
+  if (countdownEl) countdownEl.textContent = 'Pausiert';
+}
+
+function toggleAutoRefresh() {
+  if (autoRefreshPaused) {
+    startAutoRefresh();
+  } else {
+    pauseAutoRefresh();
+  }
+  // Save preference
+  try { localStorage.setItem('dashboard-autorefresh-paused', autoRefreshPaused ? '1' : '0'); } catch (e) {}
+}
+
+// Init auto-refresh
+(function() {
+  try {
+    var savedPaused = localStorage.getItem('dashboard-autorefresh-paused');
+    if (savedPaused === '1') {
+      pauseAutoRefresh();
+    } else {
+      startAutoRefresh();
+    }
+  } catch (e) {
+    startAutoRefresh();
+  }
 })();
 </script>
     <% } %>
