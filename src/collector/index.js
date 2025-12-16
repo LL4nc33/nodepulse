@@ -454,6 +454,29 @@ async function runFullDiscovery(node) {
   };
 }
 
+/**
+ * Run comprehensive system info collection on a node
+ * Collects ALL available system information
+ * @param {Object} node - Node object from database
+ * @returns {Promise<Object>} Comprehensive system info
+ */
+async function runSystemInfo(node) {
+  const script = getScript('system-info.sh');
+  const result = await ssh.executeScript(node, script, 120000);
+
+  if (result.exitCode !== 0 && !result.stdout) {
+    const errMsg = result.stderr || 'System info script failed';
+    throw new Error(errMsg);
+  }
+
+  const data = parseScriptOutput(result.stdout, node.name);
+
+  // Update node online status
+  db.nodes.setOnline(node.id, true);
+
+  return data;
+}
+
 module.exports = {
   runDiscovery,
   runHardware,
@@ -463,6 +486,7 @@ module.exports = {
   runProxmox,
   runProxmoxCommand,
   runFullDiscovery,
+  runSystemInfo,
   determineNodeType,
   getTagsFromDiscovery,
   applyAutoTags,

@@ -576,6 +576,25 @@ router.post('/nodes/:id/hardware', asyncHandler(async (req, res) => {
 }));
 
 // =====================================================
+// System Info API (comprehensive system data)
+// =====================================================
+
+// Get comprehensive system info for a node
+router.get('/nodes/:id/system-info', asyncHandler(async (req, res) => {
+  const node = db.nodes.getByIdWithCredentials(req.params.id);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    const systemInfo = await collector.runSystemInfo(node);
+    apiResponse(res, 200, systemInfo);
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'SYSTEM_INFO_ERROR', message: err.message });
+  }
+}));
+
+// =====================================================
 // Tags API
 // =====================================================
 
