@@ -115,34 +115,20 @@
         </div>
       </div>
 
-      <!-- Flat Node List with Hierarchy -->
-      <div class="node-list" id="nodeList">
-        <div class="node-list-header">
-          <div class="node-list-col-status"></div>
-          <div class="node-list-col-icon"></div>
-          <div class="node-list-col-name">Name</div>
-          <div class="node-list-col-host">Host</div>
-          <div class="node-list-col-metrics">CPU</div>
-          <div class="node-list-col-metrics">RAM</div>
-          <div class="node-list-col-metrics">Disk</div>
-          <div class="node-list-col-type">Typ</div>
-          <div class="node-list-col-actions"></div>
-        </div>
+      <%
+      // Create stats lookup map
+      var statsMap = {};
+      if (typeof nodesWithStats !== 'undefined') {
+        nodesWithStats.forEach(function(n) {
+          statsMap[n.id] = n;
+        });
+      }
 
-        <%
-        // Create stats lookup map
-        var statsMap = {};
-        if (typeof nodesWithStats !== 'undefined') {
-          nodesWithStats.forEach(function(n) {
-            statsMap[n.id] = n;
-          });
-        }
-
-        // Render flat list with hierarchy indication
-        function renderNodeList(nodeList, level) {
-          nodeList.forEach(function(node) {
-            var stats = statsMap[node.id] || {};
-        %>
+      // Render hierarchical list with indentation
+      function renderNodeTree(nodeList, level) {
+        nodeList.forEach(function(node) {
+          var stats = statsMap[node.id] || {};
+      %>
           <div class="node-list-row<%= level > 0 ? ' child-level-' + level : '' %>"
                data-node-id="<%= node.id %>"
                data-name="<%= node.name.toLowerCase() %>"
@@ -190,18 +176,101 @@
               </a>
             </div>
           </div>
-          <%
-            if (node.children && node.children.length > 0) {
-              renderNodeList(node.children, level + 1);
-            }
-          });
-        }
+      <%
+          if (node.children && node.children.length > 0) {
+            renderNodeTree(node.children, level + 1);
+          }
+        });
+      }
+      %>
 
-        // Use tree structure if available
-        if (typeof nodeTree !== 'undefined' && nodeTree.length > 0) {
-          renderNodeList(nodeTree, 0);
+      <!-- Flat List View -->
+      <div class="node-list" id="nodeListFlat">
+        <div class="node-list-header">
+          <div class="node-list-col-status"></div>
+          <div class="node-list-col-icon"></div>
+          <div class="node-list-col-name">Name</div>
+          <div class="node-list-col-host">Host</div>
+          <div class="node-list-col-metrics">CPU</div>
+          <div class="node-list-col-metrics">RAM</div>
+          <div class="node-list-col-metrics">Disk</div>
+          <div class="node-list-col-type">Typ</div>
+          <div class="node-list-col-actions"></div>
+        </div>
+
+        <% nodes.forEach(function(node) {
+          var stats = statsMap[node.id] || {};
+        %>
+          <div class="node-list-row"
+               data-node-id="<%= node.id %>"
+               data-name="<%= node.name.toLowerCase() %>"
+               data-type="<%= node.node_type || 'unknown' %>"
+               data-status="<%= node.online ? 'online' : 'offline' %>">
+            <div class="node-list-status">
+              <span class="node-list-status-dot <%= node.online ? 'online' : 'offline' %>"></span>
+            </div>
+            <div class="node-list-icon">
+              <%- include('partials/node-type-icon', { nodeType: node.node_type || 'unknown', size: 22 }) %>
+            </div>
+            <div class="node-list-name">
+              <a href="/nodes/<%= node.id %>"><%= node.name %></a>
+              <span class="node-list-host-mobile"><%= node.host %></span>
+            </div>
+            <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-metric">
+              <% if (node.online && stats.cpu_percent !== null && stats.cpu_percent !== undefined) { %>
+              <div class="mini-bar">
+                <div class="mini-bar-fill <%= (stats.cpu_percent || 0) >= 95 ? 'critical' : ((stats.cpu_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.cpu_percent || 0, 100) %>%"></div>
+              </div>
+              <span class="mini-bar-value"><%= Math.round(stats.cpu_percent) %>%</span>
+              <% } else { %><span class="mini-bar-na">-</span><% } %>
+            </div>
+            <div class="node-list-metric">
+              <% if (node.online && stats.ram_percent !== null && stats.ram_percent !== undefined) { %>
+              <div class="mini-bar">
+                <div class="mini-bar-fill <%= (stats.ram_percent || 0) >= 95 ? 'critical' : ((stats.ram_percent || 0) >= 85 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.ram_percent || 0, 100) %>%"></div>
+              </div>
+              <span class="mini-bar-value"><%= Math.round(stats.ram_percent) %>%</span>
+              <% } else { %><span class="mini-bar-na">-</span><% } %>
+            </div>
+            <div class="node-list-metric">
+              <% if (node.online && stats.disk_percent !== null && stats.disk_percent !== undefined) { %>
+              <div class="mini-bar">
+                <div class="mini-bar-fill <%= (stats.disk_percent || 0) >= 95 ? 'critical' : ((stats.disk_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.disk_percent || 0, 100) %>%"></div>
+              </div>
+              <span class="mini-bar-value"><%= Math.round(stats.disk_percent) %>%</span>
+              <% } else { %><span class="mini-bar-na">-</span><% } %>
+            </div>
+            <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
+            <div class="node-list-actions">
+              <a href="/nodes/<%= node.id %>" class="node-list-action" title="Details">
+                <span class="icon-arrow"></span>
+              </a>
+            </div>
+          </div>
+        <%
+          });
+        %>
+      </div>
+
+      <!-- Tree View (Hierarchical) -->
+      <div class="node-list tree-view" id="nodeListTree" style="display: none;">
+        <div class="node-list-header">
+          <div class="node-list-col-status"></div>
+          <div class="node-list-col-icon"></div>
+          <div class="node-list-col-name">Name</div>
+          <div class="node-list-col-host">Host</div>
+          <div class="node-list-col-metrics">CPU</div>
+          <div class="node-list-col-metrics">RAM</div>
+          <div class="node-list-col-metrics">Disk</div>
+          <div class="node-list-col-type">Typ</div>
+          <div class="node-list-col-actions"></div>
+        </div>
+
+        <% if (typeof nodeTree !== 'undefined' && nodeTree.length > 0) {
+          renderNodeTree(nodeTree, 0);
         } else {
-          // Fallback: flat list
+          // Fallback: render flat list in tree view if no hierarchy
           nodes.forEach(function(node) {
             var stats = statsMap[node.id] || {};
         %>
@@ -254,8 +323,7 @@
           </div>
         <%
           });
-        }
-        %>
+        } %>
       </div>
 
       <!-- Cards View (Monitoring-Style) -->
@@ -443,7 +511,8 @@ var currentViewMode = 'list';
 
 function setViewMode(mode) {
   currentViewMode = mode;
-  var nodeList = document.getElementById('nodeList');
+  var nodeListFlat = document.getElementById('nodeListFlat');
+  var nodeListTree = document.getElementById('nodeListTree');
   var nodeCardsView = document.getElementById('nodeCardsView');
   var nodeListCounter = document.getElementById('nodeListCounter');
   var btnList = document.getElementById('btnListView');
@@ -455,11 +524,9 @@ function setViewMode(mode) {
   if (btnCards) btnCards.classList.remove('active');
   if (btnTree) btnTree.classList.remove('active');
 
-  // Reset views
-  if (nodeList) {
-    nodeList.style.display = 'none';
-    nodeList.classList.remove('tree-view');
-  }
+  // Hide all views
+  if (nodeListFlat) nodeListFlat.style.display = 'none';
+  if (nodeListTree) nodeListTree.style.display = 'none';
   if (nodeCardsView) nodeCardsView.style.display = 'none';
   if (nodeListCounter) nodeListCounter.style.display = 'none';
 
@@ -467,15 +534,12 @@ function setViewMode(mode) {
     if (nodeCardsView) nodeCardsView.style.display = 'block';
     if (btnCards) btnCards.classList.add('active');
   } else if (mode === 'tree') {
-    if (nodeList) {
-      nodeList.style.display = 'block';
-      nodeList.classList.add('tree-view');
-    }
+    if (nodeListTree) nodeListTree.style.display = 'block';
     if (nodeListCounter) nodeListCounter.style.display = 'block';
     if (btnTree) btnTree.classList.add('active');
   } else {
-    // Default: list
-    if (nodeList) nodeList.style.display = 'block';
+    // Default: list (flat)
+    if (nodeListFlat) nodeListFlat.style.display = 'block';
     if (nodeListCounter) nodeListCounter.style.display = 'block';
     if (btnList) btnList.classList.add('active');
   }
