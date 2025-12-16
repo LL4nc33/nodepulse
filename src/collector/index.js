@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../db');
 const ssh = require('../ssh');
+const alertsService = require('../services/alerts');
 
 // Load scripts
 const scriptsDir = path.join(__dirname, '../../scripts');
@@ -168,6 +169,26 @@ async function runStats(node, saveHistory = true) {
 
   // Update node online status
   db.nodes.setOnline(node.id, true);
+
+  // Check alerts if thresholds are configured
+  try {
+    const thresholds = {
+      cpu_warning: parseFloat(db.settings.get('alert_cpu_warning') || '80'),
+      cpu_critical: parseFloat(db.settings.get('alert_cpu_critical') || '95'),
+      ram_warning: parseFloat(db.settings.get('alert_ram_warning') || '85'),
+      ram_critical: parseFloat(db.settings.get('alert_ram_critical') || '95'),
+      disk_warning: parseFloat(db.settings.get('alert_disk_warning') || '80'),
+      disk_critical: parseFloat(db.settings.get('alert_disk_critical') || '95'),
+      temp_warning: parseFloat(db.settings.get('alert_temp_warning') || '70'),
+      temp_critical: parseFloat(db.settings.get('alert_temp_critical') || '85')
+    };
+
+    alertsService.checkAlerts(node.id, data, thresholds);
+    // Also resolve any offline alert since we successfully collected stats
+    alertsService.checkOfflineAlert(node.id, true);
+  } catch (alertErr) {
+    console.error('Alert check failed for node', node.name, ':', alertErr.message);
+  }
 
   return data;
 }

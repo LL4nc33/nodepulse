@@ -57,67 +57,77 @@ router.get('/nodes', asyncHandler(async (req, res) => {
 }));
 
 // Add node form
-router.get('/nodes/add', (req, res) => {
+router.get('/nodes/add', asyncHandler(async (req, res) => {
+  const allNodes = db.nodes.getAll();
+  const nodeTree = db.nodes.getHierarchyTree();
+  const allTags = db.tags.getAll();
+  const onlineCount = allNodes.filter(n => n.online).length;
+
   res.render('nodes/add', {
     title: 'Node hinzufügen',
     currentPath: '/nodes',
     error: null,
     node: {},
+    nodes: allNodes,
+    nodeTree,
+    tags: allTags,
+    stats: {
+      total: allNodes.length,
+      online: onlineCount,
+      offline: allNodes.length - onlineCount,
+    },
   });
-});
+}));
 
 // Create node
 router.post('/nodes/add', asyncHandler(async (req, res) => {
   const { name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes } = req.body;
 
-  // Validation
-  if (!name || !name.trim()) {
+  // Helper to get sidebar data and render with error
+  const renderWithError = (error) => {
+    const allNodes = db.nodes.getAll();
+    const nodeTree = db.nodes.getHierarchyTree();
+    const allTags = db.tags.getAll();
+    const onlineCount = allNodes.filter(n => n.online).length;
     return res.render('nodes/add', {
       title: 'Node hinzufügen',
       currentPath: '/nodes',
-      error: 'Name ist erforderlich.',
+      error,
       node: req.body,
+      nodes: allNodes,
+      nodeTree,
+      tags: allTags,
+      stats: {
+        total: allNodes.length,
+        online: onlineCount,
+        offline: allNodes.length - onlineCount,
+      },
     });
+  };
+
+  // Validation
+  if (!name || !name.trim()) {
+    return renderWithError('Name ist erforderlich.');
   }
 
   if (!host || !host.trim()) {
-    return res.render('nodes/add', {
-      title: 'Node hinzufügen',
-      currentPath: '/nodes',
-      error: 'Host ist erforderlich.',
-      node: req.body,
-    });
+    return renderWithError('Host ist erforderlich.');
   }
 
   if (!ssh_user || !ssh_user.trim()) {
-    return res.render('nodes/add', {
-      title: 'Node hinzufügen',
-      currentPath: '/nodes',
-      error: 'SSH User ist erforderlich.',
-      node: req.body,
-    });
+    return renderWithError('SSH User ist erforderlich.');
   }
 
   // Validate port range
   const port = parseInt(ssh_port, 10) || 22;
   if (port < 1 || port > 65535) {
-    return res.render('nodes/add', {
-      title: 'Node hinzufügen',
-      currentPath: '/nodes',
-      error: 'SSH Port muss zwischen 1 und 65535 liegen.',
-      node: req.body,
-    });
+    return renderWithError('SSH Port muss zwischen 1 und 65535 liegen.');
   }
 
   // Check if name already exists
   const existing = db.nodes.getByName(name.trim());
   if (existing) {
-    return res.render('nodes/add', {
-      title: 'Node hinzufügen',
-      currentPath: '/nodes',
-      error: 'Ein Node mit diesem Namen existiert bereits.',
-      node: req.body,
-    });
+    return renderWithError('Ein Node mit diesem Namen existiert bereits.');
   }
 
   try {
@@ -133,12 +143,7 @@ router.post('/nodes/add', asyncHandler(async (req, res) => {
 
     res.redirect(`/nodes/${id}`);
   } catch (err) {
-    res.render('nodes/add', {
-      title: 'Node hinzufügen',
-      currentPath: '/nodes',
-      error: `Fehler beim Erstellen: ${err.message}`,
-      node: req.body,
-    });
+    return renderWithError(`Fehler beim Erstellen: ${err.message}`);
   }
 }));
 
@@ -152,22 +157,37 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     });
   }
 
-  const tags = db.tags.getForNode(node.id);
+  const nodeTags = db.tags.getForNode(node.id);
   const discovery = db.discovery.getForNode(node.id);
   const hardware = db.hardware.getForNode(node.id);
   const docker = discovery && discovery.has_docker ? db.docker.getAllForNode(node.id) : null;
   const proxmox = discovery && discovery.is_proxmox_host ? db.proxmox.getAllForNode(node.id) : null;
+  const currentStats = db.stats.getCurrent(node.id);
+
+  // Sidebar data
+  const allNodes = db.nodes.getAll();
+  const nodeTree = db.nodes.getHierarchyTree();
+  const allTags = db.tags.getAll();
+  const onlineCount = allNodes.filter(n => n.online).length;
 
   res.render('nodes/detail', {
     title: node.name,
     currentPath: '/nodes',
     node,
-    tags,
+    tags: nodeTags,
     discovery,
     hardware,
     docker,
     proxmox,
+    currentStats,
     formatBytes,
+    nodes: allNodes,
+    nodeTree,
+    stats: {
+      total: allNodes.length,
+      online: onlineCount,
+      offline: allNodes.length - onlineCount,
+    },
   });
 }));
 
@@ -181,11 +201,25 @@ router.get('/nodes/:id/edit', asyncHandler(async (req, res) => {
     });
   }
 
+  // Sidebar data
+  const allNodes = db.nodes.getAll();
+  const nodeTree = db.nodes.getHierarchyTree();
+  const allTags = db.tags.getAll();
+  const onlineCount = allNodes.filter(n => n.online).length;
+
   res.render('nodes/edit', {
     title: `${node.name} bearbeiten`,
     currentPath: '/nodes',
     node,
     error: null,
+    nodes: allNodes,
+    nodeTree,
+    tags: allTags,
+    stats: {
+      total: allNodes.length,
+      online: onlineCount,
+      offline: allNodes.length - onlineCount,
+    },
   });
 }));
 
@@ -201,65 +235,57 @@ router.post('/nodes/:id/edit', asyncHandler(async (req, res) => {
 
   const { name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes, monitoring_enabled, monitoring_interval } = req.body;
 
-  // Validation
-  if (!name || !name.trim()) {
+  // Helper to get sidebar data and render with error
+  const renderWithError = (error) => {
+    const allNodes = db.nodes.getAll();
+    const nodeTree = db.nodes.getHierarchyTree();
+    const allTags = db.tags.getAll();
+    const onlineCount = allNodes.filter(n => n.online).length;
     return res.render('nodes/edit', {
       title: `${node.name} bearbeiten`,
       currentPath: '/nodes',
-      error: 'Name ist erforderlich.',
+      error,
       node: { ...node, ...req.body },
+      nodes: allNodes,
+      nodeTree,
+      tags: allTags,
+      stats: {
+        total: allNodes.length,
+        online: onlineCount,
+        offline: allNodes.length - onlineCount,
+      },
     });
+  };
+
+  // Validation
+  if (!name || !name.trim()) {
+    return renderWithError('Name ist erforderlich.');
   }
 
   if (!host || !host.trim()) {
-    return res.render('nodes/edit', {
-      title: `${node.name} bearbeiten`,
-      currentPath: '/nodes',
-      error: 'Host ist erforderlich.',
-      node: { ...node, ...req.body },
-    });
+    return renderWithError('Host ist erforderlich.');
   }
 
   if (!ssh_user || !ssh_user.trim()) {
-    return res.render('nodes/edit', {
-      title: `${node.name} bearbeiten`,
-      currentPath: '/nodes',
-      error: 'SSH User ist erforderlich.',
-      node: { ...node, ...req.body },
-    });
+    return renderWithError('SSH User ist erforderlich.');
   }
 
   // Validate port range
   const port = parseInt(ssh_port, 10) || 22;
   if (port < 1 || port > 65535) {
-    return res.render('nodes/edit', {
-      title: `${node.name} bearbeiten`,
-      currentPath: '/nodes',
-      error: 'SSH Port muss zwischen 1 und 65535 liegen.',
-      node: { ...node, ...req.body },
-    });
+    return renderWithError('SSH Port muss zwischen 1 und 65535 liegen.');
   }
 
   // Validate monitoring interval
   const interval = parseInt(monitoring_interval, 10) || 30;
   if (interval < 5 || interval > 3600) {
-    return res.render('nodes/edit', {
-      title: `${node.name} bearbeiten`,
-      currentPath: '/nodes',
-      error: 'Monitoring Interval muss zwischen 5 und 3600 Sekunden liegen.',
-      node: { ...node, ...req.body },
-    });
+    return renderWithError('Monitoring Interval muss zwischen 5 und 3600 Sekunden liegen.');
   }
 
   // Check if name already exists (except current node)
   const existing = db.nodes.getByName(name.trim());
   if (existing && existing.id !== node.id) {
-    return res.render('nodes/edit', {
-      title: `${node.name} bearbeiten`,
-      currentPath: '/nodes',
-      error: 'Ein Node mit diesem Namen existiert bereits.',
-      node: { ...node, ...req.body },
-    });
+    return renderWithError('Ein Node mit diesem Namen existiert bereits.');
   }
 
   try {
@@ -283,12 +309,7 @@ router.post('/nodes/:id/edit', asyncHandler(async (req, res) => {
 
     res.redirect(`/nodes/${node.id}`);
   } catch (err) {
-    res.render('nodes/edit', {
-      title: `${node.name} bearbeiten`,
-      currentPath: '/nodes',
-      error: `Fehler beim Speichern: ${err.message}`,
-      node: { ...node, ...req.body },
-    });
+    return renderWithError(`Fehler beim Speichern: ${err.message}`);
   }
 }));
 
@@ -327,12 +348,25 @@ router.get('/monitoring', asyncHandler(async (req, res) => {
     temp_critical: parseInt(settings.alert_temp_critical, 10) || 85,
   };
 
+  // Sidebar data
+  const allNodes = db.nodes.getAll();
+  const nodeTree = db.nodes.getHierarchyTree();
+  const allTags = db.tags.getAll();
+  const onlineCount = allNodes.filter(n => n.online).length;
+
   res.render('monitoring/overview', {
     title: 'Monitoring',
     currentPath: '/monitoring',
     nodes: nodesWithStats,
     thresholds,
     formatBytes,
+    nodeTree,
+    tags: allTags,
+    stats: {
+      total: allNodes.length,
+      online: onlineCount,
+      offline: allNodes.length - onlineCount,
+    },
   });
 }));
 
@@ -380,10 +414,25 @@ router.get('/monitoring/:id', asyncHandler(async (req, res) => {
 
 router.get('/settings', asyncHandler(async (req, res) => {
   const settings = db.settings.getAll();
+
+  // Sidebar data
+  const allNodes = db.nodes.getAll();
+  const nodeTree = db.nodes.getHierarchyTree();
+  const allTags = db.tags.getAll();
+  const onlineCount = allNodes.filter(n => n.online).length;
+
   res.render('settings/index', {
     title: 'Einstellungen',
     currentPath: '/settings',
     settings,
+    nodes: allNodes,
+    nodeTree,
+    tags: allTags,
+    stats: {
+      total: allNodes.length,
+      online: onlineCount,
+      offline: allNodes.length - onlineCount,
+    },
   });
 }));
 
@@ -402,13 +451,43 @@ router.post('/settings', asyncHandler(async (req, res) => {
     'alert_disk_critical',
     'alert_temp_warning',
     'alert_temp_critical',
+    // Phase 3 Settings
+    'chart_default_hours',
+    'alert_retention_days',
+    'toast_notifications_enabled',
+    'import_inherit_credentials',
   ];
+
+  const checkboxSettings = [
+    'auto_discovery_enabled',
+    'rediscovery_on_connect',
+    'toast_notifications_enabled',
+    'import_inherit_credentials',
+  ];
+
+  // Helper to get sidebar data
+  const getSidebarData = () => {
+    const allNodes = db.nodes.getAll();
+    const nodeTree = db.nodes.getHierarchyTree();
+    const allTags = db.tags.getAll();
+    const onlineCount = allNodes.filter(n => n.online).length;
+    return {
+      nodes: allNodes,
+      nodeTree,
+      tags: allTags,
+      stats: {
+        total: allNodes.length,
+        online: onlineCount,
+        offline: allNodes.length - onlineCount,
+      },
+    };
+  };
 
   try {
     settingsToSave.forEach(function(key) {
       var value = req.body[key];
       // Checkboxes: convert to 'true'/'false'
-      if (key === 'auto_discovery_enabled' || key === 'rediscovery_on_connect') {
+      if (checkboxSettings.indexOf(key) !== -1) {
         value = value === 'on' ? 'true' : 'false';
       }
       if (value !== undefined) {
@@ -422,6 +501,7 @@ router.post('/settings', asyncHandler(async (req, res) => {
       currentPath: '/settings',
       settings,
       success: true,
+      ...getSidebarData(),
     });
   } catch (err) {
     const settings = db.settings.getAll();
@@ -430,8 +510,72 @@ router.post('/settings', asyncHandler(async (req, res) => {
       currentPath: '/settings',
       settings,
       error: 'Fehler beim Speichern: ' + err.message,
+      ...getSidebarData(),
     });
   }
+}));
+
+// =====================================================
+// Alerts
+// =====================================================
+
+router.get('/alerts', asyncHandler(async (req, res) => {
+  const filter = req.query.filter || 'active'; // active, all, archived
+  const nodeTree = db.nodes.getHierarchyTree();
+  const allTags = db.tags.getAll();
+  const allNodes = db.nodes.getAll();
+  const onlineCount = allNodes.filter(n => n.online).length;
+
+  let alerts = [];
+  if (filter === 'active') {
+    alerts = db.alerts.getActive();
+  } else if (filter === 'archived') {
+    alerts = db.alerts.getAll().filter(a => a.resolved_at !== null);
+  } else {
+    alerts = db.alerts.getAll();
+  }
+
+  // Add node names to alerts
+  alerts = alerts.map(alert => {
+    const node = db.nodes.getById(alert.node_id);
+    return {
+      ...alert,
+      node_name: node ? node.name : 'Unbekannt'
+    };
+  });
+
+  // Get alert counts
+  const alertCounts = {
+    active: db.alerts.getActiveCount(),
+    warning: db.alerts.getActiveCountByLevel('warning'),
+    critical: db.alerts.getActiveCountByLevel('critical')
+  };
+
+  res.render('alerts/index', {
+    title: 'Alerts',
+    currentPath: '/alerts',
+    alerts,
+    alertCounts,
+    filter,
+    nodeTree,
+    tags: allTags,
+    stats: {
+      total: allNodes.length,
+      online: onlineCount,
+      offline: allNodes.length - onlineCount,
+    },
+  });
+}));
+
+// Acknowledge an alert
+router.post('/alerts/:id/acknowledge', asyncHandler(async (req, res) => {
+  const alertId = parseInt(req.params.id, 10);
+  if (isNaN(alertId)) {
+    return res.redirect('/alerts');
+  }
+
+  db.alerts.acknowledge(alertId);
+  res.redirect('/alerts?acknowledged=1');
 }));
 
 // =====================================================

@@ -98,11 +98,19 @@
 
       if (err) {
         showAlert(resultEl, 'error', 'Verbindung fehlgeschlagen: ' + err.message);
+        // Show toast notification
+        if (typeof Toast !== 'undefined') {
+          Toast.error('SSH-Verbindung fehlgeschlagen');
+        }
         return;
       }
 
       if (response.success && response.data) {
         showAlert(resultEl, 'success', 'Verbindung erfolgreich! Hostname: ' + response.data.hostname);
+        // Show toast notification
+        if (typeof Toast !== 'undefined') {
+          Toast.success('SSH-Verbindung erfolgreich!');
+        }
 
         // Update status dots on page
         var statusDots = document.querySelectorAll('.status-dot');
@@ -112,6 +120,9 @@
         }
       } else {
         showAlert(resultEl, 'error', 'Verbindung fehlgeschlagen');
+        if (typeof Toast !== 'undefined') {
+          Toast.error('SSH-Verbindung fehlgeschlagen');
+        }
       }
     }, 15000); // 15s timeout for SSH test
   };
@@ -294,7 +305,46 @@
     setupPanelToggle();
     setupThemeToggle();
     setupCollapsibleSections();
+
+    // Load alert count for header badge
+    updateAlertBadge();
+    // Refresh every 60 seconds
+    setInterval(updateAlertBadge, 60000);
   }
+
+  // =====================================================
+  // Alert Badge
+  // =====================================================
+
+  function updateAlertBadge() {
+    var badge = document.getElementById('headerAlertCount');
+    if (!badge) return;
+
+    ajax('GET', '/api/alerts/count', null, function(err, response) {
+      if (err || !response || !response.success) {
+        return;
+      }
+
+      var counts = response.data;
+      if (counts.total > 0) {
+        badge.textContent = counts.total > 99 ? '99+' : counts.total;
+        badge.style.display = 'block';
+
+        // Add appropriate class for styling
+        badge.className = 'alert-badge';
+        if (counts.critical > 0) {
+          badge.classList.add('has-critical');
+        } else if (counts.warning > 0) {
+          badge.classList.add('warning-only');
+        }
+      } else {
+        badge.style.display = 'none';
+      }
+    });
+  }
+
+  // Expose for manual refresh if needed
+  window.updateAlertBadge = updateAlertBadge;
 
   // Run on DOM ready
   if (document.readyState === 'loading') {

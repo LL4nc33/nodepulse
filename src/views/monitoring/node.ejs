@@ -1,7 +1,9 @@
 <%- include('../partials/header', { currentPath: '/monitoring' }) %>
 
-<main class="container">
-  <div class="main-content">
+<div class="app-layout">
+  <%- include('../partials/side-panel') %>
+
+  <main class="main-panel">
 
 <nav class="breadcrumb" aria-label="Breadcrumb">
   <a href="/monitoring">Monitoring</a> / <span><%= node.name %></span>
@@ -129,6 +131,27 @@
     </div>
   </div>
 
+  <!-- Stats History Charts -->
+  <div class="detail-card full-width">
+    <div class="chart-section-header">
+      <h3>Stats-Verlauf</h3>
+      <div class="chart-timerange">
+        <label for="chart-hours">Zeitraum:</label>
+        <select id="chart-hours" onchange="changeChartTimerange(this.value)">
+          <option value="1">1 Stunde</option>
+          <option value="6">6 Stunden</option>
+          <option value="24" selected>24 Stunden</option>
+          <option value="168">7 Tage</option>
+        </select>
+      </div>
+    </div>
+    <div id="stats-charts" class="charts-grid">
+      <div class="chart-loading">
+        <span class="spinner"></span> Lade Charts...
+      </div>
+    </div>
+  </div>
+
   <div class="detail-card full-width">
     <h3>Letzte Aktualisierung</h3>
     <p class="stats-timestamp">
@@ -245,9 +268,52 @@ function tick() {
 // Start countdown timer
 countdownTimer = setInterval(tick, 1000);
 updateCountdown();
+
+// =========================================
+// Charts Management
+// =========================================
+
+var statsCharts = null;
+var chartHours = 24;
+
+// Initialize charts on page load
+function initCharts() {
+  if (typeof StatsCharts === 'undefined') {
+    console.error('StatsCharts not loaded');
+    return;
+  }
+
+  statsCharts = new StatsCharts('stats-charts', nodeId, chartHours);
+  statsCharts.setThresholds({
+    cpu_warning: <%= thresholds.cpu_warning || 80 %>,
+    cpu_critical: <%= thresholds.cpu_critical || 95 %>,
+    ram_warning: <%= thresholds.ram_warning || 85 %>,
+    ram_critical: <%= thresholds.ram_critical || 95 %>,
+    disk_warning: <%= thresholds.disk_warning || 80 %>,
+    disk_critical: <%= thresholds.disk_critical || 95 %>,
+    temp_warning: <%= thresholds.temp_warning || 70 %>,
+    temp_critical: <%= thresholds.temp_critical || 85 %>
+  });
+  statsCharts.load();
+}
+
+// Change chart timerange
+function changeChartTimerange(hours) {
+  chartHours = parseInt(hours, 10);
+  if (statsCharts) {
+    statsCharts.setHours(chartHours);
+  }
+}
+
+// Initialize charts when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCharts);
+} else {
+  initCharts();
+}
 </script>
 
-  </div>
-</main>
+  </main>
+</div>
 
 <%- include('../partials/footer') %>

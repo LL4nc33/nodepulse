@@ -1,7 +1,9 @@
 <%- include('../partials/header', { currentPath: '/settings' }) %>
 
-<main class="container">
-  <div class="main-content">
+<div class="app-layout">
+  <%- include('../partials/side-panel') %>
+
+  <main class="main-panel">
 
 <div class="page-header">
   <h1>Einstellungen</h1>
@@ -19,114 +21,321 @@
 </div>
 <% } %>
 
+<!-- Tab Navigation -->
+<div class="settings-tabs" role="tablist">
+  <button type="button" class="settings-tab active" data-tab="discovery" role="tab" aria-selected="true" onclick="switchSettingsTab('discovery', this)">
+    Discovery
+  </button>
+  <button type="button" class="settings-tab" data-tab="monitoring" role="tab" aria-selected="false" onclick="switchSettingsTab('monitoring', this)">
+    Monitoring
+  </button>
+  <button type="button" class="settings-tab" data-tab="alerts" role="tab" aria-selected="false" onclick="switchSettingsTab('alerts', this)">
+    Alerts
+  </button>
+</div>
+
 <form action="/settings" method="POST" class="settings-form">
-  <div class="settings-grid">
-    <div class="settings-section">
-      <h3>Discovery</h3>
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input type="checkbox" name="auto_discovery_enabled" <%= settings.auto_discovery_enabled === 'true' ? 'checked' : '' %>>
-          <span>Auto-Discovery aktiv</span>
-        </label>
-        <small>Automatische Erkennung von Node-Typ und Features</small>
-      </div>
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input type="checkbox" name="rediscovery_on_connect" <%= settings.rediscovery_on_connect === 'true' ? 'checked' : '' %>>
-          <span>Re-Discovery bei Connect</span>
-        </label>
-        <small>Discovery erneut ausführen wenn Node online geht</small>
-      </div>
-    </div>
+  <div class="settings-tab-content">
 
-    <div class="settings-section">
-      <h3>Monitoring</h3>
-      <div class="form-group">
-        <label for="monitoring_default_interval">Standard-Interval (Sekunden)</label>
-        <input type="number" id="monitoring_default_interval" name="monitoring_default_interval"
-               value="<%= settings.monitoring_default_interval || '30' %>" min="5" max="3600">
-        <small>Wie oft Stats gesammelt werden (5-3600s)</small>
-      </div>
-      <div class="form-group">
-        <label for="stats_retention_hours">Stats-Aufbewahrung (Stunden)</label>
-        <input type="number" id="stats_retention_hours" name="stats_retention_hours"
-               value="<%= settings.stats_retention_hours || '168' %>" min="1" max="8760">
-        <small>Wie lange Stats-History gespeichert wird (1-8760h)</small>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <h3>CPU Alerts</h3>
-      <div class="form-row">
+    <!-- Discovery Tab -->
+    <div class="settings-tab-pane active" id="tab-discovery" role="tabpanel">
+      <div class="settings-section">
+        <h3>Auto-Discovery</h3>
         <div class="form-group">
-          <label for="alert_cpu_warning">Warning (%)</label>
-          <input type="number" id="alert_cpu_warning" name="alert_cpu_warning"
-                 value="<%= settings.alert_cpu_warning || '80' %>" min="1" max="100">
+          <label class="checkbox-label">
+            <input type="checkbox" name="auto_discovery_enabled" <%= settings.auto_discovery_enabled === 'true' ? 'checked' : '' %>>
+            <span>Auto-Discovery aktiv</span>
+          </label>
+          <small>Automatische Erkennung von Node-Typ und Features beim Hinzufuegen</small>
         </div>
         <div class="form-group">
-          <label for="alert_cpu_critical">Critical (%)</label>
-          <input type="number" id="alert_cpu_critical" name="alert_cpu_critical"
-                 value="<%= settings.alert_cpu_critical || '95' %>" min="1" max="100">
+          <label class="checkbox-label">
+            <input type="checkbox" name="rediscovery_on_connect" <%= settings.rediscovery_on_connect === 'true' ? 'checked' : '' %>>
+            <span>Re-Discovery bei Connect</span>
+          </label>
+          <small>Discovery erneut ausfuehren wenn Node online geht</small>
         </div>
       </div>
     </div>
 
-    <div class="settings-section">
-      <h3>RAM Alerts</h3>
-      <div class="form-row">
+    <!-- Monitoring Tab -->
+    <div class="settings-tab-pane" id="tab-monitoring" role="tabpanel">
+      <div class="settings-section">
+        <h3>Stats-Sammlung</h3>
         <div class="form-group">
-          <label for="alert_ram_warning">Warning (%)</label>
-          <input type="number" id="alert_ram_warning" name="alert_ram_warning"
-                 value="<%= settings.alert_ram_warning || '85' %>" min="1" max="100">
+          <label for="monitoring_default_interval">Standard-Interval (Sekunden)</label>
+          <input type="number" id="monitoring_default_interval" name="monitoring_default_interval"
+                 value="<%= settings.monitoring_default_interval || '30' %>" min="5" max="3600">
+          <small>Wie oft Stats gesammelt werden (5-3600s)</small>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Daten-Aufbewahrung</h3>
+        <div class="form-group">
+          <label for="stats_retention_hours">Stats-Aufbewahrung (Stunden)</label>
+          <input type="number" id="stats_retention_hours" name="stats_retention_hours"
+                 value="<%= settings.stats_retention_hours || '168' %>" min="1" max="8760">
+          <small>Wie lange Stats-History gespeichert wird (1-8760h, Standard: 168h = 1 Woche)</small>
         </div>
         <div class="form-group">
-          <label for="alert_ram_critical">Critical (%)</label>
-          <input type="number" id="alert_ram_critical" name="alert_ram_critical"
-                 value="<%= settings.alert_ram_critical || '95' %>" min="1" max="100">
+          <label for="alert_retention_days">Alert-Aufbewahrung (Tage)</label>
+          <input type="number" id="alert_retention_days" name="alert_retention_days"
+                 value="<%= settings.alert_retention_days || '90' %>" min="1" max="365">
+          <small>Wie lange Alerts gespeichert werden (1-365 Tage, Standard: 90)</small>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Charts</h3>
+        <div class="form-group">
+          <label for="chart_default_hours">Standard-Zeitraum</label>
+          <select id="chart_default_hours" name="chart_default_hours">
+            <option value="1" <%= settings.chart_default_hours === '1' ? 'selected' : '' %>>1 Stunde</option>
+            <option value="6" <%= settings.chart_default_hours === '6' ? 'selected' : '' %>>6 Stunden</option>
+            <option value="24" <%= !settings.chart_default_hours || settings.chart_default_hours === '24' ? 'selected' : '' %>>24 Stunden</option>
+            <option value="168" <%= settings.chart_default_hours === '168' ? 'selected' : '' %>>7 Tage</option>
+          </select>
+          <small>Standard-Zeitraum fuer Stats-Charts</small>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Benachrichtigungen</h3>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="toast_notifications_enabled" <%= settings.toast_notifications_enabled === 'true' ? 'checked' : '' %>>
+            <span>Toast-Benachrichtigungen</span>
+          </label>
+          <small>Zeige Popup-Benachrichtigungen bei neuen Alerts</small>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>VM/CT Import</h3>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" name="import_inherit_credentials" <%= settings.import_inherit_credentials !== 'false' ? 'checked' : '' %>>
+            <span>SSH-Credentials vom Parent uebernehmen</span>
+          </label>
+          <small>Beim Import von VMs/CTs die SSH-Zugangsdaten vom Proxmox-Host uebernehmen</small>
         </div>
       </div>
     </div>
 
-    <div class="settings-section">
-      <h3>Disk Alerts</h3>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="alert_disk_warning">Warning (%)</label>
-          <input type="number" id="alert_disk_warning" name="alert_disk_warning"
-                 value="<%= settings.alert_disk_warning || '80' %>" min="1" max="100">
+    <!-- Alerts Tab -->
+    <div class="settings-tab-pane" id="tab-alerts" role="tabpanel">
+      <div class="settings-section">
+        <h3>CPU Thresholds</h3>
+        <div class="settings-threshold-row">
+          <div class="settings-threshold-group">
+            <label for="alert_cpu_warning">Warning</label>
+            <div class="settings-range-wrapper">
+              <input type="range" class="settings-range-input" id="alert_cpu_warning_range"
+                     min="1" max="100" value="<%= settings.alert_cpu_warning || '80' %>"
+                     oninput="syncRangeValue('alert_cpu_warning', this.value)">
+              <input type="number" id="alert_cpu_warning" name="alert_cpu_warning"
+                     class="settings-range-number"
+                     value="<%= settings.alert_cpu_warning || '80' %>" min="1" max="100"
+                     onchange="syncRangeSlider('alert_cpu_warning', this.value)">
+              <span class="settings-range-unit">%</span>
+            </div>
+          </div>
+          <div class="settings-threshold-group">
+            <label for="alert_cpu_critical">Critical</label>
+            <div class="settings-range-wrapper">
+              <input type="range" class="settings-range-input critical" id="alert_cpu_critical_range"
+                     min="1" max="100" value="<%= settings.alert_cpu_critical || '95' %>"
+                     oninput="syncRangeValue('alert_cpu_critical', this.value)">
+              <input type="number" id="alert_cpu_critical" name="alert_cpu_critical"
+                     class="settings-range-number"
+                     value="<%= settings.alert_cpu_critical || '95' %>" min="1" max="100"
+                     onchange="syncRangeSlider('alert_cpu_critical', this.value)">
+              <span class="settings-range-unit">%</span>
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="alert_disk_critical">Critical (%)</label>
-          <input type="number" id="alert_disk_critical" name="alert_disk_critical"
-                 value="<%= settings.alert_disk_critical || '95' %>" min="1" max="100">
+      </div>
+
+      <div class="settings-section">
+        <h3>RAM Thresholds</h3>
+        <div class="settings-threshold-row">
+          <div class="settings-threshold-group">
+            <label for="alert_ram_warning">Warning</label>
+            <div class="settings-range-wrapper">
+              <input type="range" class="settings-range-input" id="alert_ram_warning_range"
+                     min="1" max="100" value="<%= settings.alert_ram_warning || '85' %>"
+                     oninput="syncRangeValue('alert_ram_warning', this.value)">
+              <input type="number" id="alert_ram_warning" name="alert_ram_warning"
+                     class="settings-range-number"
+                     value="<%= settings.alert_ram_warning || '85' %>" min="1" max="100"
+                     onchange="syncRangeSlider('alert_ram_warning', this.value)">
+              <span class="settings-range-unit">%</span>
+            </div>
+          </div>
+          <div class="settings-threshold-group">
+            <label for="alert_ram_critical">Critical</label>
+            <div class="settings-range-wrapper">
+              <input type="range" class="settings-range-input critical" id="alert_ram_critical_range"
+                     min="1" max="100" value="<%= settings.alert_ram_critical || '95' %>"
+                     oninput="syncRangeValue('alert_ram_critical', this.value)">
+              <input type="number" id="alert_ram_critical" name="alert_ram_critical"
+                     class="settings-range-number"
+                     value="<%= settings.alert_ram_critical || '95' %>" min="1" max="100"
+                     onchange="syncRangeSlider('alert_ram_critical', this.value)">
+              <span class="settings-range-unit">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Disk Thresholds</h3>
+        <div class="settings-threshold-row">
+          <div class="settings-threshold-group">
+            <label for="alert_disk_warning">Warning</label>
+            <div class="settings-range-wrapper">
+              <input type="range" class="settings-range-input" id="alert_disk_warning_range"
+                     min="1" max="100" value="<%= settings.alert_disk_warning || '80' %>"
+                     oninput="syncRangeValue('alert_disk_warning', this.value)">
+              <input type="number" id="alert_disk_warning" name="alert_disk_warning"
+                     class="settings-range-number"
+                     value="<%= settings.alert_disk_warning || '80' %>" min="1" max="100"
+                     onchange="syncRangeSlider('alert_disk_warning', this.value)">
+              <span class="settings-range-unit">%</span>
+            </div>
+          </div>
+          <div class="settings-threshold-group">
+            <label for="alert_disk_critical">Critical</label>
+            <div class="settings-range-wrapper">
+              <input type="range" class="settings-range-input critical" id="alert_disk_critical_range"
+                     min="1" max="100" value="<%= settings.alert_disk_critical || '95' %>"
+                     oninput="syncRangeValue('alert_disk_critical', this.value)">
+              <input type="number" id="alert_disk_critical" name="alert_disk_critical"
+                     class="settings-range-number"
+                     value="<%= settings.alert_disk_critical || '95' %>" min="1" max="100"
+                     onchange="syncRangeSlider('alert_disk_critical', this.value)">
+              <span class="settings-range-unit">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Temperatur Thresholds</h3>
+        <div class="settings-threshold-row">
+          <div class="settings-threshold-group">
+            <label for="alert_temp_warning">Warning</label>
+            <div class="settings-range-wrapper">
+              <input type="range" class="settings-range-input" id="alert_temp_warning_range"
+                     min="30" max="100" value="<%= settings.alert_temp_warning || '70' %>"
+                     oninput="syncRangeValue('alert_temp_warning', this.value)">
+              <input type="number" id="alert_temp_warning" name="alert_temp_warning"
+                     class="settings-range-number"
+                     value="<%= settings.alert_temp_warning || '70' %>" min="30" max="100"
+                     onchange="syncRangeSlider('alert_temp_warning', this.value)">
+              <span class="settings-range-unit">&deg;C</span>
+            </div>
+          </div>
+          <div class="settings-threshold-group">
+            <label for="alert_temp_critical">Critical</label>
+            <div class="settings-range-wrapper">
+              <input type="range" class="settings-range-input critical" id="alert_temp_critical_range"
+                     min="30" max="100" value="<%= settings.alert_temp_critical || '85' %>"
+                     oninput="syncRangeValue('alert_temp_critical', this.value)">
+              <input type="number" id="alert_temp_critical" name="alert_temp_critical"
+                     class="settings-range-number"
+                     value="<%= settings.alert_temp_critical || '85' %>" min="30" max="100"
+                     onchange="syncRangeSlider('alert_temp_critical', this.value)">
+              <span class="settings-range-unit">&deg;C</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="settings-section">
-      <h3>Temperatur Alerts</h3>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="alert_temp_warning">Warning (&deg;C)</label>
-          <input type="number" id="alert_temp_warning" name="alert_temp_warning"
-                 value="<%= settings.alert_temp_warning || '70' %>" min="1" max="150">
-        </div>
-        <div class="form-group">
-          <label for="alert_temp_critical">Critical (&deg;C)</label>
-          <input type="number" id="alert_temp_critical" name="alert_temp_critical"
-                 value="<%= settings.alert_temp_critical || '85' %>" min="1" max="150">
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="form-actions">
     <button type="submit" class="btn btn-primary">Speichern</button>
-    <a href="/settings" class="btn btn-secondary">Zurücksetzen</a>
+    <a href="/settings" class="btn btn-secondary">Zuruecksetzen</a>
   </div>
 </form>
 
-  </div>
-</main>
+<script>
+// Tab Switching (ES5)
+function switchSettingsTab(tabId, btnEl) {
+  // Update tab buttons
+  var tabs = document.querySelectorAll('.settings-tab');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].classList.remove('active');
+    tabs[i].setAttribute('aria-selected', 'false');
+  }
+  if (btnEl) {
+    btnEl.classList.add('active');
+    btnEl.setAttribute('aria-selected', 'true');
+  }
+
+  // Update tab panes
+  var panes = document.querySelectorAll('.settings-tab-pane');
+  for (var j = 0; j < panes.length; j++) {
+    panes[j].classList.remove('active');
+  }
+  var activePane = document.getElementById('tab-' + tabId);
+  if (activePane) {
+    activePane.classList.add('active');
+  }
+
+  // Save to localStorage
+  try {
+    localStorage.setItem('settings-active-tab', tabId);
+  } catch (e) {}
+}
+
+// Range Slider Sync (ES5)
+function syncRangeValue(inputId, value) {
+  var numberInput = document.getElementById(inputId);
+  if (numberInput) {
+    numberInput.value = value;
+  }
+}
+
+function syncRangeSlider(inputId, value) {
+  var rangeInput = document.getElementById(inputId + '_range');
+  if (rangeInput) {
+    rangeInput.value = value;
+  }
+}
+
+// Restore active tab on page load
+(function() {
+  try {
+    var savedTab = localStorage.getItem('settings-active-tab');
+    if (savedTab) {
+      var tabBtn = document.querySelector('.settings-tab[data-tab="' + savedTab + '"]');
+      if (tabBtn) {
+        switchSettingsTab(savedTab, tabBtn);
+      }
+    }
+  } catch (e) {}
+})();
+
+// Show toast on success/error (ES5)
+(function() {
+  <% if (typeof success !== 'undefined' && success) { %>
+  if (typeof Toast !== 'undefined') {
+    Toast.success('Einstellungen gespeichert!');
+  }
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+  if (typeof Toast !== 'undefined') {
+    Toast.error('<%= error %>');
+  }
+  <% } %>
+})();
+</script>
+
+  </main>
+</div>
 
 <%- include('../partials/footer') %>

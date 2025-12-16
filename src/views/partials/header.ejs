@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>nodepulse</title>
   <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=3.2">
   <script>
     (function() {
       var theme = localStorage.getItem('nodepulse-theme');
@@ -36,6 +36,13 @@
       <a href="/" class="nav-link<%= currentPath === '/' ? ' active' : '' %>">Dashboard</a>
       <a href="/nodes" class="nav-link<%= currentPath === '/nodes' ? ' active' : '' %>">Nodes</a>
       <a href="/monitoring" class="nav-link<%= currentPath === '/monitoring' ? ' active' : '' %>">Monitoring</a>
+      <a href="/alerts" class="nav-link header-alerts<%= currentPath === '/alerts' ? ' active' : '' %>" title="Alerts">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span class="alert-badge" id="headerAlertCount" style="display: none;">0</span>
+      </a>
       <a href="/settings" class="nav-link<%= currentPath === '/settings' ? ' active' : '' %>">Settings</a>
       <button type="button" class="theme-toggle" id="themeToggle" aria-label="Theme wechseln" title="Theme wechseln">
         <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

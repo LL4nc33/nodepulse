@@ -205,6 +205,28 @@ CREATE TABLE IF NOT EXISTS node_stats_history (
 CREATE INDEX IF NOT EXISTS idx_stats_history_node_time ON node_stats_history(node_id, timestamp);
 
 -- =====================================================
+-- ALERTS HISTORY
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS alerts_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id INTEGER NOT NULL,
+    alert_type TEXT NOT NULL,        -- 'cpu', 'ram', 'disk', 'temp', 'offline'
+    alert_level TEXT NOT NULL,       -- 'warning', 'critical'
+    value REAL,                      -- aktueller Wert beim Alert
+    threshold REAL,                  -- ueberschrittener Threshold
+    message TEXT,                    -- beschreibende Nachricht
+    created_at INTEGER NOT NULL,     -- Unix timestamp
+    resolved_at INTEGER,             -- Unix timestamp wenn resolved, NULL wenn aktiv
+    acknowledged INTEGER DEFAULT 0,  -- 0 = nicht bestaetigt, 1 = bestaetigt
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_node ON alerts_history(node_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_active ON alerts_history(resolved_at) WHERE resolved_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_alerts_created ON alerts_history(created_at);
+
+-- =====================================================
 -- DOCKER OBJECTS
 -- =====================================================
 

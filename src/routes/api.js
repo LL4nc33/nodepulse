@@ -2419,4 +2419,42 @@ router.post('/nodes/:id/services/:service/:action', asyncHandler(async (req, res
   }
 }));
 
+// =====================================================
+// Alerts API
+// =====================================================
+
+// Get alert counts for header badge
+router.get('/alerts/count', asyncHandler(async (req, res) => {
+  const counts = {
+    total: db.alerts.getActiveCount(),
+    warning: db.alerts.getActiveCountByLevel('warning'),
+    critical: db.alerts.getActiveCountByLevel('critical')
+  };
+  apiResponse(res, 200, counts);
+}));
+
+// Get all active alerts
+router.get('/alerts', asyncHandler(async (req, res) => {
+  const alerts = db.alerts.getActive();
+  const alertsWithNodes = alerts.map(alert => {
+    const node = db.nodes.getById(alert.node_id);
+    return {
+      ...alert,
+      node_name: node ? node.name : 'Unbekannt'
+    };
+  });
+  apiResponse(res, 200, alertsWithNodes);
+}));
+
+// Acknowledge an alert
+router.post('/alerts/:id/acknowledge', asyncHandler(async (req, res) => {
+  const alertId = parseInt(req.params.id, 10);
+  if (isNaN(alertId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Alert-ID' });
+  }
+
+  db.alerts.acknowledge(alertId);
+  apiResponse(res, 200, { acknowledged: true });
+}));
+
 module.exports = router;

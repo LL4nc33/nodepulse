@@ -1,7 +1,9 @@
 <%- include('../partials/header', { currentPath: '/nodes' }) %>
 
-<main class="container">
-  <div class="main-content">
+<div class="app-layout">
+  <%- include('../partials/side-panel') %>
+
+  <main class="main-panel">
 
 <nav class="breadcrumb" aria-label="Breadcrumb">
   <a href="/nodes">Nodes</a> / <a href="/nodes/<%= node.id %>"><%= node.name %></a> / <span>Bearbeiten</span>
@@ -89,7 +91,7 @@
   </div>
 </form>
 
-  </div>
-</main>
+  </main>
+</div>
 
 <%- include('../partials/footer') %>

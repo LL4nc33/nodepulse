@@ -1,7 +1,9 @@
 <%- include('../partials/header', { currentPath: '/nodes' }) %>
 
-<main class="container">
-  <div class="main-content">
+<div class="app-layout">
+  <%- include('../partials/side-panel') %>
+
+  <main class="main-panel">
 
 <nav class="breadcrumb" aria-label="Breadcrumb">
   <a href="/nodes">Nodes</a> / <span><%= node.name %></span>
@@ -160,6 +162,20 @@
 
       <div class="detail-card">
         <h3>Arbeitsspeicher</h3>
+        <% if (typeof currentStats !== 'undefined' && currentStats && currentStats.ram_percent) { %>
+          <div class="hardware-progress">
+            <div class="hardware-progress-header">
+              <span>RAM Auslastung</span>
+              <span class="hardware-progress-value <%= currentStats.ram_percent >= 90 ? 'critical' : (currentStats.ram_percent >= 75 ? 'warning' : '') %>"><%= Math.round(currentStats.ram_percent) %>%</span>
+            </div>
+            <div class="hardware-progress-bar">
+              <div class="hardware-progress-fill <%= currentStats.ram_percent >= 90 ? 'critical' : (currentStats.ram_percent >= 75 ? 'warning' : 'ok') %>" style="width: <%= Math.min(currentStats.ram_percent, 100) %>%"></div>
+            </div>
+            <div class="hardware-progress-label">
+              <%= currentStats.ram_used_bytes ? formatBytes(currentStats.ram_used_bytes) : '-' %> / <%= hardware.ram_total_bytes ? formatBytes(hardware.ram_total_bytes) : '-' %> verwendet
+            </div>
+          </div>
+        <% } %>
         <dl>
           <dt>RAM Total</dt>
           <dd><%= hardware.ram_total_bytes ? formatBytes(hardware.ram_total_bytes) : '-' %></dd>
@@ -174,6 +190,20 @@
 
       <div class="detail-card">
         <h3>Festplatten</h3>
+        <% if (typeof currentStats !== 'undefined' && currentStats && currentStats.disk_percent) { %>
+          <div class="hardware-progress">
+            <div class="hardware-progress-header">
+              <span>Disk Auslastung (Root)</span>
+              <span class="hardware-progress-value <%= currentStats.disk_percent >= 90 ? 'critical' : (currentStats.disk_percent >= 75 ? 'warning' : '') %>"><%= Math.round(currentStats.disk_percent) %>%</span>
+            </div>
+            <div class="hardware-progress-bar">
+              <div class="hardware-progress-fill <%= currentStats.disk_percent >= 90 ? 'critical' : (currentStats.disk_percent >= 75 ? 'warning' : 'ok') %>" style="width: <%= Math.min(currentStats.disk_percent, 100) %>%"></div>
+            </div>
+            <div class="hardware-progress-label">
+              <%= currentStats.disk_used_bytes ? formatBytes(currentStats.disk_used_bytes) : '-' %> / <%= currentStats.disk_total_bytes ? formatBytes(currentStats.disk_total_bytes) : '-' %> verwendet
+            </div>
+          </div>
+        <% } %>
         <%
           var disks = [];
           try { disks = JSON.parse(hardware.disks_json || '[]'); } catch(e) {}
@@ -398,8 +428,19 @@
       <% if (docker.containers.length === 0) { %>
         <p class="empty">Keine Container vorhanden</p>
       <% } else { %>
+        <!-- Docker Filter Bar -->
+        <div class="docker-filter-bar">
+          <div class="docker-filter-buttons">
+            <button class="docker-filter-btn active" data-filter="all" onclick="filterDockerContainers('all', this)">Alle</button>
+            <button class="docker-filter-btn" data-filter="running" onclick="filterDockerContainers('running', this)">Running</button>
+            <button class="docker-filter-btn" data-filter="stopped" onclick="filterDockerContainers('stopped', this)">Stopped</button>
+          </div>
+          <input type="text" class="docker-search-input" id="dockerContainerSearch" placeholder="Container suchen..." onkeyup="searchDockerContainers()">
+          <span class="docker-filter-count" id="dockerContainerCount"><%= docker.containers.length %>/<%= docker.containers.length %></span>
+        </div>
+
         <div class="docker-table-wrapper">
-          <table class="docker-table">
+          <table class="docker-table" id="dockerContainerTable">
             <thead>
               <tr>
                 <th>Name</th>
@@ -639,6 +680,10 @@
             </thead>
             <tbody>
               <% proxmox.vms.forEach(function(vm) { %>
+                <%
+                  var vmCpuPercent = typeof vm.cpu === 'number' ? Math.round(vm.cpu * 100) : null;
+                  var vmMemPercent = (vm.mem && vm.maxmem) ? Math.round((vm.mem / vm.maxmem) * 100) : null;
+                %>
                 <tr class="vm-row <%= vm.status %>">
                   <td class="vm-id"><%= vm.vmid %></td>
                   <td class="vm-name">
@@ -648,9 +693,29 @@
                   <td class="vm-status">
                     <span class="state-badge <%= vm.status %>"><%= vm.status %></span>
                   </td>
-                  <td><%= vm.cpu_cores %> Cores</td>
-                  <td><%= vm.memory_bytes ? formatBytes(vm.memory_bytes) : '-' %></td>
-                  <td><%= vm.disk_bytes ? formatBytes(vm.disk_bytes) : '-' %></td>
+                  <td class="vm-cpu">
+                    <div class="proxmox-cell-content">
+                      <span><%= vm.cpu_cores %> Cores</span>
+                      <% if (vmCpuPercent !== null && vm.status === 'running') { %>
+                        <div class="proxmox-mini-bar">
+                          <div class="proxmox-mini-fill <%= vmCpuPercent >= 90 ? 'critical' : (vmCpuPercent >= 70 ? 'warning' : 'ok') %>" style="width: <%= vmCpuPercent %>%"></div>
+                        </div>
+                        <span class="proxmox-mini-value <%= vmCpuPercent >= 90 ? 'critical' : (vmCpuPercent >= 70 ? 'warning' : '') %>"><%= vmCpuPercent %>%</span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td class="vm-ram">
+                    <div class="proxmox-cell-content">
+                      <span><%= vm.memory_bytes ? formatBytes(vm.memory_bytes) : (vm.maxmem ? formatBytes(vm.maxmem) : '-') %></span>
+                      <% if (vmMemPercent !== null && vm.status === 'running') { %>
+                        <div class="proxmox-mini-bar">
+                          <div class="proxmox-mini-fill <%= vmMemPercent >= 90 ? 'critical' : (vmMemPercent >= 70 ? 'warning' : 'ok') %>" style="width: <%= vmMemPercent %>%"></div>
+                        </div>
+                        <span class="proxmox-mini-value <%= vmMemPercent >= 90 ? 'critical' : (vmMemPercent >= 70 ? 'warning' : '') %>"><%= vmMemPercent %>%</span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td><%= vm.disk_bytes ? formatBytes(vm.disk_bytes) : (vm.maxdisk ? formatBytes(vm.maxdisk) : '-') %></td>
                   <td class="vm-actions">
                     <% if (!vm.template) { %>
                       <% if (vm.status === 'running') { %>
@@ -712,6 +777,10 @@
             </thead>
             <tbody>
               <% proxmox.cts.forEach(function(ct) { %>
+                <%
+                  var ctCpuPercent = typeof ct.cpu === 'number' ? Math.round(ct.cpu * 100) : null;
+                  var ctMemPercent = (ct.mem && ct.maxmem) ? Math.round((ct.mem / ct.maxmem) * 100) : null;
+                %>
                 <tr class="ct-row <%= ct.status %>">
                   <td class="ct-id"><%= ct.ctid %></td>
                   <td class="ct-name">
@@ -721,9 +790,29 @@
                   <td class="ct-status">
                     <span class="state-badge <%= ct.status %>"><%= ct.status %></span>
                   </td>
-                  <td><%= ct.cpu_cores %> Cores</td>
-                  <td><%= ct.memory_bytes ? formatBytes(ct.memory_bytes) : '-' %></td>
-                  <td><%= ct.disk_bytes ? formatBytes(ct.disk_bytes) : '-' %></td>
+                  <td class="ct-cpu">
+                    <div class="proxmox-cell-content">
+                      <span><%= ct.cpu_cores %> Cores</span>
+                      <% if (ctCpuPercent !== null && ct.status === 'running') { %>
+                        <div class="proxmox-mini-bar">
+                          <div class="proxmox-mini-fill <%= ctCpuPercent >= 90 ? 'critical' : (ctCpuPercent >= 70 ? 'warning' : 'ok') %>" style="width: <%= ctCpuPercent %>%"></div>
+                        </div>
+                        <span class="proxmox-mini-value <%= ctCpuPercent >= 90 ? 'critical' : (ctCpuPercent >= 70 ? 'warning' : '') %>"><%= ctCpuPercent %>%</span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td class="ct-ram">
+                    <div class="proxmox-cell-content">
+                      <span><%= ct.memory_bytes ? formatBytes(ct.memory_bytes) : (ct.maxmem ? formatBytes(ct.maxmem) : '-') %></span>
+                      <% if (ctMemPercent !== null && ct.status === 'running') { %>
+                        <div class="proxmox-mini-bar">
+                          <div class="proxmox-mini-fill <%= ctMemPercent >= 90 ? 'critical' : (ctMemPercent >= 70 ? 'warning' : 'ok') %>" style="width: <%= ctMemPercent %>%"></div>
+                        </div>
+                        <span class="proxmox-mini-value <%= ctMemPercent >= 90 ? 'critical' : (ctMemPercent >= 70 ? 'warning' : '') %>"><%= ctMemPercent %>%</span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td><%= ct.disk_bytes ? formatBytes(ct.disk_bytes) : (ct.maxdisk ? formatBytes(ct.maxdisk) : '-') %></td>
                   <td class="ct-actions">
                     <% if (!ct.template) { %>
                       <% if (ct.status === 'running') { %>
@@ -1172,6 +1261,74 @@ for (var i = 0; i < tabBtns.length; i++) {
     }
     document.getElementById('tab-' + tabId).classList.add('active');
   });
+}
+
+// =====================================================
+// Docker Container Filter & Search
+// =====================================================
+
+var currentDockerFilter = 'all';
+
+function filterDockerContainers(filter, btnEl) {
+  currentDockerFilter = filter;
+
+  // Update active button
+  var filterBtns = document.querySelectorAll('.docker-filter-btn');
+  for (var i = 0; i < filterBtns.length; i++) {
+    filterBtns[i].classList.remove('active');
+  }
+  if (btnEl) btnEl.classList.add('active');
+
+  applyDockerFilters();
+}
+
+function searchDockerContainers() {
+  applyDockerFilters();
+}
+
+function applyDockerFilters() {
+  var table = document.getElementById('dockerContainerTable');
+  if (!table) return;
+
+  var searchInput = document.getElementById('dockerContainerSearch');
+  var searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+  var rows = table.querySelectorAll('tbody tr.container-row');
+  var visibleCount = 0;
+  var totalCount = rows.length;
+
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var name = row.querySelector('.container-name');
+    var image = row.querySelector('.container-image');
+    var nameText = name ? name.textContent.toLowerCase() : '';
+    var imageText = image ? image.textContent.toLowerCase() : '';
+
+    var isRunning = row.classList.contains('running');
+    var isStopped = row.classList.contains('exited') || row.classList.contains('created') || row.classList.contains('dead');
+
+    var matchesFilter = true;
+    if (currentDockerFilter === 'running') {
+      matchesFilter = isRunning;
+    } else if (currentDockerFilter === 'stopped') {
+      matchesFilter = isStopped;
+    }
+
+    var matchesSearch = nameText.indexOf(searchTerm) > -1 || imageText.indexOf(searchTerm) > -1;
+
+    if (matchesFilter && matchesSearch) {
+      row.style.display = '';
+      visibleCount++;
+    } else {
+      row.style.display = 'none';
+    }
+  }
+
+  // Update count
+  var countEl = document.getElementById('dockerContainerCount');
+  if (countEl) {
+    countEl.textContent = visibleCount + '/' + totalCount;
+  }
 }
 
 // Discovery function
@@ -2723,7 +2880,7 @@ if (servicesTabBtn && !servicesTabBtn.hasAttribute('data-services-listener')) {
 }
 </script>
 
-  </div>
-</main>
+  </main>
+</div>
 
 <%- include('../partials/footer') %>

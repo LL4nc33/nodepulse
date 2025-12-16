@@ -15,7 +15,12 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
 ('alert_disk_warning', '80'),
 ('alert_disk_critical', '95'),
 ('alert_temp_warning', '70'),
-('alert_temp_critical', '85');
+('alert_temp_critical', '85'),
+-- Phase 3 Settings
+('chart_default_hours', '24'),
+('alert_retention_days', '90'),
+('toast_notifications_enabled', 'true'),
+('import_inherit_credentials', 'true');
 
 -- System Tags (auto-generated)
 INSERT OR IGNORE INTO tags (name, tag_type, color, description) VALUES

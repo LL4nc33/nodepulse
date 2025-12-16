@@ -1,0 +1,109 @@
+<%
+  // Default values for sidebar data
+  var sidebarNodes = typeof nodes !== 'undefined' ? nodes : [];
+  var sidebarTree = typeof nodeTree !== 'undefined' ? nodeTree : [];
+  var sidebarStats = typeof stats !== 'undefined' ? stats : { total: sidebarNodes.length, online: 0, offline: 0 };
+  var sidebarTags = typeof tags !== 'undefined' ? tags : [];
+
+  // Calculate stats if not provided
+  if (!sidebarStats.total && sidebarNodes.length > 0) {
+    var onlineCount = 0;
+    for (var i = 0; i < sidebarNodes.length; i++) {
+      if (sidebarNodes[i].online) onlineCount++;
+    }
+    sidebarStats = {
+      total: sidebarNodes.length,
+      online: onlineCount,
+      offline: sidebarNodes.length - onlineCount
+    };
+  }
+%>
+<aside class="side-panel" id="sidePanel">
+  <div class="side-panel-section">
+    <div class="side-panel-section-header">Nodes (<%= sidebarStats.total %>)</div>
+    <div class="side-panel-section-content">
+      <ul class="node-tree">
+        <%
+        // Render node tree recursively
+        function renderNodeTree(nodeList, level) {
+          nodeList.forEach(function(node, index) {
+        %>
+          <li class="node-tree-item">
+            <a href="/nodes/<%= node.id %>" class="node-tree-row" data-level="<%= level %>">
+              <span class="node-tree-status <%= node.online ? 'online' : 'offline' %>"></span>
+              <span class="node-tree-name"><%= node.name %></span>
+              <% if (node.child_count > 0) { %>
+                <span class="node-tree-children-count"><%= node.child_count %></span>
+              <% } %>
+            </a>
+            <% if (node.children && node.children.length > 0) { %>
+              <ul class="node-tree">
+                <% renderNodeTree(node.children, level + 1); %>
+              </ul>
+            <% } %>
+          </li>
+        <%
+          });
+        }
+
+        // Use tree structure if available, otherwise flat list
+        if (sidebarTree.length > 0) {
+          renderNodeTree(sidebarTree, 0);
+        } else {
+          sidebarNodes.forEach(function(node) {
+        %>
+          <li class="node-tree-item">
+            <a href="/nodes/<%= node.id %>" class="node-tree-row" data-level="0">
+              <span class="node-tree-status <%= node.online ? 'online' : 'offline' %>"></span>
+              <span class="node-tree-name"><%= node.name %></span>
+            </a>
+          </li>
+        <%
+          });
+        }
+        %>
+      </ul>
+    </div>
+  </div>
+
+  <div class="side-panel-section">
+    <div class="side-panel-section-header">Tags</div>
+    <div class="side-panel-section-content">
+      <div style="padding: 0.5rem 1rem;">
+        <% if (sidebarTags.length > 0) { %>
+          <% sidebarTags.forEach(function(tag) { %>
+            <span class="tag" style="background-color: <%= tag.color %>20; border: 1px solid <%= tag.color %>; margin: 0.25rem;"><%= tag.name %></span>
+          <% }); %>
+        <% } else { %>
+          <span class="empty">Keine Tags</span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="side-panel-section">
+    <div class="side-panel-section-header">Quick Links</div>
+    <div class="side-panel-section-content">
+      <ul class="node-tree">
+        <li class="node-tree-item">
+          <a href="/nodes/add" class="node-tree-row">
+            <span style="margin-right: 0.5rem;">+</span>
+            <span class="node-tree-name">Node hinzufuegen</span>
+          </a>
+        </li>
+        <li class="node-tree-item">
+          <a href="/monitoring" class="node-tree-row">
+            <span style="margin-right: 0.5rem;">&#x1F4CA;</span>
+            <span class="node-tree-name">Monitoring</span>
+          </a>
+        </li>
+        <li class="node-tree-item">
+          <a href="/settings" class="node-tree-row">
+            <span style="margin-right: 0.5rem;">&#x2699;</span>
+            <span class="node-tree-name">Einstellungen</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</aside>
