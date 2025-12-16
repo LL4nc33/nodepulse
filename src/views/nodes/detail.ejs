@@ -425,8 +425,13 @@
     </div>
 
     <!-- Containers Section -->
-    <div class="docker-section">
-      <h3>Container</h3>
+    <div class="docker-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle">▼</span>
+        Container
+        <span class="section-count">(<%= docker.containers.length %>)</span>
+      </h3>
+      <div class="section-content">
       <% if (docker.containers.length === 0) { %>
         <p class="empty">Keine Container vorhanden</p>
       <% } else { %>
@@ -491,11 +496,17 @@
           </table>
         </div>
       <% } %>
+      </div>
     </div>
 
     <!-- Images Section -->
-    <div class="docker-section">
-      <h3>Images</h3>
+    <div class="docker-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle">▼</span>
+        Images
+        <span class="section-count">(<%= docker.images.length %>)</span>
+      </h3>
+      <div class="section-content">
       <% if (docker.images.length === 0) { %>
         <p class="empty">Keine Images vorhanden</p>
       <% } else { %>
@@ -528,11 +539,17 @@
           </table>
         </div>
       <% } %>
+      </div>
     </div>
 
     <!-- Volumes Section -->
-    <div class="docker-section">
-      <h3>Volumes</h3>
+    <div class="docker-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle">▼</span>
+        Volumes
+        <span class="section-count">(<%= docker.volumes.length %>)</span>
+      </h3>
+      <div class="section-content">
       <% if (docker.volumes.length === 0) { %>
         <p class="empty">Keine Volumes vorhanden</p>
       <% } else { %>
@@ -567,11 +584,17 @@
           </table>
         </div>
       <% } %>
+      </div>
     </div>
 
     <!-- Networks Section -->
-    <div class="docker-section">
-      <h3>Networks</h3>
+    <div class="docker-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle">▼</span>
+        Networks
+        <span class="section-count">(<%= docker.networks.length %>)</span>
+      </h3>
+      <div class="section-content">
       <% if (docker.networks.length === 0) { %>
         <p class="empty">Keine Networks vorhanden</p>
       <% } else { %>
@@ -604,6 +627,7 @@
           </table>
         </div>
       <% } %>
+      </div>
     </div>
   <% } %>
 </div>
