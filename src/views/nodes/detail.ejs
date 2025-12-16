@@ -49,15 +49,17 @@
 <% } %>
 
 <%- include('../partials/node-detail/network-tab') %>
-<%- include('../partials/node-detail/terminal-tab') %>
 
 <!-- Modals -->
 <%- include('../partials/node-detail/modals') %>
 
+  </main>
+
+  <!-- Terminal Bottom Panel (außerhalb main-panel) -->
+  <%- include('../partials/node-detail/terminal-panel') %>
+</div>
+
 <!-- External JavaScript (kein Inline mehr!) -->
 <script src="/static/js/detail-page.js"></script>
-
-  </main>
-</div>
 
 <%- include('../partials/footer') %>

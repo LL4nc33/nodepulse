@@ -2677,3 +2677,185 @@ if (networkTabBtn && !networkTabBtn.hasAttribute('data-network-listener')) {
   });
   networkTabBtn.setAttribute('data-network-listener', 'true');
 }
+
+// =====================================================
+// Terminal Bottom Panel
+// =====================================================
+
+var terminalPanel = document.getElementById('terminalPanel');
+var terminalToggleBtn = document.getElementById('terminalToggleBtn');
+var terminalResizeHandle = document.getElementById('terminalResizeHandle');
+var terminalMinimizeBtn = document.getElementById('terminalMinimizeBtn');
+
+// Terminal state management
+var terminalState = {
+  visible: false,
+  minimized: false,
+  height: 400 // Default height
+};
+
+// Load state from localStorage
+(function loadTerminalState() {
+  try {
+    var savedState = localStorage.getItem('terminalPanelState');
+    if (savedState) {
+      var parsed = JSON.parse(savedState);
+      terminalState.visible = parsed.visible || false;
+      terminalState.minimized = parsed.minimized || false;
+      terminalState.height = parsed.height || 400;
+    }
+  } catch (e) {
+    // Fallback to defaults
+  }
+
+  // Apply saved state
+  if (terminalPanel) {
+    terminalPanel.style.height = terminalState.height + 'px';
+
+    if (terminalState.visible) {
+      terminalPanel.classList.remove('hidden');
+      if (terminalState.minimized) {
+        terminalPanel.classList.add('minimized');
+      }
+      if (terminalToggleBtn) {
+        terminalToggleBtn.style.display = 'none';
+      }
+    } else {
+      terminalPanel.classList.add('hidden');
+      if (terminalToggleBtn) {
+        terminalToggleBtn.style.display = 'flex';
+      }
+    }
+  }
+})();
+
+// Save state to localStorage
+function saveTerminalState() {
+  try {
+    localStorage.setItem('terminalPanelState', JSON.stringify(terminalState));
+  } catch (e) {
+    // Ignore localStorage errors
+  }
+}
+
+// Toggle terminal panel visibility/minimized state
+function toggleTerminalPanel() {
+  if (!terminalPanel) return;
+
+  if (terminalPanel.classList.contains('hidden')) {
+    // Show panel
+    terminalPanel.classList.remove('hidden');
+    terminalState.visible = true;
+    terminalState.minimized = false;
+    if (terminalToggleBtn) {
+      terminalToggleBtn.style.display = 'none';
+    }
+  } else if (terminalPanel.classList.contains('minimized')) {
+    // Restore from minimized
+    terminalPanel.classList.remove('minimized');
+    terminalState.minimized = false;
+  } else {
+    // Minimize panel
+    terminalPanel.classList.add('minimized');
+    terminalState.minimized = true;
+  }
+
+  saveTerminalState();
+}
+
+// Close terminal panel completely
+function closeTerminalPanel() {
+  if (!terminalPanel) return;
+
+  terminalPanel.classList.add('hidden');
+  terminalPanel.classList.remove('minimized');
+  terminalState.visible = false;
+  terminalState.minimized = false;
+
+  if (terminalToggleBtn) {
+    terminalToggleBtn.style.display = 'flex';
+  }
+
+  saveTerminalState();
+}
+
+// Terminal resize functionality
+(function initTerminalResize() {
+  if (!terminalResizeHandle || !terminalPanel) return;
+
+  var isResizing = false;
+  var startY = 0;
+  var startHeight = 0;
+
+  terminalResizeHandle.addEventListener('mousedown', function(e) {
+    isResizing = true;
+    startY = e.clientY;
+    startHeight = terminalPanel.offsetHeight;
+
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isResizing) return;
+
+    var deltaY = startY - e.clientY;
+    var newHeight = startHeight + deltaY;
+
+    // Constrain height between 200px and 80% of viewport
+    var minHeight = 200;
+    var maxHeight = window.innerHeight * 0.8;
+    newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+
+    terminalPanel.style.height = newHeight + 'px';
+    terminalState.height = newHeight;
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (isResizing) {
+      isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      saveTerminalState();
+    }
+  });
+})();
+
+// Focus terminal input on panel open
+if (terminalPanel) {
+  var observer = new MutationObserver(function(mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      var mutation = mutations[i];
+      if (mutation.attributeName === 'class') {
+        var wasHidden = mutation.oldValue && mutation.oldValue.indexOf('hidden') > -1;
+        var isVisible = !terminalPanel.classList.contains('hidden');
+
+        if (wasHidden && isVisible) {
+          var input = document.getElementById('command-input');
+          if (input) {
+            setTimeout(function() {
+              input.focus();
+            }, 100);
+          }
+        }
+      }
+    }
+  });
+
+  observer.observe(terminalPanel, {
+    attributes: true,
+    attributeOldValue: true,
+    attributeFilter: ['class']
+  });
+}
+
+// Keyboard shortcut: Ctrl+` to toggle terminal (like VS Code)
+document.addEventListener('keydown', function(e) {
+  // Ctrl+` or Cmd+` (keyCode 192 is backtick)
+  if ((e.ctrlKey || e.metaKey) && e.keyCode === 192) {
+    e.preventDefault();
+    toggleTerminalPanel();
+  }
+});
