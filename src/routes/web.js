@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const collector = require('../collector');
 const { formatBytes } = require('../lib/utils');
+const sidebarMiddleware = require('../middleware/sidebar');
 
 // =====================================================
 // Helper: Wrap async route handlers
@@ -19,6 +20,11 @@ router.use((req, res, next) => {
   res.locals.toastNotificationsEnabled = settings.toast_notifications_enabled === 'true';
   next();
 });
+
+// =====================================================
+// Middleware: Sidebar Data für alle Views
+// =====================================================
+router.use(sidebarMiddleware(db));
 
 // =====================================================
 // Dashboard
@@ -97,24 +103,12 @@ router.get('/nodes', (req, res) => {
 
 // Add node form
 router.get('/nodes/add', asyncHandler(async (req, res) => {
-  const allNodes = db.nodes.getAll();
-  const nodeTree = db.nodes.getHierarchyTree();
-  const allTags = db.tags.getAll();
-  const onlineCount = allNodes.filter(n => n.online).length;
-
+  // Sidebar data comes from middleware (res.locals)
   res.render('nodes/add', {
     title: 'Node hinzufügen',
     currentPath: '/nodes',
     error: null,
-    node: {},
-    nodes: allNodes,
-    nodeTree,
-    tags: allTags,
-    stats: {
-      total: allNodes.length,
-      online: onlineCount,
-      offline: allNodes.length - onlineCount,
-    },
+    node: {}
   });
 }));
 
@@ -122,25 +116,13 @@ router.get('/nodes/add', asyncHandler(async (req, res) => {
 router.post('/nodes/add', asyncHandler(async (req, res) => {
   const { name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes } = req.body;
 
-  // Helper to get sidebar data and render with error
+  // Helper to render with error (sidebar data from middleware)
   const renderWithError = (error) => {
-    const allNodes = db.nodes.getAll();
-    const nodeTree = db.nodes.getHierarchyTree();
-    const allTags = db.tags.getAll();
-    const onlineCount = allNodes.filter(n => n.online).length;
     return res.render('nodes/add', {
       title: 'Node hinzufügen',
       currentPath: '/nodes',
       error,
-      node: req.body,
-      nodes: allNodes,
-      nodeTree,
-      tags: allTags,
-      stats: {
-        total: allNodes.length,
-        online: onlineCount,
-        offline: allNodes.length - onlineCount,
-      },
+      node: req.body
     });
   };
 
@@ -217,12 +199,7 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
   const proxmox = discovery && discovery.is_proxmox_host ? db.proxmox.getAllForNode(node.id) : null;
   const currentStats = db.stats.getCurrent(node.id);
 
-  // Sidebar data
-  const allNodes = db.nodes.getAll();
-  const nodeTree = db.nodes.getHierarchyTree();
-  const allTags = db.tags.getAll();
-  const onlineCount = allNodes.filter(n => n.online).length;
-
+  // Sidebar data comes from middleware
   res.render('nodes/detail', {
     title: node.name,
     currentPath: '/nodes',
@@ -233,14 +210,7 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     docker,
     proxmox,
     currentStats,
-    formatBytes,
-    nodes: allNodes,
-    nodeTree,
-    stats: {
-      total: allNodes.length,
-      online: onlineCount,
-      offline: allNodes.length - onlineCount,
-    },
+    formatBytes
   });
 }));
 
@@ -254,25 +224,12 @@ router.get('/nodes/:id/edit', asyncHandler(async (req, res) => {
     });
   }
 
-  // Sidebar data
-  const allNodes = db.nodes.getAll();
-  const nodeTree = db.nodes.getHierarchyTree();
-  const allTags = db.tags.getAll();
-  const onlineCount = allNodes.filter(n => n.online).length;
-
+  // Sidebar data comes from middleware
   res.render('nodes/edit', {
     title: `${node.name} bearbeiten`,
     currentPath: '/nodes',
     node,
-    error: null,
-    nodes: allNodes,
-    nodeTree,
-    tags: allTags,
-    stats: {
-      total: allNodes.length,
-      online: onlineCount,
-      offline: allNodes.length - onlineCount,
-    },
+    error: null
   });
 }));
 
@@ -288,25 +245,13 @@ router.post('/nodes/:id/edit', asyncHandler(async (req, res) => {
 
   const { name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes, monitoring_enabled, monitoring_interval } = req.body;
 
-  // Helper to get sidebar data and render with error
+  // Helper to render with error (sidebar data from middleware)
   const renderWithError = (error) => {
-    const allNodes = db.nodes.getAll();
-    const nodeTree = db.nodes.getHierarchyTree();
-    const allTags = db.tags.getAll();
-    const onlineCount = allNodes.filter(n => n.online).length;
     return res.render('nodes/edit', {
       title: `${node.name} bearbeiten`,
       currentPath: '/nodes',
       error,
-      node: { ...node, ...req.body },
-      nodes: allNodes,
-      nodeTree,
-      tags: allTags,
-      stats: {
-        total: allNodes.length,
-        online: onlineCount,
-        offline: allNodes.length - onlineCount,
-      },
+      node: { ...node, ...req.body }
     });
   };
 
@@ -435,24 +380,11 @@ router.get('/monitoring/:id', asyncHandler(async (req, res) => {
 router.get('/settings', asyncHandler(async (req, res) => {
   const settings = db.settings.getAll();
 
-  // Sidebar data
-  const allNodes = db.nodes.getAll();
-  const nodeTree = db.nodes.getHierarchyTree();
-  const allTags = db.tags.getAll();
-  const onlineCount = allNodes.filter(n => n.online).length;
-
+  // Sidebar data comes from middleware
   res.render('settings/index', {
     title: 'Einstellungen',
     currentPath: '/settings',
-    settings,
-    nodes: allNodes,
-    nodeTree,
-    tags: allTags,
-    stats: {
-      total: allNodes.length,
-      online: onlineCount,
-      offline: allNodes.length - onlineCount,
-    },
+    settings
   });
 }));
 
@@ -486,24 +418,7 @@ router.post('/settings', asyncHandler(async (req, res) => {
     'import_inherit_credentials',
   ];
 
-  // Helper to get sidebar data
-  const getSidebarData = () => {
-    const allNodes = db.nodes.getAll();
-    const nodeTree = db.nodes.getHierarchyTree();
-    const allTags = db.tags.getAll();
-    const onlineCount = allNodes.filter(n => n.online).length;
-    return {
-      nodes: allNodes,
-      nodeTree,
-      tags: allTags,
-      stats: {
-        total: allNodes.length,
-        online: onlineCount,
-        offline: allNodes.length - onlineCount,
-      },
-    };
-  };
-
+  // Sidebar data comes from middleware
   try {
     settingsToSave.forEach(function(key) {
       var value = req.body[key];
@@ -521,8 +436,7 @@ router.post('/settings', asyncHandler(async (req, res) => {
       title: 'Einstellungen',
       currentPath: '/settings',
       settings,
-      success: true,
-      ...getSidebarData(),
+      success: true
     });
   } catch (err) {
     const settings = db.settings.getAll();
@@ -530,8 +444,7 @@ router.post('/settings', asyncHandler(async (req, res) => {
       title: 'Einstellungen',
       currentPath: '/settings',
       settings,
-      error: 'Fehler beim Speichern: ' + err.message,
-      ...getSidebarData(),
+      error: 'Fehler beim Speichern: ' + err.message
     });
   }
 }));
@@ -542,10 +455,8 @@ router.post('/settings', asyncHandler(async (req, res) => {
 
 router.get('/alerts', asyncHandler(async (req, res) => {
   const filter = req.query.filter || 'active'; // active, all, archived
-  const nodeTree = db.nodes.getHierarchyTree();
-  const allTags = db.tags.getAll();
-  const allNodes = db.nodes.getAll();
-  const onlineCount = allNodes.filter(n => n.online).length;
+
+  // Sidebar data comes from middleware
 
   // Get alerts (node_name already included via LEFT JOIN in db.alerts.getAll())
   let alerts = [];
@@ -569,14 +480,7 @@ router.get('/alerts', asyncHandler(async (req, res) => {
     currentPath: '/alerts',
     alerts,
     alertCounts,
-    filter,
-    nodeTree,
-    tags: allTags,
-    stats: {
-      total: allNodes.length,
-      online: onlineCount,
-      offline: allNodes.length - onlineCount,
-    },
+    filter
   });
 }));
 
