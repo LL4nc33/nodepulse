@@ -87,15 +87,10 @@ router.get('/', asyncHandler(async (req, res) => {
 // Nodes
 // =====================================================
 
-// List all nodes
-router.get('/nodes', asyncHandler(async (req, res) => {
-  const nodes = db.nodes.getAll();
-  res.render('nodes/list', {
-    title: 'Nodes',
-    currentPath: '/nodes',
-    nodes,
-  });
-}));
+// Redirect /nodes to Dashboard (Node list is now integrated)
+router.get('/nodes', (req, res) => {
+  res.redirect('/');
+});
 
 // Add node form
 router.get('/nodes/add', asyncHandler(async (req, res) => {
@@ -372,44 +367,10 @@ router.post('/nodes/:id/delete', asyncHandler(async (req, res) => {
 // Monitoring
 // =====================================================
 
-// Monitoring overview (all nodes)
-router.get('/monitoring', asyncHandler(async (req, res) => {
-  const nodesWithStats = db.stats.getAllNodesWithStats();
-  const settings = db.settings.getAll();
-
-  // Get alert thresholds
-  const thresholds = {
-    cpu_warning: parseInt(settings.alert_cpu_warning, 10) || 80,
-    cpu_critical: parseInt(settings.alert_cpu_critical, 10) || 95,
-    ram_warning: parseInt(settings.alert_ram_warning, 10) || 85,
-    ram_critical: parseInt(settings.alert_ram_critical, 10) || 95,
-    disk_warning: parseInt(settings.alert_disk_warning, 10) || 80,
-    disk_critical: parseInt(settings.alert_disk_critical, 10) || 95,
-    temp_warning: parseInt(settings.alert_temp_warning, 10) || 70,
-    temp_critical: parseInt(settings.alert_temp_critical, 10) || 85,
-  };
-
-  // Sidebar data
-  const allNodes = db.nodes.getAll();
-  const nodeTree = db.nodes.getHierarchyTree();
-  const allTags = db.tags.getAll();
-  const onlineCount = allNodes.filter(n => n.online).length;
-
-  res.render('monitoring/overview', {
-    title: 'Monitoring',
-    currentPath: '/monitoring',
-    nodes: nodesWithStats,
-    thresholds,
-    formatBytes,
-    nodeTree,
-    tags: allTags,
-    stats: {
-      total: allNodes.length,
-      online: onlineCount,
-      offline: allNodes.length - onlineCount,
-    },
-  });
-}));
+// Redirect /monitoring to Dashboard with cards view hint
+router.get('/monitoring', (req, res) => {
+  res.redirect('/?view=cards');
+});
 
 // Monitoring detail for single node
 router.get('/monitoring/:id', asyncHandler(async (req, res) => {

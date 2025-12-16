@@ -495,9 +495,22 @@ function filterNodesAndCards() {
   }
 }
 
-// Restore view mode on load
+// Restore view mode on load (check URL param first, then localStorage)
 (function() {
   try {
+    // Check URL parameter (e.g., ?view=cards from /monitoring redirect)
+    var urlParams = window.location.search;
+    var viewMatch = urlParams.match(/[?&]view=([^&]+)/);
+    if (viewMatch && (viewMatch[1] === 'cards' || viewMatch[1] === 'tree' || viewMatch[1] === 'list')) {
+      setViewMode(viewMatch[1]);
+      // Clean up URL without reload
+      if (window.history && window.history.replaceState) {
+        var cleanUrl = window.location.pathname + urlParams.replace(/[?&]view=[^&]+/, '').replace(/^\?$/, '');
+        window.history.replaceState({}, document.title, cleanUrl || window.location.pathname);
+      }
+      return;
+    }
+    // Fallback to localStorage
     var savedMode = localStorage.getItem('dashboard-view-mode');
     if (savedMode === 'cards' || savedMode === 'tree') {
       setViewMode(savedMode);
