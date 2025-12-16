@@ -146,28 +146,28 @@
             </div>
             <div class="node-list-host"><%= node.host %></div>
             <div class="node-list-metric">
-              <% if (node.online && stats.cpu_percent !== null && stats.cpu_percent !== undefined) { %>
-              <div class="mini-bar">
-                <div class="mini-bar-fill <%= (stats.cpu_percent || 0) >= 95 ? 'critical' : ((stats.cpu_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.cpu_percent || 0, 100) %>%"></div>
-              </div>
-              <span class="mini-bar-value"><%= Math.round(stats.cpu_percent) %>%</span>
-              <% } else { %><span class="mini-bar-na">-</span><% } %>
+              <%- include('partials/progress-bar', {
+                progressValue: stats.cpu_percent,
+                thresholdWarning: 80,
+                thresholdCritical: 95,
+                offline: !node.online
+              }) %>
             </div>
             <div class="node-list-metric">
-              <% if (node.online && stats.ram_percent !== null && stats.ram_percent !== undefined) { %>
-              <div class="mini-bar">
-                <div class="mini-bar-fill <%= (stats.ram_percent || 0) >= 95 ? 'critical' : ((stats.ram_percent || 0) >= 85 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.ram_percent || 0, 100) %>%"></div>
-              </div>
-              <span class="mini-bar-value"><%= Math.round(stats.ram_percent) %>%</span>
-              <% } else { %><span class="mini-bar-na">-</span><% } %>
+              <%- include('partials/progress-bar', {
+                progressValue: stats.ram_percent,
+                thresholdWarning: 85,
+                thresholdCritical: 95,
+                offline: !node.online
+              }) %>
             </div>
             <div class="node-list-metric">
-              <% if (node.online && stats.disk_percent !== null && stats.disk_percent !== undefined) { %>
-              <div class="mini-bar">
-                <div class="mini-bar-fill <%= (stats.disk_percent || 0) >= 95 ? 'critical' : ((stats.disk_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.disk_percent || 0, 100) %>%"></div>
-              </div>
-              <span class="mini-bar-value"><%= Math.round(stats.disk_percent) %>%</span>
-              <% } else { %><span class="mini-bar-na">-</span><% } %>
+              <%- include('partials/progress-bar', {
+                progressValue: stats.disk_percent,
+                thresholdWarning: 80,
+                thresholdCritical: 95,
+                offline: !node.online
+              }) %>
             </div>
             <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
             <div class="node-list-actions">
@@ -218,28 +218,28 @@
             </div>
             <div class="node-list-host"><%= node.host %></div>
             <div class="node-list-metric">
-              <% if (node.online && stats.cpu_percent !== null && stats.cpu_percent !== undefined) { %>
-              <div class="mini-bar">
-                <div class="mini-bar-fill <%= (stats.cpu_percent || 0) >= 95 ? 'critical' : ((stats.cpu_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.cpu_percent || 0, 100) %>%"></div>
-              </div>
-              <span class="mini-bar-value"><%= Math.round(stats.cpu_percent) %>%</span>
-              <% } else { %><span class="mini-bar-na">-</span><% } %>
+              <%- include('partials/progress-bar', {
+                progressValue: stats.cpu_percent,
+                thresholdWarning: 80,
+                thresholdCritical: 95,
+                offline: !node.online
+              }) %>
             </div>
             <div class="node-list-metric">
-              <% if (node.online && stats.ram_percent !== null && stats.ram_percent !== undefined) { %>
-              <div class="mini-bar">
-                <div class="mini-bar-fill <%= (stats.ram_percent || 0) >= 95 ? 'critical' : ((stats.ram_percent || 0) >= 85 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.ram_percent || 0, 100) %>%"></div>
-              </div>
-              <span class="mini-bar-value"><%= Math.round(stats.ram_percent) %>%</span>
-              <% } else { %><span class="mini-bar-na">-</span><% } %>
+              <%- include('partials/progress-bar', {
+                progressValue: stats.ram_percent,
+                thresholdWarning: 85,
+                thresholdCritical: 95,
+                offline: !node.online
+              }) %>
             </div>
             <div class="node-list-metric">
-              <% if (node.online && stats.disk_percent !== null && stats.disk_percent !== undefined) { %>
-              <div class="mini-bar">
-                <div class="mini-bar-fill <%= (stats.disk_percent || 0) >= 95 ? 'critical' : ((stats.disk_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.disk_percent || 0, 100) %>%"></div>
-              </div>
-              <span class="mini-bar-value"><%= Math.round(stats.disk_percent) %>%</span>
-              <% } else { %><span class="mini-bar-na">-</span><% } %>
+              <%- include('partials/progress-bar', {
+                progressValue: stats.disk_percent,
+                thresholdWarning: 80,
+                thresholdCritical: 95,
+                offline: !node.online
+              }) %>
             </div>
             <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
             <div class="node-list-actions">
@@ -291,28 +291,28 @@
             </div>
             <div class="node-list-host"><%= node.host %></div>
             <div class="node-list-metric">
-              <% if (node.online && stats.cpu_percent !== null && stats.cpu_percent !== undefined) { %>
-              <div class="mini-bar">
-                <div class="mini-bar-fill <%= (stats.cpu_percent || 0) >= 95 ? 'critical' : ((stats.cpu_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.cpu_percent || 0, 100) %>%"></div>
-              </div>
-              <span class="mini-bar-value"><%= Math.round(stats.cpu_percent) %>%</span>
-              <% } else { %><span class="mini-bar-na">-</span><% } %>
+              <%- include('partials/progress-bar', {
+                progressValue: stats.cpu_percent,
+                thresholdWarning: 80,
+                thresholdCritical: 95,
+                offline: !node.online
+              }) %>
             </div>
             <div class="node-list-metric">
-              <% if (node.online && stats.ram_percent !== null && stats.ram_percent !== undefined) { %>
-              <div class="mini-bar">
-                <div class="mini-bar-fill <%= (stats.ram_percent || 0) >= 95 ? 'critical' : ((stats.ram_percent || 0) >= 85 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.ram_percent || 0, 100) %>%"></div>
-              </div>
-              <span class="mini-bar-value"><%= Math.round(stats.ram_percent) %>%</span>
-              <% } else { %><span class="mini-bar-na">-</span><% } %>
+              <%- include('partials/progress-bar', {
+                progressValue: stats.ram_percent,
+                thresholdWarning: 85,
+                thresholdCritical: 95,
+                offline: !node.online
+              }) %>
             </div>
             <div class="node-list-metric">
-              <% if (node.online && stats.disk_percent !== null && stats.disk_percent !== undefined) { %>
-              <div class="mini-bar">
-                <div class="mini-bar-fill <%= (stats.disk_percent || 0) >= 95 ? 'critical' : ((stats.disk_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.disk_percent || 0, 100) %>%"></div>
-              </div>
-              <span class="mini-bar-value"><%= Math.round(stats.disk_percent) %>%</span>
-              <% } else { %><span class="mini-bar-na">-</span><% } %>
+              <%- include('partials/progress-bar', {
+                progressValue: stats.disk_percent,
+                thresholdWarning: 80,
+                thresholdCritical: 95,
+                offline: !node.online
+              }) %>
             </div>
             <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
             <div class="node-list-actions">

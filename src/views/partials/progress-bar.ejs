@@ -1,0 +1,29 @@
+<%
+// Progress Bar Partial
+// Parameters:
+//   - progressValue: Number (0-100)
+//   - thresholdWarning: Number (default: 80)
+//   - thresholdCritical: Number (default: 95)
+//   - offline: Boolean (optional, default: false)
+
+const value = typeof progressValue !== 'undefined' ? progressValue : 0;
+const warningThreshold = typeof thresholdWarning !== 'undefined' ? thresholdWarning : 80;
+const criticalThreshold = typeof thresholdCritical !== 'undefined' ? thresholdCritical : 95;
+const isOffline = typeof offline !== 'undefined' && offline;
+
+let barClass = 'ok';
+if (value >= criticalThreshold) {
+  barClass = 'critical';
+} else if (value >= warningThreshold) {
+  barClass = 'warning';
+}
+%>
+
+<% if (isOffline) { %>
+  <span class="mini-bar-na">-</span>
+<% } else { %>
+  <div class="mini-bar">
+    <div class="mini-bar-fill <%= barClass %>" style="width: <%= Math.min(value, 100) %>%"></div>
+  </div>
+  <span class="mini-bar-value"><%= Math.round(value) %>%</span>
+<% } %>
