@@ -1,0 +1,85 @@
+<div class="tab-content" id="tab-network">
+  <div class="network-container">
+    <div class="network-header">
+      <h3>Netzwerk-Diagnose</h3>
+      <button class="btn btn-secondary" onclick="loadNetworkDiagnostics(<%= node.id %>)" id="btn-refresh-network">
+        <span class="btn-text">Aktualisieren</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+
+    <!-- Network Diagnostics Content -->
+    <div class="network-content" id="network-content">
+      <div class="loading-placeholder">
+        <span class="spinner"></span>
+        <span>Netzwerk-Informationen werden geladen...</span>
+      </div>
+    </div>
+
+    <!-- Diagnostic Tools -->
+    <div class="network-tools">
+      <h4>Diagnose-Tools</h4>
+
+      <!-- Ping Test -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 12h8"/>
+            <path d="M12 8v8"/>
+          </svg>
+          <span>Ping Test</span>
+        </div>
+        <div class="tool-form">
+          <input type="text" id="ping-target" placeholder="IP oder Hostname (z.B. 8.8.8.8)" class="tool-input">
+          <button class="btn btn-primary" onclick="runPingTest(<%= node.id %>)" id="btn-ping">
+            <span class="btn-text">Ping</span>
+            <span class="btn-loading"><span class="spinner"></span></span>
+          </button>
+        </div>
+        <div class="tool-result" id="ping-result" style="display: none;"></div>
+      </div>
+
+      <!-- DNS Lookup -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M2 12h20"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span>DNS Lookup</span>
+        </div>
+        <div class="tool-form">
+          <input type="text" id="dns-hostname" placeholder="Hostname (z.B. google.com)" class="tool-input">
+          <button class="btn btn-primary" onclick="runDnsLookup(<%= node.id %>)" id="btn-dns">
+            <span class="btn-text">Lookup</span>
+            <span class="btn-loading"><span class="spinner"></span></span>
+          </button>
+        </div>
+        <div class="tool-result" id="dns-result" style="display: none;"></div>
+      </div>
+
+      <!-- Traceroute -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 2L11 13"/>
+            <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+          </svg>
+          <span>Traceroute</span>
+        </div>
+        <div class="tool-form">
+          <input type="text" id="trace-target" placeholder="IP oder Hostname" class="tool-input">
+          <button class="btn btn-primary" onclick="runTraceroute(<%= node.id %>)" id="btn-trace">
+            <span class="btn-text">Trace</span>
+            <span class="btn-loading"><span class="spinner"></span></span>
+          </button>
+        </div>
+        <div class="tool-result" id="trace-result" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Terminal Tab -->

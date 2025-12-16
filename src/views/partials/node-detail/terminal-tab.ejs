@@ -1,0 +1,58 @@
+<div class="tab-content" id="tab-terminal">
+  <div class="terminal-container">
+    <div class="terminal-header">
+      <h3>Command Execution</h3>
+    </div>
+
+    <!-- Command Input -->
+    <div class="terminal-input-section">
+      <form id="command-form" onsubmit="executeCommand(event, <%= node.id %>)">
+        <div class="terminal-input-wrapper">
+          <span class="terminal-prompt">$</span>
+          <input type="text" id="command-input" name="command" class="terminal-input"
+                 placeholder="Befehl eingeben..." autocomplete="off" maxlength="2000">
+          <button type="submit" class="btn btn-primary" id="btn-execute">
+            <span class="btn-text">Ausführen</span>
+            <span class="btn-loading"><span class="spinner"></span></span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Quick Commands -->
+    <div class="terminal-quick-commands">
+      <span class="quick-commands-label">Schnellbefehle:</span>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('uptime')">uptime</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('free -h')">free -h</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('df -h')">df -h</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('top -bn1 | head -20')">top</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('cat /etc/os-release')">OS Info</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('ip addr')">IP Addr</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('ps aux --sort=-%mem | head -15')">Prozesse</button>
+      <button type="button" class="btn btn-sm btn-quick" onclick="setCommand('journalctl -n 50 --no-pager')">Logs</button>
+    </div>
+
+    <!-- Output Area -->
+    <div class="terminal-output-section">
+      <div class="terminal-output-header">
+        <span>Ausgabe</span>
+        <button type="button" class="btn btn-sm" onclick="clearOutput()">Leeren</button>
+      </div>
+      <pre id="terminal-output" class="terminal-output">Noch kein Befehl ausgefuehrt.</pre>
+    </div>
+
+    <!-- Command History -->
+    <div class="terminal-history-section">
+      <div class="terminal-history-header">
+        <span>Letzte Befehle</span>
+        <button type="button" class="btn btn-sm" id="btn-refresh-history" onclick="loadCommandHistory(<%= node.id %>)">
+          Aktualisieren
+        </button>
+      </div>
+      <div id="command-history" class="command-history">
+        <p class="empty">Keine Befehle in der Historie.</p>
+      </div>
+    </div>
+  </div>
+</div>
+

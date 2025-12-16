@@ -1,0 +1,459 @@
+<!-- Snapshot Create Modal -->
+<% if (discovery && discovery.is_proxmox_host) { %>
+<div class="modal" id="snapshot-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="toggleSnapshotModal()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Snapshot erstellen</h3>
+      <button class="btn-close" onclick="toggleSnapshotModal()" aria-label="Modal schliessen">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="snapshot-form" onsubmit="createSnapshot(event, <%= node.id %>)">
+        <div class="form-group">
+          <label for="snap-vm-type">Typ</label>
+          <select id="snap-vm-type" name="vm_type" required>
+            <option value="">-- Waehlen --</option>
+            <option value="vm">VM</option>
+            <option value="ct">Container</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="snap-vmid">VMID / CTID</label>
+          <input type="number" id="snap-vmid" name="vmid" min="100" max="999999999" required>
+        </div>
+        <div class="form-group">
+          <label for="snap-name">Snapshot Name</label>
+          <input type="text" id="snap-name" name="snap_name" pattern="[a-zA-Z0-9_-]+" maxlength="40" required>
+          <small>Nur Buchstaben, Zahlen, - und _ erlaubt</small>
+        </div>
+        <div class="form-group">
+          <label for="snap-desc">Beschreibung (optional)</label>
+          <input type="text" id="snap-desc" name="description" maxlength="255">
+        </div>
+        <div id="snapshot-form-result" class="alert" style="display: none;"></div>
+        <button type="submit" class="btn btn-primary" id="btn-create-snapshot">
+          <span class="btn-text">Snapshot erstellen</span>
+          <span class="btn-loading"><span class="spinner"></span> Erstelle...</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- VM Create Modal -->
+<div class="modal" id="create-vm-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeCreateVmModal()"></div>
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3>Neue VM erstellen</h3>
+      <button class="btn-close" onclick="closeCreateVmModal()" aria-label="Modal schliessen">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="create-vm-loading" class="loading-state">
+        <span class="spinner"></span> Lade Ressourcen...
+      </div>
+      <form id="create-vm-form" onsubmit="submitCreateVm(event)" style="display: none;">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vm-vmid">VMID *</label>
+            <input type="number" id="vm-vmid" name="vmid" min="100" max="999999" required>
+            <small>100-999999</small>
+          </div>
+          <div class="form-group">
+            <label for="vm-name">Name *</label>
+            <input type="text" id="vm-name" name="name" pattern="[a-zA-Z0-9][a-zA-Z0-9._-]*" maxlength="63" required>
+            <small>Alphanumerisch, -, _, .</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="vm-iso">ISO Image *</label>
+          <select id="vm-iso" name="iso" required>
+            <option value="">-- ISO waehlen --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="vm-storage">Storage *</label>
+          <select id="vm-storage" name="storage" required>
+            <option value="">-- Storage waehlen --</option>
+          </select>
+          <small>Fuer VM-Disk</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vm-cores">CPU Cores *</label>
+            <input type="number" id="vm-cores" name="cores" min="1" max="128" value="2" required>
+          </div>
+          <div class="form-group">
+            <label for="vm-sockets">Sockets</label>
+            <input type="number" id="vm-sockets" name="sockets" min="1" max="8" value="1">
+          </div>
+          <div class="form-group">
+            <label for="vm-memory">RAM (MB) *</label>
+            <input type="number" id="vm-memory" name="memory" min="512" max="1048576" value="2048" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vm-disk">Disk (GB) *</label>
+            <input type="number" id="vm-disk" name="disk_size" min="1" max="10000" value="32" required>
+          </div>
+          <div class="form-group">
+            <label for="vm-ostype">OS Typ</label>
+            <select id="vm-ostype" name="ostype">
+              <option value="l26">Linux 2.6+ (l26)</option>
+              <option value="l24">Linux 2.4</option>
+              <option value="win11">Windows 11</option>
+              <option value="win10">Windows 10</option>
+              <option value="win8">Windows 8</option>
+              <option value="win7">Windows 7</option>
+              <option value="other">Andere</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="vm-bios">BIOS</label>
+            <select id="vm-bios" name="bios">
+              <option value="seabios">SeaBIOS (Legacy)</option>
+              <option value="ovmf">OVMF (UEFI)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vm-bridge">Network Bridge</label>
+            <select id="vm-bridge" name="net_bridge">
+              <option value="vmbr0">vmbr0</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="vm-netmodel">Network Model</label>
+            <select id="vm-netmodel" name="net_model">
+              <option value="virtio">VirtIO (empfohlen)</option>
+              <option value="e1000">Intel E1000</option>
+              <option value="rtl8139">Realtek RTL8139</option>
+              <option value="vmxnet3">VMware vmxnet3</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="vm-onboot" name="start_on_boot">
+              <span>Start bei Boot</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="vm-description">Beschreibung</label>
+          <input type="text" id="vm-description" name="description" maxlength="255">
+        </div>
+
+        <div id="create-vm-error" class="alert alert-error" style="display: none;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCreateVmModal()">Abbrechen</button>
+      <button class="btn btn-success" id="btn-create-vm" onclick="submitCreateVmBtn()" disabled>
+        <span class="btn-text">VM erstellen</span>
+        <span class="btn-loading"><span class="spinner"></span> Erstelle...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CT Create Modal -->
+<div class="modal" id="create-ct-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeCreateCtModal()"></div>
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3>Neuen Container erstellen</h3>
+      <button class="btn-close" onclick="closeCreateCtModal()" aria-label="Modal schliessen">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="create-ct-loading" class="loading-state">
+        <span class="spinner"></span> Lade Ressourcen...
+      </div>
+      <form id="create-ct-form" onsubmit="submitCreateCt(event)" style="display: none;">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ct-ctid">CTID *</label>
+            <input type="number" id="ct-ctid" name="ctid" min="100" max="999999" required>
+            <small>100-999999</small>
+          </div>
+          <div class="form-group">
+            <label for="ct-hostname">Hostname *</label>
+            <input type="text" id="ct-hostname" name="hostname" pattern="[a-zA-Z0-9][a-zA-Z0-9._-]*" maxlength="63" required>
+            <small>Alphanumerisch, -, _</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ct-template">Template *</label>
+          <select id="ct-template" name="template" required>
+            <option value="">-- Template waehlen --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="ct-storage">Storage *</label>
+          <select id="ct-storage" name="storage" required>
+            <option value="">-- Storage waehlen --</option>
+          </select>
+          <small>Fuer Container Root-FS</small>
+        </div>
+
+        <div class="form-group">
+          <label for="ct-password">Root Passwort *</label>
+          <input type="password" id="ct-password" name="password" minlength="5" maxlength="64" required>
+          <small>Mindestens 5 Zeichen</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ct-cores">CPU Cores *</label>
+            <input type="number" id="ct-cores" name="cores" min="1" max="128" value="2" required>
+          </div>
+          <div class="form-group">
+            <label for="ct-memory">RAM (MB) *</label>
+            <input type="number" id="ct-memory" name="memory" min="64" max="1048576" value="1024" required>
+          </div>
+          <div class="form-group">
+            <label for="ct-swap">Swap (MB)</label>
+            <input type="number" id="ct-swap" name="swap" min="0" max="131072" value="512">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ct-disk">Disk (GB) *</label>
+            <input type="number" id="ct-disk" name="disk_size" min="1" max="10000" value="8" required>
+          </div>
+          <div class="form-group">
+            <label for="ct-bridge">Network Bridge</label>
+            <select id="ct-bridge" name="net_bridge">
+              <option value="vmbr0">vmbr0</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ct-ipconfig">IP Konfiguration</label>
+          <select id="ct-ipconfig-type" onchange="toggleCtIpConfig()">
+            <option value="dhcp">DHCP (automatisch)</option>
+            <option value="static">Statische IP</option>
+          </select>
+        </div>
+
+        <div id="ct-static-ip-fields" style="display: none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ct-ip">IP/CIDR *</label>
+              <input type="text" id="ct-ip" name="ip_config" placeholder="192.168.1.100/24">
+              <small>z.B. 192.168.1.100/24</small>
+            </div>
+            <div class="form-group">
+              <label for="ct-gateway">Gateway</label>
+              <input type="text" id="ct-gateway" name="gateway" placeholder="192.168.1.1">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="ct-unprivileged" name="unprivileged" checked>
+              <span>Unprivileged (empfohlen)</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="ct-nesting" name="nesting">
+              <span>Nesting (fuer Docker)</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="ct-onboot" name="start_on_boot">
+              <span>Start bei Boot</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ct-description">Beschreibung</label>
+          <input type="text" id="ct-description" name="description" maxlength="255">
+        </div>
+
+        <div id="create-ct-error" class="alert alert-error" style="display: none;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCreateCtModal()">Abbrechen</button>
+      <button class="btn btn-success" id="btn-create-ct" onclick="submitCreateCtBtn()" disabled>
+        <span class="btn-text">CT erstellen</span>
+        <span class="btn-loading"><span class="spinner"></span> Erstelle...</span>
+      </button>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- Logs Modal -->
+<div class="modal" id="logs-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeLogs()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="logs-title">Container Logs</h3>
+      <button class="btn-close" onclick="closeLogs()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <pre id="logs-content" class="logs-output">Lade Logs...</pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeLogs()">Schliessen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Docker Delete Confirmation Modal -->
+<div class="modal" id="docker-delete-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeDeleteModal()"></div>
+  <div class="modal-content modal-danger">
+    <div class="modal-header">
+      <h3 id="delete-modal-title">Ressource loeschen?</h3>
+      <button class="btn-close" onclick="closeDeleteModal()" aria-label="Modal schliessen">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="delete-warning">
+        <span class="warning-icon">&#9888;</span>
+        <div id="delete-modal-message"></div>
+      </div>
+      <div id="delete-force-option" class="form-group" style="display: none;">
+        <label class="checkbox-label danger">
+          <input type="checkbox" id="delete-force-checkbox">
+          <span>Force-Loeschung (ignoriert laufende Prozesse)</span>
+        </label>
+        <small class="text-danger">Warnung: Kann zu Datenverlust fuehren!</small>
+      </div>
+      <div id="delete-modal-error" class="alert alert-error" style="display: none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeDeleteModal()">Abbrechen</button>
+      <button class="btn btn-danger" id="btn-confirm-delete" onclick="executeDockerDelete()">
+        <span class="btn-text">Loeschen</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Proxmox Config Modal (CPU/RAM) -->
+<div class="modal" id="proxmox-config-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeConfigModal()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="config-modal-title">Hardware konfigurieren</h3>
+      <button class="btn-close" onclick="closeConfigModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="config-modal-info" class="modal-info"></p>
+      <div class="form-group">
+        <label for="config-cores">CPU Cores (1-128)</label>
+        <input type="number" id="config-cores" min="1" max="128" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="config-memory">RAM in MB</label>
+        <input type="number" id="config-memory" min="64" max="1048576" step="128" class="form-control">
+        <small class="text-muted">Empfohlen: 512, 1024, 2048, 4096, 8192...</small>
+      </div>
+      <div id="config-modal-error" class="alert alert-error" style="display: none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeConfigModal()">Abbrechen</button>
+      <button class="btn btn-primary" id="btn-save-config" onclick="saveConfig()">
+        <span class="btn-text">Speichern</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Proxmox Clone Modal -->
+<div class="modal" id="proxmox-clone-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeCloneModal()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="clone-modal-title">VM/CT klonen</h3>
+      <button class="btn-close" onclick="closeCloneModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="clone-modal-info" class="modal-info"></p>
+      <div class="form-group">
+        <label for="clone-newid">Neue ID (100-999999) *</label>
+        <input type="number" id="clone-newid" min="100" max="999999" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label for="clone-name">Name (optional)</label>
+        <input type="text" id="clone-name" class="form-control" placeholder="z.B. mein-clone">
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="clone-full" checked>
+          <span>Full Clone (empfohlen)</span>
+        </label>
+        <small class="text-muted">Linked Clone ist vom Original abhaengig!</small>
+      </div>
+      <div id="clone-modal-error" class="alert alert-error" style="display: none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCloneModal()">Abbrechen</button>
+      <button class="btn btn-primary" id="btn-start-clone" onclick="startClone()">
+        <span class="btn-text">Klonen</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Proxmox Template Confirmation Modal -->
+<div class="modal" id="proxmox-template-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeTemplateModal()"></div>
+  <div class="modal-content modal-danger">
+    <div class="modal-header">
+      <h3 id="template-modal-title">Zu Template konvertieren?</h3>
+      <button class="btn-close" onclick="closeTemplateModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="delete-warning">
+        <span class="warning-icon">&#9888;</span>
+        <div id="template-modal-message">
+          <strong>WARNUNG:</strong> Diese Aktion kann nicht rueckgaengig gemacht werden!<br><br>
+          Nach der Konvertierung kann die VM/CT <strong>NICHT mehr gestartet</strong> werden - sie dient nur noch als Vorlage fuer Clones.
+        </div>
+      </div>
+      <div id="template-modal-error" class="alert alert-error" style="display: none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeTemplateModal()">Abbrechen</button>
+      <button class="btn btn-warning" id="btn-convert-template" onclick="convertToTemplate()">
+        <span class="btn-text">Zu Template konvertieren</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="danger-zone">
+  <h3>Gefahrenzone</h3>
+  <form method="POST" action="/nodes/<%= node.id %>/delete" id="delete-form">
+    <p>Node "<strong><%= node.name %></strong>" unwiderruflich loschen?</p>
+    <button type="submit" class="btn btn-danger">Node loschen</button>
+  </form>
+</div>
+

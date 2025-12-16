@@ -1,0 +1,87 @@
+<!-- Discovery Tab -->
+<div class="tab-content" id="tab-discovery">
+  <% if (!discovery) { %>
+    <div class="empty-state">
+      <p>Keine Discovery-Daten vorhanden.</p>
+      <button class="btn btn-primary btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
+        <span class="btn-text">Discovery starten</span>
+        <span class="btn-loading"><span class="spinner"></span> Scanne...</span>
+      </button>
+    </div>
+  <% } else { %>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>System</h3>
+        <dl>
+          <dt>Hostname</dt>
+          <dd><%= discovery.hostname || '-' %></dd>
+          <dt>Betriebssystem</dt>
+          <dd><%= discovery.os_name || '-' %></dd>
+          <dt>OS ID</dt>
+          <dd><%= discovery.os_id || '-' %></dd>
+          <dt>Architektur</dt>
+          <dd><%= discovery.arch || '-' %></dd>
+          <dt>Virtualisierung</dt>
+          <dd><%= discovery.virtualization || 'none' %></dd>
+          <dt>Systemd</dt>
+          <dd><%= discovery.has_systemd ? 'Ja' : 'Nein' %></dd>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>Proxmox</h3>
+        <dl>
+          <dt>Proxmox Host</dt>
+          <dd><%= discovery.is_proxmox_host ? 'Ja' : 'Nein' %></dd>
+          <% if (discovery.is_proxmox_host) { %>
+            <dt>Version</dt>
+            <dd><%= discovery.proxmox_version || '-' %></dd>
+            <dt>Cluster</dt>
+            <dd><%= discovery.is_proxmox_cluster ? 'Ja' : 'Nein' %></dd>
+            <% if (discovery.is_proxmox_cluster) { %>
+              <dt>Cluster Name</dt>
+              <dd><%= discovery.proxmox_cluster_name || '-' %></dd>
+              <dt>Cluster Nodes</dt>
+              <dd><%= discovery.proxmox_cluster_nodes || '-' %></dd>
+            <% } %>
+          <% } %>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>Container Runtimes</h3>
+        <dl>
+          <dt>Docker</dt>
+          <dd><%= discovery.has_docker ? 'Ja' : 'Nein' %></dd>
+          <% if (discovery.has_docker) { %>
+            <dt>Docker Version</dt>
+            <dd><%= discovery.docker_version || '-' %></dd>
+            <dt>Container</dt>
+            <dd><%= discovery.docker_containers || 0 %></dd>
+          <% } %>
+          <dt>Podman</dt>
+          <dd><%= discovery.has_podman ? 'Ja' : 'Nein' %></dd>
+          <% if (discovery.has_podman) { %>
+            <dt>Podman Version</dt>
+            <dd><%= discovery.podman_version || '-' %></dd>
+          <% } %>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>Hardware-Typ</h3>
+        <dl>
+          <dt>Raspberry Pi</dt>
+          <dd><%= discovery.is_raspberry_pi ? 'Ja' : 'Nein' %></dd>
+          <% if (discovery.is_raspberry_pi) { %>
+            <dt>Pi Modell</dt>
+            <dd><%= discovery.raspberry_pi_model || '-' %></dd>
+          <% } %>
+        </dl>
+        <% if (discovery.discovered_at) { %>
+          <p class="discovery-time">Zuletzt gescannt: <%= discovery.discovered_at %></p>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>

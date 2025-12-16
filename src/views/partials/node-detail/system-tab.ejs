@@ -1,0 +1,20 @@
+<div class="tab-content" id="tab-system">
+  <div class="system-info-container">
+    <div class="system-info-header">
+      <h3>System-Informationen</h3>
+      <button class="btn btn-secondary" onclick="loadSystemInfo(<%= node.id %>)" id="btn-refresh-sysinfo">
+        <span class="btn-text">Aktualisieren</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+
+    <div class="system-info-content" id="system-info-content">
+      <div class="loading-placeholder">
+        <span class="spinner"></span>
+        <span>System-Informationen werden geladen...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Network Tab - Network Diagnostics -->

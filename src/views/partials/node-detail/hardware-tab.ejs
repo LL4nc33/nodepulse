@@ -1,0 +1,164 @@
+<!-- Hardware Tab -->
+<div class="tab-content" id="tab-hardware">
+  <% if (!hardware) { %>
+    <div class="empty-state">
+      <p>Keine Hardware-Daten vorhanden.</p>
+      <button class="btn btn-primary btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
+        <span class="btn-text">Discovery starten</span>
+        <span class="btn-loading"><span class="spinner"></span> Scanne...</span>
+      </button>
+    </div>
+  <% } else { %>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>System</h3>
+        <dl>
+          <dt>Hersteller</dt>
+          <dd><%= hardware.system_manufacturer || '-' %></dd>
+          <dt>Produkt</dt>
+          <dd><%= hardware.system_product || '-' %></dd>
+          <dt>Seriennummer</dt>
+          <dd><%= hardware.system_serial || '-' %></dd>
+          <dt>BIOS</dt>
+          <dd><%= hardware.bios_version || '-' %></dd>
+          <dt>Boot-Modus</dt>
+          <dd><%= hardware.boot_mode || '-' %></dd>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>CPU</h3>
+        <dl>
+          <dt>Modell</dt>
+          <dd><%= hardware.cpu_model || '-' %></dd>
+          <dt>Hersteller</dt>
+          <dd><%= hardware.cpu_vendor || '-' %></dd>
+          <dt>Kerne / Threads</dt>
+          <dd><%= hardware.cpu_cores || '-' %> / <%= hardware.cpu_threads || '-' %></dd>
+          <dt>Architektur</dt>
+          <dd><%= hardware.cpu_arch || '-' %></dd>
+          <dt>Max. Takt</dt>
+          <dd><%= hardware.cpu_max_mhz ? hardware.cpu_max_mhz + ' MHz' : '-' %></dd>
+          <dt>Virtualisierung</dt>
+          <dd><%= hardware.cpu_virt_support || '-' %></dd>
+          <dt>Cache L1/L2/L3</dt>
+          <dd><%= hardware.cpu_cache_l1 || '-' %> / <%= hardware.cpu_cache_l2 || '-' %> / <%= hardware.cpu_cache_l3 || '-' %></dd>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>Arbeitsspeicher</h3>
+        <% if (typeof currentStats !== 'undefined' && currentStats && currentStats.ram_percent) { %>
+          <div class="hardware-progress">
+            <div class="hardware-progress-header">
+              <span>RAM Auslastung</span>
+              <span class="hardware-progress-value <%= currentStats.ram_percent >= 90 ? 'critical' : (currentStats.ram_percent >= 75 ? 'warning' : '') %>"><%= Math.round(currentStats.ram_percent) %>%</span>
+            </div>
+            <div class="hardware-progress-bar">
+              <div class="hardware-progress-fill <%= currentStats.ram_percent >= 90 ? 'critical' : (currentStats.ram_percent >= 75 ? 'warning' : 'ok') %>" style="width: <%= Math.min(currentStats.ram_percent, 100) %>%"></div>
+            </div>
+            <div class="hardware-progress-label">
+              <%= currentStats.ram_used_bytes ? formatBytes(currentStats.ram_used_bytes) : '-' %> / <%= hardware.ram_total_bytes ? formatBytes(hardware.ram_total_bytes) : '-' %> verwendet
+            </div>
+          </div>
+        <% } %>
+        <dl>
+          <dt>RAM Total</dt>
+          <dd><%= hardware.ram_total_bytes ? formatBytes(hardware.ram_total_bytes) : '-' %></dd>
+          <dt>RAM Typ</dt>
+          <dd><%= hardware.ram_type || '-' %></dd>
+          <dt>RAM Geschwindigkeit</dt>
+          <dd><%= hardware.ram_speed_mhz ? hardware.ram_speed_mhz + ' MHz' : '-' %></dd>
+          <dt>Swap Total</dt>
+          <dd><%= hardware.swap_total_bytes ? formatBytes(hardware.swap_total_bytes) : '-' %></dd>
+        </dl>
+      </div>
+
+      <div class="detail-card">
+        <h3>Festplatten</h3>
+        <% if (typeof currentStats !== 'undefined' && currentStats && currentStats.disk_percent) { %>
+          <div class="hardware-progress">
+            <div class="hardware-progress-header">
+              <span>Disk Auslastung (Root)</span>
+              <span class="hardware-progress-value <%= currentStats.disk_percent >= 90 ? 'critical' : (currentStats.disk_percent >= 75 ? 'warning' : '') %>"><%= Math.round(currentStats.disk_percent) %>%</span>
+            </div>
+            <div class="hardware-progress-bar">
+              <div class="hardware-progress-fill <%= currentStats.disk_percent >= 90 ? 'critical' : (currentStats.disk_percent >= 75 ? 'warning' : 'ok') %>" style="width: <%= Math.min(currentStats.disk_percent, 100) %>%"></div>
+            </div>
+            <div class="hardware-progress-label">
+              <%= currentStats.disk_used_bytes ? formatBytes(currentStats.disk_used_bytes) : '-' %> / <%= currentStats.disk_total_bytes ? formatBytes(currentStats.disk_total_bytes) : '-' %> verwendet
+            </div>
+          </div>
+        <% } %>
+        <%
+          var disks = [];
+          try { disks = JSON.parse(hardware.disks_json || '[]'); } catch(e) {}
+        %>
+        <% if (disks.length === 0) { %>
+          <span class="empty">Keine Festplatten erkannt</span>
+        <% } else { %>
+          <div class="disk-list">
+            <% disks.forEach(function(disk) { %>
+              <div class="disk-item">
+                <strong><%= disk.name || disk.NAME || '-' %></strong>
+                <% var size = disk.size || disk.SIZE; %>
+                <span class="disk-size"><%= size ? formatBytes(size) : '-' %></span>
+                <span class="disk-type"><%= (disk.rota || disk.ROTA) === 1 ? 'HDD' : 'SSD' %></span>
+                <% if (disk.model || disk.MODEL) { %>
+                  <small><%= disk.model || disk.MODEL %></small>
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="detail-card">
+        <h3>Netzwerk</h3>
+        <%
+          var networks = [];
+          try { networks = JSON.parse(hardware.network_json || '[]'); } catch(e) {}
+        %>
+        <% if (networks.length === 0) { %>
+          <span class="empty">Keine Netzwerk-Interfaces erkannt</span>
+        <% } else { %>
+          <div class="network-list">
+            <% networks.forEach(function(net) { %>
+              <div class="network-item">
+                <strong><%= net.name || '-' %></strong>
+                <span class="net-state <%= net.state === 'UP' ? 'up' : 'down' %>"><%= net.state || '-' %></span>
+                <% if (net.mac) { %>
+                  <small>MAC: <%= net.mac %></small>
+                <% } %>
+                <% if (net.ips && net.ips.length > 0) { %>
+                  <% net.ips.forEach(function(ip) { %>
+                    <% if (ip.address) { %>
+                      <span class="ip-address"><%= ip.address %></span>
+                    <% } %>
+                  <% }); %>
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="detail-card">
+        <h3>GPU</h3>
+        <%
+          var gpus = [];
+          try { gpus = JSON.parse(hardware.gpu_json || '[]'); } catch(e) {}
+        %>
+        <% if (gpus.length === 0) { %>
+          <span class="empty">Keine GPU erkannt</span>
+        <% } else { %>
+          <ul class="gpu-list">
+            <% gpus.forEach(function(gpu) { %>
+              <li><%= gpu.description || '-' %></li>
+            <% }); %>
+          </ul>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>

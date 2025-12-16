@@ -1,0 +1,362 @@
+<!-- Proxmox Tab -->
+<% if (discovery && discovery.is_proxmox_host) { %>
+<div class="tab-content" id="tab-proxmox">
+  <div class="proxmox-header">
+    <h2>Proxmox Management</h2>
+    <div class="proxmox-actions">
+      <button class="btn btn-primary" id="btn-refresh-proxmox" onclick="refreshProxmox(<%= node.id %>)">
+        <span class="btn-text">Aktualisieren</span>
+        <span class="btn-loading"><span class="spinner"></span> Lade...</span>
+      </button>
+      <button class="btn btn-success" onclick="openCreateVmModal(<%= node.id %>)">+ VM erstellen</button>
+      <button class="btn btn-success" onclick="openCreateCtModal(<%= node.id %>)">+ CT erstellen</button>
+      <button class="btn btn-secondary" onclick="toggleSnapshotModal()">Snapshot erstellen</button>
+    </div>
+  </div>
+
+  <div id="proxmox-result" class="alert" role="alert" aria-live="polite" style="display: none;"></div>
+
+  <% if (!proxmox || (!proxmox.vms.length && !proxmox.cts.length)) { %>
+    <div class="empty-state">
+      <p>Keine Proxmox-Daten vorhanden.</p>
+      <button class="btn btn-primary" onclick="refreshProxmox(<%= node.id %>)">
+        Proxmox-Daten laden
+      </button>
+    </div>
+  <% } else { %>
+    <!-- Proxmox Summary -->
+    <div class="proxmox-summary">
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.vms.filter(function(v) { return v.status === 'running'; }).length %></span>
+        <span class="summary-label">VMs Running</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.vms.length %></span>
+        <span class="summary-label">VMs Total</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.cts.filter(function(c) { return c.status === 'running'; }).length %></span>
+        <span class="summary-label">CTs Running</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.cts.length %></span>
+        <span class="summary-label">CTs Total</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.storage.length %></span>
+        <span class="summary-label">Storage</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= proxmox.snapshots.length %></span>
+        <span class="summary-label">Snapshots</span>
+      </div>
+    </div>
+
+    <!-- VMs Section -->
+    <div class="proxmox-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        Virtuelle Maschinen (VMs)
+        <span class="section-count">(<%= proxmox.vms.length %>)</span>
+      </h3>
+      <div class="section-content">
+      <% if (proxmox.vms.length === 0) { %>
+        <p class="empty">Keine VMs vorhanden</p>
+      <% } else { %>
+        <div class="proxmox-table-wrapper">
+          <table class="proxmox-table">
+            <thead>
+              <tr>
+                <th>VMID</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>CPU</th>
+                <th>RAM</th>
+                <th>Disk</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% proxmox.vms.forEach(function(vm) { %>
+                <%
+                  var vmCpuPercent = typeof vm.cpu === 'number' ? Math.round(vm.cpu * 100) : null;
+                  var vmMemPercent = (vm.mem && vm.maxmem) ? Math.round((vm.mem / vm.maxmem) * 100) : null;
+                %>
+                <tr class="vm-row <%= vm.status %>">
+                  <td class="vm-id"><%= vm.vmid %></td>
+                  <td class="vm-name">
+                    <%= vm.name || '-' %>
+                    <% if (vm.template) { %><span class="template-badge">Template</span><% } %>
+                  </td>
+                  <td class="vm-status">
+                    <span class="state-badge <%= vm.status %>"><%= vm.status %></span>
+                  </td>
+                  <td class="vm-cpu">
+                    <div class="proxmox-cell-content">
+                      <span><%= vm.cpu_cores %> Cores</span>
+                      <% if (vmCpuPercent !== null && vm.status === 'running') { %>
+                        <div class="proxmox-mini-bar">
+                          <div class="proxmox-mini-fill <%= vmCpuPercent >= 90 ? 'critical' : (vmCpuPercent >= 70 ? 'warning' : 'ok') %>" style="width: <%= vmCpuPercent %>%"></div>
+                        </div>
+                        <span class="proxmox-mini-value <%= vmCpuPercent >= 90 ? 'critical' : (vmCpuPercent >= 70 ? 'warning' : '') %>"><%= vmCpuPercent %>%</span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td class="vm-ram">
+                    <div class="proxmox-cell-content">
+                      <span><%= vm.memory_bytes ? formatBytes(vm.memory_bytes) : (vm.maxmem ? formatBytes(vm.maxmem) : '-') %></span>
+                      <% if (vmMemPercent !== null && vm.status === 'running') { %>
+                        <div class="proxmox-mini-bar">
+                          <div class="proxmox-mini-fill <%= vmMemPercent >= 90 ? 'critical' : (vmMemPercent >= 70 ? 'warning' : 'ok') %>" style="width: <%= vmMemPercent %>%"></div>
+                        </div>
+                        <span class="proxmox-mini-value <%= vmMemPercent >= 90 ? 'critical' : (vmMemPercent >= 70 ? 'warning' : '') %>"><%= vmMemPercent %>%</span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td><%= vm.disk_bytes ? formatBytes(vm.disk_bytes) : (vm.maxdisk ? formatBytes(vm.maxdisk) : '-') %></td>
+                  <td class="vm-actions">
+                    <% if (!vm.template) { %>
+                      <% if (vm.status === 'running') { %>
+                        <button class="btn btn-sm btn-icon" title="Shutdown" onclick="proxmoxAction(<%= node.id %>, 'vm', <%= vm.vmid %>, 'shutdown')">
+                          <span class="icon-shutdown"></span>
+                        </button>
+                        <button class="btn btn-sm btn-icon btn-danger" title="Stop" onclick="proxmoxAction(<%= node.id %>, 'vm', <%= vm.vmid %>, 'stop')">
+                          <span class="icon-stop"></span>
+                        </button>
+                        <button class="btn btn-sm btn-icon" title="Reboot" onclick="proxmoxAction(<%= node.id %>, 'vm', <%= vm.vmid %>, 'reboot')">
+                          <span class="icon-restart"></span>
+                        </button>
+                      <% } else { %>
+                        <button class="btn btn-sm btn-icon" title="Start" onclick="proxmoxAction(<%= node.id %>, 'vm', <%= vm.vmid %>, 'start')">
+                          <span class="icon-start"></span>
+                        </button>
+                      <% } %>
+                      <button class="btn btn-sm" title="Config" onclick="openConfigModal(<%= node.id %>, 'vm', <%= vm.vmid %>, '<%= vm.name || '' %>', <%= vm.cpu_cores %>, <%= Math.round((vm.memory_bytes || 0) / 1048576) %>)">
+                        <span class="icon-edit"></span>
+                      </button>
+                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'vm', <%= vm.vmid %>, '<%= vm.name || '' %>')">
+                        <span class="icon-clone"></span>
+                      </button>
+                      <button class="btn btn-sm btn-warning" title="Template" onclick="confirmTemplate(<%= node.id %>, 'vm', <%= vm.vmid %>, '<%= vm.name || '' %>')">
+                        <span class="icon-template"></span>
+                      </button>
+                    <% } else { %>
+                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'vm', <%= vm.vmid %>, '<%= vm.name || '' %>')">
+                        <span class="icon-clone"></span>
+                      </button>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+      </div>
+    </div>
+
+    <!-- CTs Section -->
+    <div class="proxmox-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        Container (LXC)
+        <span class="section-count">(<%= proxmox.cts.length %>)</span>
+      </h3>
+      <div class="section-content">
+      <% if (proxmox.cts.length === 0) { %>
+        <p class="empty">Keine Container vorhanden</p>
+      <% } else { %>
+        <div class="proxmox-table-wrapper">
+          <table class="proxmox-table">
+            <thead>
+              <tr>
+                <th>CTID</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>CPU</th>
+                <th>RAM</th>
+                <th>Disk</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% proxmox.cts.forEach(function(ct) { %>
+                <%
+                  var ctCpuPercent = typeof ct.cpu === 'number' ? Math.round(ct.cpu * 100) : null;
+                  var ctMemPercent = (ct.mem && ct.maxmem) ? Math.round((ct.mem / ct.maxmem) * 100) : null;
+                %>
+                <tr class="ct-row <%= ct.status %>">
+                  <td class="ct-id"><%= ct.ctid %></td>
+                  <td class="ct-name">
+                    <%= ct.name || '-' %>
+                    <% if (ct.template) { %><span class="template-badge">Template</span><% } %>
+                  </td>
+                  <td class="ct-status">
+                    <span class="state-badge <%= ct.status %>"><%= ct.status %></span>
+                  </td>
+                  <td class="ct-cpu">
+                    <div class="proxmox-cell-content">
+                      <span><%= ct.cpu_cores %> Cores</span>
+                      <% if (ctCpuPercent !== null && ct.status === 'running') { %>
+                        <div class="proxmox-mini-bar">
+                          <div class="proxmox-mini-fill <%= ctCpuPercent >= 90 ? 'critical' : (ctCpuPercent >= 70 ? 'warning' : 'ok') %>" style="width: <%= ctCpuPercent %>%"></div>
+                        </div>
+                        <span class="proxmox-mini-value <%= ctCpuPercent >= 90 ? 'critical' : (ctCpuPercent >= 70 ? 'warning' : '') %>"><%= ctCpuPercent %>%</span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td class="ct-ram">
+                    <div class="proxmox-cell-content">
+                      <span><%= ct.memory_bytes ? formatBytes(ct.memory_bytes) : (ct.maxmem ? formatBytes(ct.maxmem) : '-') %></span>
+                      <% if (ctMemPercent !== null && ct.status === 'running') { %>
+                        <div class="proxmox-mini-bar">
+                          <div class="proxmox-mini-fill <%= ctMemPercent >= 90 ? 'critical' : (ctMemPercent >= 70 ? 'warning' : 'ok') %>" style="width: <%= ctMemPercent %>%"></div>
+                        </div>
+                        <span class="proxmox-mini-value <%= ctMemPercent >= 90 ? 'critical' : (ctMemPercent >= 70 ? 'warning' : '') %>"><%= ctMemPercent %>%</span>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td><%= ct.disk_bytes ? formatBytes(ct.disk_bytes) : (ct.maxdisk ? formatBytes(ct.maxdisk) : '-') %></td>
+                  <td class="ct-actions">
+                    <% if (!ct.template) { %>
+                      <% if (ct.status === 'running') { %>
+                        <button class="btn btn-sm btn-icon" title="Shutdown" onclick="proxmoxAction(<%= node.id %>, 'ct', <%= ct.ctid %>, 'shutdown')">
+                          <span class="icon-shutdown"></span>
+                        </button>
+                        <button class="btn btn-sm btn-icon btn-danger" title="Stop" onclick="proxmoxAction(<%= node.id %>, 'ct', <%= ct.ctid %>, 'stop')">
+                          <span class="icon-stop"></span>
+                        </button>
+                        <button class="btn btn-sm btn-icon" title="Reboot" onclick="proxmoxAction(<%= node.id %>, 'ct', <%= ct.ctid %>, 'reboot')">
+                          <span class="icon-restart"></span>
+                        </button>
+                      <% } else { %>
+                        <button class="btn btn-sm btn-icon" title="Start" onclick="proxmoxAction(<%= node.id %>, 'ct', <%= ct.ctid %>, 'start')">
+                          <span class="icon-start"></span>
+                        </button>
+                      <% } %>
+                      <button class="btn btn-sm" title="Config" onclick="openConfigModal(<%= node.id %>, 'ct', <%= ct.ctid %>, '<%= ct.name || '' %>', <%= ct.cpu_cores %>, <%= Math.round((ct.memory_bytes || 0) / 1048576) %>)">
+                        <span class="icon-edit"></span>
+                      </button>
+                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'ct', <%= ct.ctid %>, '<%= ct.name || '' %>')">
+                        <span class="icon-clone"></span>
+                      </button>
+                      <button class="btn btn-sm btn-warning" title="Template" onclick="confirmTemplate(<%= node.id %>, 'ct', <%= ct.ctid %>, '<%= ct.name || '' %>')">
+                        <span class="icon-template"></span>
+                      </button>
+                    <% } else { %>
+                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'ct', <%= ct.ctid %>, '<%= ct.name || '' %>')">
+                        <span class="icon-clone"></span>
+                      </button>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+      </div>
+    </div>
+
+    <!-- Storage Section -->
+    <div class="proxmox-section collapsible collapsed">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        Storage
+        <span class="section-count">(<%= proxmox.storage.length %>)</span>
+      </h3>
+      <div class="section-content" style="display: none;">
+      <% if (proxmox.storage.length === 0) { %>
+        <p class="empty">Kein Storage vorhanden</p>
+      <% } else { %>
+        <div class="proxmox-table-wrapper">
+          <table class="proxmox-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Typ</th>
+                <th>Status</th>
+                <th>Gesamt</th>
+                <th>Belegt</th>
+                <th>Frei</th>
+                <th>Auslastung</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% proxmox.storage.forEach(function(store) { %>
+                <%
+                  var usedPercent = 0;
+                  if (store.total_bytes > 0) {
+                    usedPercent = Math.round((store.used_bytes / store.total_bytes) * 100);
+                  }
+                  var storageClass = usedPercent >= 95 ? 'critical' : (usedPercent >= 80 ? 'warning' : '');
+                %>
+                <tr class="storage-row">
+                  <td class="storage-name"><%= store.storage_name %></td>
+                  <td><%= store.storage_type %></td>
+                  <td><span class="state-badge active">active</span></td>
+                  <td><%= store.total_bytes ? formatBytes(store.total_bytes) : '-' %></td>
+                  <td><%= store.used_bytes ? formatBytes(store.used_bytes) : '-' %></td>
+                  <td><%= store.available_bytes ? formatBytes(store.available_bytes) : '-' %></td>
+                  <td>
+                    <div class="storage-bar">
+                      <div class="storage-bar-fill <%= storageClass %>" style="width: <%= usedPercent %>%"></div>
+                      <span class="storage-bar-text"><%= usedPercent %>%</span>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+      </div>
+    </div>
+
+    <!-- Snapshots Section -->
+    <div class="proxmox-section collapsible collapsed">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        Snapshots
+        <span class="section-count">(<%= proxmox.snapshots.length %>)</span>
+      </h3>
+      <div class="section-content" style="display: none;">
+      <% if (proxmox.snapshots.length === 0) { %>
+        <p class="empty">Keine Snapshots vorhanden</p>
+      <% } else { %>
+        <div class="proxmox-table-wrapper">
+          <table class="proxmox-table">
+            <thead>
+              <tr>
+                <th>VM/CT</th>
+                <th>Typ</th>
+                <th>Snapshot Name</th>
+                <th>Beschreibung</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% proxmox.snapshots.forEach(function(snap) { %>
+                <tr class="snapshot-row">
+                  <td><%= snap.vmid %></td>
+                  <td><span class="type-badge <%= snap.vm_type %>"><%= snap.vm_type.toUpperCase() %></span></td>
+                  <td class="snap-name"><%= snap.snap_name %></td>
+                  <td class="snap-desc"><%= snap.description || '-' %></td>
+                  <td class="snap-actions">
+                    <button class="btn btn-sm btn-danger" title="Löschen" onclick="deleteSnapshot(<%= node.id %>, '<%= snap.vm_type %>', <%= snap.vmid %>, '<%= snap.snap_name %>')">
+                      Löschen
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+<% } %>
+
+<!-- Services Tab (systemd) -->

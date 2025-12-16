@@ -1,0 +1,265 @@
+<!-- Docker Tab -->
+<% if (discovery && discovery.has_docker) { %>
+<div class="tab-content" id="tab-docker">
+  <div class="docker-header">
+    <h2>Docker Management</h2>
+    <div class="docker-actions">
+      <button class="btn btn-primary" id="btn-refresh-docker" onclick="refreshDocker(<%= node.id %>)">
+        <span class="btn-text">Aktualisieren</span>
+        <span class="btn-loading"><span class="spinner"></span> Lade...</span>
+      </button>
+      <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle" onclick="togglePruneMenu()">Aufraeumen</button>
+        <div class="dropdown-menu" id="prune-menu">
+          <button class="dropdown-item" onclick="pruneDocker(<%= node.id %>, 'containers')">Gestoppte Container</button>
+          <button class="dropdown-item" onclick="pruneDocker(<%= node.id %>, 'images')">Unbenutzte Images</button>
+          <button class="dropdown-item" onclick="pruneDocker(<%= node.id %>, 'volumes')">Unbenutzte Volumes</button>
+          <button class="dropdown-item" onclick="pruneDocker(<%= node.id %>, 'networks')">Unbenutzte Networks</button>
+          <button class="dropdown-item text-danger" onclick="pruneDocker(<%= node.id %>, 'system')">System Prune (Alles)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="docker-result" class="alert" role="alert" aria-live="polite" style="display: none;"></div>
+
+  <% if (!docker || (!docker.containers.length && !docker.images.length)) { %>
+    <div class="empty-state">
+      <p>Keine Docker-Daten vorhanden.</p>
+      <button class="btn btn-primary" onclick="refreshDocker(<%= node.id %>)">
+        Docker-Daten laden
+      </button>
+    </div>
+  <% } else { %>
+    <!-- Docker Summary -->
+    <div class="docker-summary">
+      <div class="summary-card">
+        <span class="summary-value"><%= docker.containers.filter(function(c) { return c.state === 'running'; }).length %></span>
+        <span class="summary-label">Running</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= docker.containers.length %></span>
+        <span class="summary-label">Container</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= docker.images.length %></span>
+        <span class="summary-label">Images</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= docker.volumes.length %></span>
+        <span class="summary-label">Volumes</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-value"><%= docker.networks.length %></span>
+        <span class="summary-label">Networks</span>
+      </div>
+    </div>
+
+    <!-- Containers Section -->
+    <div class="docker-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        Container
+        <span class="section-count">(<%= docker.containers.length %>)</span>
+      </h3>
+      <div class="section-content">
+      <% if (docker.containers.length === 0) { %>
+        <p class="empty">Keine Container vorhanden</p>
+      <% } else { %>
+        <!-- Docker Filter Bar -->
+        <div class="docker-filter-bar">
+          <div class="docker-filter-buttons">
+            <button class="docker-filter-btn active" data-filter="all" onclick="filterDockerContainers('all', this)">Alle</button>
+            <button class="docker-filter-btn" data-filter="running" onclick="filterDockerContainers('running', this)">Running</button>
+            <button class="docker-filter-btn" data-filter="stopped" onclick="filterDockerContainers('stopped', this)">Stopped</button>
+          </div>
+          <input type="text" class="docker-search-input" id="dockerContainerSearch" placeholder="Container suchen..." onkeyup="searchDockerContainers()">
+          <span class="docker-filter-count" id="dockerContainerCount"><%= docker.containers.length %>/<%= docker.containers.length %></span>
+        </div>
+
+        <div class="docker-table-wrapper">
+          <table class="docker-table" id="dockerContainerTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Image</th>
+                <th>Status</th>
+                <th>Ports</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% docker.containers.forEach(function(container) { %>
+                <tr class="container-row <%= container.state %>">
+                  <td class="container-name"><%= container.name %></td>
+                  <td class="container-image"><%= container.image %></td>
+                  <td class="container-status">
+                    <span class="state-badge <%= container.state %>"><%= container.state %></span>
+                  </td>
+                  <td class="container-ports"><%= container.ports || '-' %></td>
+                  <td class="container-actions">
+                    <% if (container.state === 'running') { %>
+                      <button class="btn btn-sm btn-icon" title="Stop" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'stop')">
+                        <span class="icon-stop"></span>
+                      </button>
+                      <button class="btn btn-sm btn-icon" title="Restart" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'restart')">
+                        <span class="icon-restart"></span>
+                      </button>
+                    <% } else if (container.state === 'exited' || container.state === 'created') { %>
+                      <button class="btn btn-sm btn-icon" title="Start" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'start')">
+                        <span class="icon-start"></span>
+                      </button>
+                    <% } else if (container.state === 'paused') { %>
+                      <button class="btn btn-sm btn-icon" title="Unpause" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'unpause')">
+                        <span class="icon-start"></span>
+                      </button>
+                    <% } %>
+                    <button class="btn btn-sm btn-icon" title="Logs" onclick="showLogs(<%= node.id %>, '<%= container.container_id %>', '<%= container.name %>')">
+                      <span class="icon-logs"></span>
+                    </button>
+                    <button class="btn btn-sm btn-icon btn-danger" title="Löschen" onclick="confirmDeleteDocker(<%= node.id %>, 'containers', '<%= container.container_id %>', '<%= container.name %>', '<%= container.state %>')">
+                      <span class="icon-delete"></span>
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+      </div>
+    </div>
+
+    <!-- Images Section -->
+    <div class="docker-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        Images
+        <span class="section-count">(<%= docker.images.length %>)</span>
+      </h3>
+      <div class="section-content">
+      <% if (docker.images.length === 0) { %>
+        <p class="empty">Keine Images vorhanden</p>
+      <% } else { %>
+        <div class="docker-table-wrapper">
+          <table class="docker-table">
+            <thead>
+              <tr>
+                <th>Repository</th>
+                <th>Tag</th>
+                <th>Groesse</th>
+                <th>Erstellt</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% docker.images.forEach(function(image) { %>
+                <tr>
+                  <td><%= image.repository %></td>
+                  <td><span class="image-tag"><%= image.tag %></span></td>
+                  <td><%= image.size %></td>
+                  <td class="date-cell"><%= image.created %></td>
+                  <td class="image-actions">
+                    <button class="btn btn-sm btn-danger" title="Löschen" onclick="confirmDeleteDocker(<%= node.id %>, 'images', '<%= image.image_id %>', '<%= image.repository %>:<%= image.tag %>')">
+                      <span class="icon-delete"></span>
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+      </div>
+    </div>
+
+    <!-- Volumes Section -->
+    <div class="docker-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        Volumes
+        <span class="section-count">(<%= docker.volumes.length %>)</span>
+      </h3>
+      <div class="section-content">
+      <% if (docker.volumes.length === 0) { %>
+        <p class="empty">Keine Volumes vorhanden</p>
+      <% } else { %>
+        <div class="docker-table-wrapper">
+          <table class="docker-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Driver</th>
+                <th>Status</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% docker.volumes.forEach(function(volume) { %>
+                <tr>
+                  <td class="volume-name"><%= volume.name %></td>
+                  <td><%= volume.driver %></td>
+                  <td>
+                    <span class="usage-badge <%= volume.in_use ? 'in-use' : 'unused' %>">
+                      <%= volume.in_use ? 'In Verwendung' : 'Unbenutzt' %>
+                    </span>
+                  </td>
+                  <td class="volume-actions">
+                    <button class="btn btn-sm btn-danger" title="Löschen" onclick="confirmDeleteDocker(<%= node.id %>, 'volumes', '<%= volume.name %>', '<%= volume.name %>', null, <%= volume.in_use ? 'true' : 'false' %>)" <%= volume.in_use ? 'disabled' : '' %>>
+                      <span class="icon-delete"></span>
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+      </div>
+    </div>
+
+    <!-- Networks Section -->
+    <div class="docker-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+        Networks
+        <span class="section-count">(<%= docker.networks.length %>)</span>
+      </h3>
+      <div class="section-content">
+      <% if (docker.networks.length === 0) { %>
+        <p class="empty">Keine Networks vorhanden</p>
+      <% } else { %>
+        <div class="docker-table-wrapper">
+          <table class="docker-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Driver</th>
+                <th>Scope</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% docker.networks.forEach(function(network) {
+                  var isProtected = ['bridge', 'host', 'none'].indexOf(network.name) !== -1;
+              %>
+                <tr>
+                  <td><%= network.name %></td>
+                  <td><%= network.driver %></td>
+                  <td><%= network.scope %></td>
+                  <td class="network-actions">
+                    <button class="btn btn-sm btn-danger" title="<%= isProtected ? 'Standard-Netzwerk (nicht löschbar)' : 'Löschen' %>" onclick="confirmDeleteDocker(<%= node.id %>, 'networks', '<%= network.network_id %>', '<%= network.name %>')" <%= isProtected ? 'disabled' : '' %>>
+                      <span class="icon-delete"></span>
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+<% } %>

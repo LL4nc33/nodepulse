@@ -1,0 +1,33 @@
+<div class="tab-content" id="tab-services">
+  <div class="services-container">
+    <div class="services-header">
+      <h3>Systemd Services</h3>
+      <button class="btn btn-secondary" onclick="loadServices(<%= node.id %>)">
+        <span class="btn-text">Aktualisieren</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+
+    <div class="services-filter">
+      <input type="text" id="services-search" placeholder="Service suchen..."
+             onkeyup="filterServices()" class="form-control">
+      <select id="services-status-filter" onchange="filterServices()" class="form-control">
+        <option value="">Alle Status</option>
+        <option value="running">Running</option>
+        <option value="exited">Exited</option>
+        <option value="failed">Failed</option>
+        <option value="dead">Dead</option>
+      </select>
+    </div>
+
+    <div class="services-list" id="services-list">
+      <div class="loading-placeholder">
+        <span class="spinner"></span>
+        <span>Services werden geladen...</span>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<!-- System Tab - Comprehensive System Info -->

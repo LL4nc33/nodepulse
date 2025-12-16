@@ -1447,46 +1447,98 @@ a:focus {
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
+  gap: 0.5rem;
   margin-bottom: 1.5rem;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 0;
-}
-
-.tabs > * {
-  margin-right: 0.5rem;
-}
-
-.tabs > *:last-child {
-  margin-right: 0;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 60px;
+  background: var(--color-bg);
+  z-index: 10;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tab-btn {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
   background: none;
   border: none;
   color: var(--color-text-muted);
-  padding: 0.875rem 1.5rem;
-  min-height: 48px;
-  min-width: 120px;
-  font-size: 0.9375rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  -webkit-transition: color 0.2s, border-color 0.2s;
-  transition: color 0.2s, border-color 0.2s;
+  -webkit-transition: all 0.2s ease;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  border-radius: 6px 6px 0 0;
 }
 
 .tab-btn:hover {
   color: var(--color-text);
+  background: var(--color-bg-elevated);
 }
 
 .tab-btn.active {
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
+  background: var(--color-bg-elevated);
 }
 
 .tab-btn:focus {
   outline: 2px solid var(--color-accent);
   outline-offset: -2px;
+}
+
+/* Tab Icons */
+.tab-icon {
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+  -webkit-transition: opacity 0.2s;
+  transition: opacity 0.2s;
+}
+
+.tab-btn:hover .tab-icon,
+.tab-btn.active .tab-icon {
+  opacity: 1;
+}
+
+.tab-label {
+  font-weight: 500;
+}
+
+/* Tab Badges (for counts) */
+.tab-badge {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .tab-content {
@@ -1495,6 +1547,18 @@ a:focus {
 
 .tab-content.active {
   display: block;
+}
+
+/* Mobile: Icons ausblenden */
+@media (max-width: 640px) {
+  .tab-icon {
+    display: none;
+  }
+
+  .tab-btn {
+    padding: 0.75rem;
+    font-size: 0.8125rem;
+  }
 }
 
 /* =====================================================

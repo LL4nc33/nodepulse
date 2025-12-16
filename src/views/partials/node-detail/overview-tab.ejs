@@ -1,0 +1,64 @@
+<!-- Overview Tab -->
+<div class="tab-content active" id="tab-overview">
+  <div class="detail-grid">
+    <div class="detail-card">
+      <h3>Verbindung</h3>
+      <dl>
+        <dt>Host</dt>
+        <dd><%= node.host %></dd>
+        <dt>SSH Port</dt>
+        <dd><%= node.ssh_port %></dd>
+        <dt>SSH User</dt>
+        <dd><%= node.ssh_user %></dd>
+        <dt>SSH Key</dt>
+        <dd><%= node.ssh_key_path || 'Standard' %></dd>
+      </dl>
+    </div>
+
+    <div class="detail-card">
+      <h3>Status</h3>
+      <dl>
+        <dt>Online</dt>
+        <dd><%= node.online ? 'Ja' : 'Nein' %></dd>
+        <dt>Zuletzt gesehen</dt>
+        <dd><%= node.last_seen || 'Nie' %></dd>
+        <dt>Node-Typ</dt>
+        <dd><span class="node-type-badge"><%= node.node_type || 'Unbekannt' %></span></dd>
+        <dt>Letzter Fehler</dt>
+        <dd class="<%= node.last_error ? 'text-error' : '' %>"><%= node.last_error || '-' %></dd>
+      </dl>
+    </div>
+
+    <div class="detail-card">
+      <h3>Monitoring</h3>
+      <dl>
+        <dt>Aktiv</dt>
+        <dd><%= node.monitoring_enabled ? 'Ja' : 'Nein' %></dd>
+        <dt>Interval</dt>
+        <dd><%= node.monitoring_interval %>s</dd>
+        <dt>Auto-Discovery</dt>
+        <dd><%= node.auto_discovery ? 'Ja' : 'Nein' %></dd>
+      </dl>
+    </div>
+
+    <div class="detail-card">
+      <h3>Tags</h3>
+      <div class="tags">
+        <% if (tags.length === 0) { %>
+          <span class="empty">Keine Tags</span>
+        <% } else { %>
+          <% tags.forEach(function(tag) { %>
+            <span class="tag" style="background-color: <%= tag.color %>"><%= tag.name %></span>
+          <% }); %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <% if (node.notes) { %>
+    <div class="detail-card full-width">
+      <h3>Notizen</h3>
+      <p><%= node.notes %></p>
+    </div>
+  <% } %>
+</div>
