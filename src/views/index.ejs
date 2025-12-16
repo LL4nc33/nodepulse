@@ -95,14 +95,26 @@
           <div class="node-list-col-icon"></div>
           <div class="node-list-col-name">Name</div>
           <div class="node-list-col-host">Host</div>
+          <div class="node-list-col-metrics">CPU</div>
+          <div class="node-list-col-metrics">RAM</div>
+          <div class="node-list-col-metrics">Disk</div>
           <div class="node-list-col-type">Typ</div>
           <div class="node-list-col-actions"></div>
         </div>
 
         <%
+        // Create stats lookup map
+        var statsMap = {};
+        if (typeof nodesWithStats !== 'undefined') {
+          nodesWithStats.forEach(function(n) {
+            statsMap[n.id] = n;
+          });
+        }
+
         // Render flat list with hierarchy indication
         function renderNodeList(nodeList, level) {
           nodeList.forEach(function(node) {
+            var stats = statsMap[node.id] || {};
         %>
           <div class="node-list-row<%= level > 0 ? ' child-level-' + level : '' %>"
                data-name="<%= node.name.toLowerCase() %>"
@@ -119,6 +131,30 @@
               <span class="node-list-host-mobile"><%= node.host %></span>
             </div>
             <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-metric">
+              <% if (node.online && stats.cpu_percent !== null && stats.cpu_percent !== undefined) { %>
+              <div class="mini-bar">
+                <div class="mini-bar-fill <%= (stats.cpu_percent || 0) >= 95 ? 'critical' : ((stats.cpu_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.cpu_percent || 0, 100) %>%"></div>
+              </div>
+              <span class="mini-bar-value"><%= Math.round(stats.cpu_percent) %>%</span>
+              <% } else { %><span class="mini-bar-na">-</span><% } %>
+            </div>
+            <div class="node-list-metric">
+              <% if (node.online && stats.ram_percent !== null && stats.ram_percent !== undefined) { %>
+              <div class="mini-bar">
+                <div class="mini-bar-fill <%= (stats.ram_percent || 0) >= 95 ? 'critical' : ((stats.ram_percent || 0) >= 85 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.ram_percent || 0, 100) %>%"></div>
+              </div>
+              <span class="mini-bar-value"><%= Math.round(stats.ram_percent) %>%</span>
+              <% } else { %><span class="mini-bar-na">-</span><% } %>
+            </div>
+            <div class="node-list-metric">
+              <% if (node.online && stats.disk_percent !== null && stats.disk_percent !== undefined) { %>
+              <div class="mini-bar">
+                <div class="mini-bar-fill <%= (stats.disk_percent || 0) >= 95 ? 'critical' : ((stats.disk_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.disk_percent || 0, 100) %>%"></div>
+              </div>
+              <span class="mini-bar-value"><%= Math.round(stats.disk_percent) %>%</span>
+              <% } else { %><span class="mini-bar-na">-</span><% } %>
+            </div>
             <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
             <div class="node-list-actions">
               <a href="/nodes/<%= node.id %>" class="node-list-action" title="Details">
@@ -139,6 +175,7 @@
         } else {
           // Fallback: flat list
           nodes.forEach(function(node) {
+            var stats = statsMap[node.id] || {};
         %>
           <div class="node-list-row"
                data-name="<%= node.name.toLowerCase() %>"
@@ -155,6 +192,30 @@
               <span class="node-list-host-mobile"><%= node.host %></span>
             </div>
             <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-metric">
+              <% if (node.online && stats.cpu_percent !== null && stats.cpu_percent !== undefined) { %>
+              <div class="mini-bar">
+                <div class="mini-bar-fill <%= (stats.cpu_percent || 0) >= 95 ? 'critical' : ((stats.cpu_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.cpu_percent || 0, 100) %>%"></div>
+              </div>
+              <span class="mini-bar-value"><%= Math.round(stats.cpu_percent) %>%</span>
+              <% } else { %><span class="mini-bar-na">-</span><% } %>
+            </div>
+            <div class="node-list-metric">
+              <% if (node.online && stats.ram_percent !== null && stats.ram_percent !== undefined) { %>
+              <div class="mini-bar">
+                <div class="mini-bar-fill <%= (stats.ram_percent || 0) >= 95 ? 'critical' : ((stats.ram_percent || 0) >= 85 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.ram_percent || 0, 100) %>%"></div>
+              </div>
+              <span class="mini-bar-value"><%= Math.round(stats.ram_percent) %>%</span>
+              <% } else { %><span class="mini-bar-na">-</span><% } %>
+            </div>
+            <div class="node-list-metric">
+              <% if (node.online && stats.disk_percent !== null && stats.disk_percent !== undefined) { %>
+              <div class="mini-bar">
+                <div class="mini-bar-fill <%= (stats.disk_percent || 0) >= 95 ? 'critical' : ((stats.disk_percent || 0) >= 80 ? 'warning' : 'ok') %>" style="width: <%= Math.min(stats.disk_percent || 0, 100) %>%"></div>
+              </div>
+              <span class="mini-bar-value"><%= Math.round(stats.disk_percent) %>%</span>
+              <% } else { %><span class="mini-bar-na">-</span><% } %>
+            </div>
             <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
             <div class="node-list-actions">
               <a href="/nodes/<%= node.id %>" class="node-list-action" title="Details">
