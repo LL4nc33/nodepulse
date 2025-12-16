@@ -4,7 +4,7 @@
   <%- include('partials/side-panel') %>
 
   <!-- Main Content -->
-  <main class="main-panel">
+  <main class="main-panel" id="main-content">
     <!-- Stats Cards -->
     <div class="stats-cards">
       <div class="stats-card">
@@ -38,31 +38,21 @@
 
     <% if (nodes.length === 0) { %>
       <% if (typeof tagFilter !== 'undefined' && tagFilter) { %>
-      <div class="empty-state">
-        <div class="empty-state-icon">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
-            <line x1="7" y1="7" x2="7.01" y2="7"/>
-          </svg>
-        </div>
-        <div class="empty-state-title">Keine Nodes mit Tag "<%= tagFilter %>"</div>
-        <p class="empty-state-text">Es gibt keine Nodes mit diesem Tag. Waehle einen anderen Tag oder zeige alle Nodes an.</p>
-        <a href="/" class="btn btn-primary">Alle Nodes anzeigen</a>
-      </div>
+      <%- include('partials/empty-state', {
+        icon: '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+        title: 'Keine Nodes mit Tag "' + tagFilter + '"',
+        text: 'Es gibt keine Nodes mit diesem Tag. Waehle einen anderen Tag oder zeige alle Nodes an.',
+        buttonText: 'Alle Nodes anzeigen',
+        buttonHref: '/'
+      }) %>
       <% } else { %>
-      <div class="empty-state">
-        <div class="empty-state-icon">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="2" y="3" width="20" height="14" rx="2"/>
-            <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
-            <circle cx="12" cy="10" r="2"/>
-          </svg>
-        </div>
-        <div class="empty-state-title">Keine Nodes vorhanden</div>
-        <p class="empty-state-text">Fuege deinen ersten Server, Raspberry Pi oder Docker-Host hinzu, um mit dem Monitoring zu starten.</p>
-        <a href="/nodes/add" class="btn btn-primary">+ Ersten Node hinzufuegen</a>
-      </div>
+      <%- include('partials/empty-state', {
+        icon: '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="2"/></svg>',
+        title: 'Keine Nodes vorhanden',
+        text: 'Fuege deinen ersten Server, Raspberry Pi oder Docker-Host hinzu, um mit dem Monitoring zu starten.',
+        buttonText: '+ Ersten Node hinzufuegen',
+        buttonHref: '/nodes/add'
+      }) %>
       <% } %>
     <% } else { %>
       <% if (typeof tagFilter !== 'undefined' && tagFilter) { %>
@@ -79,7 +69,7 @@
       <% } %>
       <!-- Search/Filter Bar -->
       <div class="node-list-filter">
-        <input type="text" id="nodeSearchInput" class="node-list-search" placeholder="Nodes suchen..." onkeyup="filterNodesAndCards()">
+        <input type="text" id="nodeSearchInput" class="node-list-search" placeholder="Nodes suchen..." onkeyup="debouncedFilter()">
         <select id="nodeTypeFilter" class="node-list-type-select" onchange="filterNodesAndCards()">
           <option value="">Alle Typen</option>
           <option value="proxmox-host">Proxmox</option>
@@ -154,6 +144,7 @@
             var stats = statsMap[node.id] || {};
         %>
           <div class="node-list-row<%= level > 0 ? ' child-level-' + level : '' %>"
+               data-node-id="<%= node.id %>"
                data-name="<%= node.name.toLowerCase() %>"
                data-type="<%= node.node_type || 'unknown' %>"
                data-status="<%= node.online ? 'online' : 'offline' %>">
@@ -215,6 +206,7 @@
             var stats = statsMap[node.id] || {};
         %>
           <div class="node-list-row"
+               data-node-id="<%= node.id %>"
                data-name="<%= node.name.toLowerCase() %>"
                data-type="<%= node.node_type || 'unknown' %>"
                data-status="<%= node.online ? 'online' : 'offline' %>">
@@ -285,6 +277,7 @@
               }
             %>
             <div class="monitoring-card <%= statusClass %>"
+                 data-node-id="<%= node.id %>"
                  data-name="<%= node.name.toLowerCase() %>"
                  data-type="<%= node.node_type || 'unknown' %>"
                  data-status="<%= node.online ? 'online' : 'offline' %>">
@@ -369,9 +362,9 @@
             <% }); %>
           </div>
         <% } else { %>
-          <div class="empty-state">
-            <p>Keine Monitoring-Daten verfuegbar.</p>
-          </div>
+          <%- include('partials/empty-state', {
+            title: 'Keine Monitoring-Daten verfuegbar.'
+          }) %>
         <% } %>
       </div>
 
@@ -381,6 +374,31 @@
       </div>
 
 <script>
+// Thresholds für Client-seitige Logik verfügbar machen
+var thresholds = {
+  cpu_warning: <%= thresholds.cpu_warning %>,
+  cpu_critical: <%= thresholds.cpu_critical %>,
+  ram_warning: <%= thresholds.ram_warning %>,
+  ram_critical: <%= thresholds.ram_critical %>,
+  disk_warning: <%= thresholds.disk_warning %>,
+  disk_critical: <%= thresholds.disk_critical %>,
+  temp_warning: <%= thresholds.temp_warning %>,
+  temp_critical: <%= thresholds.temp_critical %>
+};
+
+// Debounce Helper (ES5-kompatibel)
+var debounceTimers = {};
+function debounce(func, delay, key) {
+  return function() {
+    var context = this;
+    var args = arguments;
+    clearTimeout(debounceTimers[key]);
+    debounceTimers[key] = setTimeout(function() {
+      func.apply(context, args);
+    }, delay);
+  };
+}
+
 // ES5 Node Filter Function
 function filterNodes() {
   var searchInput = document.getElementById('nodeSearchInput');
@@ -495,6 +513,9 @@ function filterNodesAndCards() {
   }
 }
 
+// Debounced Filter-Funktion (300ms Verzögerung)
+var debouncedFilter = debounce(filterNodesAndCards, 300, 'nodeFilter');
+
 // Restore view mode on load (check URL param first, then localStorage)
 (function() {
   try {
@@ -554,7 +575,7 @@ function startAutoRefresh() {
       autoRefreshCountdown--;
       updateCountdownDisplay();
       if (autoRefreshCountdown <= 0) {
-        window.location.reload();
+        refreshDashboardData();
       }
     }
   }, 1000);
@@ -582,6 +603,240 @@ function toggleAutoRefresh() {
   }
   // Save preference
   try { localStorage.setItem('dashboard-autorefresh-paused', autoRefreshPaused ? '1' : '0'); } catch (e) {}
+}
+
+// ==========================================
+// API-basierter Refresh (statt Page Reload)
+// ==========================================
+
+// Helper: CSS-Klassen für Progress-Bars
+function getBarClass(value, warningThreshold, criticalThreshold) {
+  if (value >= criticalThreshold) return 'critical';
+  if (value >= warningThreshold) return 'warning';
+  return 'ok';
+}
+
+// Helper: CSS-Klassen für Werte
+function getValueClass(value, warningThreshold, criticalThreshold) {
+  if (value >= criticalThreshold) return 'critical';
+  if (value >= warningThreshold) return 'warning';
+  return '';
+}
+
+// Helper: Alert-Level bestimmen
+function getAlertLevel(node) {
+  if (!node.online) return 'offline';
+  var maxCpu = node.cpu_percent >= thresholds.cpu_critical;
+  var maxRam = node.ram_percent >= thresholds.ram_critical;
+  var maxDisk = node.disk_percent >= thresholds.disk_critical;
+  if (maxCpu || maxRam || maxDisk) return 'critical';
+
+  var warnCpu = node.cpu_percent >= thresholds.cpu_warning;
+  var warnRam = node.ram_percent >= thresholds.ram_warning;
+  var warnDisk = node.disk_percent >= thresholds.disk_warning;
+  if (warnCpu || warnRam || warnDisk) return 'warning';
+
+  return 'ok';
+}
+
+// API-Aufruf für Dashboard-Refresh
+function refreshDashboardData() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/stats', true);
+  xhr.timeout = 30000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        var response = JSON.parse(xhr.responseText);
+        if (response.success) {
+          updateDashboard(response.data);
+        }
+      }
+      // Countdown zurücksetzen
+      autoRefreshCountdown = 30;
+    }
+  };
+
+  xhr.send();
+}
+
+// Update Stats-Cards (Total, Online, Offline)
+function updateStatsCards(nodes) {
+  var total = nodes.length;
+  var online = 0;
+  for (var i = 0; i < nodes.length; i++) {
+    if (nodes[i].online) online++;
+  }
+  var offline = total - online;
+
+  // Update DOM
+  var totalEl = document.querySelector('.stats-card-value');
+  var onlineEl = document.querySelector('.stats-card-online .stats-card-value');
+  var offlineEl = document.querySelector('.stats-card-offline .stats-card-value');
+
+  if (totalEl) totalEl.textContent = total;
+  if (onlineEl) onlineEl.textContent = online;
+  if (offlineEl) offlineEl.textContent = offline;
+}
+
+// Update List-View (Mini-Bars)
+function updateListView(nodes) {
+  for (var i = 0; i < nodes.length; i++) {
+    var node = nodes[i];
+    var row = document.querySelector('.node-list-row[data-node-id="' + node.id + '"]');
+    if (!row) continue;
+
+    // Status Dot
+    var statusDot = row.querySelector('.node-list-status-dot');
+    if (statusDot) {
+      statusDot.className = 'node-list-status-dot ' + (node.online ? 'online' : 'offline');
+    }
+
+    // Mini-Bars (CPU, RAM, Disk)
+    var metrics = row.querySelectorAll('.node-list-metric');
+
+    // CPU (index 0)
+    if (metrics[0] && node.online) {
+      var cpuPercent = Math.round(node.cpu_percent || 0);
+      var cpuBar = metrics[0].querySelector('.mini-bar-fill');
+      var cpuValue = metrics[0].querySelector('.mini-bar-value');
+      if (cpuBar) {
+        cpuBar.className = 'mini-bar-fill ' + getBarClass(cpuPercent, thresholds.cpu_warning, thresholds.cpu_critical);
+        cpuBar.style.width = Math.min(cpuPercent, 100) + '%';
+      }
+      if (cpuValue) cpuValue.textContent = cpuPercent + '%';
+    }
+
+    // RAM (index 1)
+    if (metrics[1] && node.online) {
+      var ramPercent = Math.round(node.ram_percent || 0);
+      var ramBar = metrics[1].querySelector('.mini-bar-fill');
+      var ramValue = metrics[1].querySelector('.mini-bar-value');
+      if (ramBar) {
+        ramBar.className = 'mini-bar-fill ' + getBarClass(ramPercent, thresholds.ram_warning, thresholds.ram_critical);
+        ramBar.style.width = Math.min(ramPercent, 100) + '%';
+      }
+      if (ramValue) ramValue.textContent = ramPercent + '%';
+    }
+
+    // Disk (index 2)
+    if (metrics[2] && node.online) {
+      var diskPercent = Math.round(node.disk_percent || 0);
+      var diskBar = metrics[2].querySelector('.mini-bar-fill');
+      var diskValue = metrics[2].querySelector('.mini-bar-value');
+      if (diskBar) {
+        diskBar.className = 'mini-bar-fill ' + getBarClass(diskPercent, thresholds.disk_warning, thresholds.disk_critical);
+        diskBar.style.width = Math.min(diskPercent, 100) + '%';
+      }
+      if (diskValue) diskValue.textContent = diskPercent + '%';
+    }
+  }
+}
+
+// Update Cards-View (Monitoring-Style)
+function updateCardsView(nodes) {
+  for (var i = 0; i < nodes.length; i++) {
+    var node = nodes[i];
+    var card = document.querySelector('.monitoring-card[data-node-id="' + node.id + '"]');
+    if (!card) continue;
+
+    // Status-Klasse
+    var alertLevel = getAlertLevel(node);
+    card.className = 'monitoring-card ' + alertLevel +
+                     (card.getAttribute('data-name') ? ' ' : '') +
+                     (card.getAttribute('data-type') ? ' ' : '') +
+                     (card.getAttribute('data-status') ? ' ' : '');
+    card.setAttribute('data-status', node.online ? 'online' : 'offline');
+
+    // Status-Badge
+    var statusBadge = card.querySelector('.monitoring-status');
+    if (statusBadge) {
+      statusBadge.className = 'monitoring-status ' + (node.online ? 'online' : 'offline');
+      statusBadge.textContent = node.online ? 'Online' : 'Offline';
+    }
+
+    if (!node.online) continue;
+
+    // Stat-Bars (CPU, RAM, Disk, Temp)
+    var statBars = card.querySelectorAll('.stat-bar');
+
+    // CPU (index 0)
+    if (statBars[0]) {
+      var cpuPercent = Math.round(node.cpu_percent || 0);
+      var cpuValueEl = statBars[0].querySelector('.stat-bar-value');
+      var cpuFill = statBars[0].querySelector('.stat-bar-fill');
+
+      if (cpuValueEl) {
+        cpuValueEl.className = 'stat-bar-value ' + getValueClass(cpuPercent, thresholds.cpu_warning, thresholds.cpu_critical);
+        cpuValueEl.textContent = cpuPercent + '%';
+      }
+      if (cpuFill) {
+        cpuFill.className = 'stat-bar-fill ' + getBarClass(cpuPercent, thresholds.cpu_warning, thresholds.cpu_critical);
+        cpuFill.style.width = Math.min(cpuPercent, 100) + '%';
+      }
+    }
+
+    // RAM (index 1)
+    if (statBars[1]) {
+      var ramPercent = Math.round(node.ram_percent || 0);
+      var ramValueEl = statBars[1].querySelector('.stat-bar-value');
+      var ramFill = statBars[1].querySelector('.stat-bar-fill');
+
+      if (ramValueEl) {
+        ramValueEl.className = 'stat-bar-value ' + getValueClass(ramPercent, thresholds.ram_warning, thresholds.ram_critical);
+        ramValueEl.textContent = ramPercent + '%';
+      }
+      if (ramFill) {
+        ramFill.className = 'stat-bar-fill ' + getBarClass(ramPercent, thresholds.ram_warning, thresholds.ram_critical);
+        ramFill.style.width = Math.min(ramPercent, 100) + '%';
+      }
+    }
+
+    // Disk (index 2)
+    if (statBars[2]) {
+      var diskPercent = Math.round(node.disk_percent || 0);
+      var diskValueEl = statBars[2].querySelector('.stat-bar-value');
+      var diskFill = statBars[2].querySelector('.stat-bar-fill');
+
+      if (diskValueEl) {
+        diskValueEl.className = 'stat-bar-value ' + getValueClass(diskPercent, thresholds.disk_warning, thresholds.disk_critical);
+        diskValueEl.textContent = diskPercent + '%';
+      }
+      if (diskFill) {
+        diskFill.className = 'stat-bar-fill ' + getBarClass(diskPercent, thresholds.disk_warning, thresholds.disk_critical);
+        diskFill.style.width = Math.min(diskPercent, 100) + '%';
+      }
+    }
+
+    // Temp (index 3)
+    if (statBars[3] && node.temp_cpu !== null) {
+      var tempValueEl = statBars[3].querySelector('.stat-bar-value');
+      var tempValue = Math.round(node.temp_cpu);
+
+      if (tempValueEl) {
+        tempValueEl.className = 'stat-bar-value ' + getValueClass(tempValue, thresholds.temp_warning, thresholds.temp_critical);
+        tempValueEl.innerHTML = tempValue + '&deg;C';
+      }
+    }
+
+    // Meta-Info (Load, Uptime)
+    var metaEl = card.querySelector('.monitoring-meta');
+    if (metaEl && node.load_1m !== null) {
+      var metaHtml = '<span>Load: ' + node.load_1m + '</span>';
+      if (node.uptime_seconds) {
+        metaHtml += '<span>Up: ' + Math.floor(node.uptime_seconds / 86400) + 'd</span>';
+      }
+      metaEl.innerHTML = metaHtml;
+    }
+  }
+}
+
+// Master Update-Funktion
+function updateDashboard(nodes) {
+  updateStatsCards(nodes);
+  updateListView(nodes);
+  updateCardsView(nodes);
 }
 
 // Init auto-refresh

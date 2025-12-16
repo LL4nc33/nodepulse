@@ -37,39 +37,24 @@
 
 <% if (alerts.length === 0) { %>
   <% if (filter === 'active') { %>
-    <div class="empty-state empty-state-success">
-      <div class="empty-state-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M8 12l2.5 2.5L16 9"/>
-        </svg>
-      </div>
-      <div class="empty-state-title">Alles in Ordnung!</div>
-      <p class="empty-state-text">Keine aktiven Alerts. Alle Systeme laufen normal.</p>
-    </div>
+    <%- include('../partials/empty-state', {
+      icon: '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2.5 2.5L16 9"/></svg>',
+      title: 'Alles in Ordnung!',
+      text: 'Keine aktiven Alerts. Alle Systeme laufen normal.',
+      variant: 'success'
+    }) %>
   <% } else if (filter === 'archived') { %>
-    <div class="empty-state">
-      <div class="empty-state-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M21 8v13H3V8"/>
-          <path d="M1 3h22v5H1z"/>
-          <path d="M10 12h4"/>
-        </svg>
-      </div>
-      <div class="empty-state-title">Archiv leer</div>
-      <p class="empty-state-text">Keine archivierten Alerts vorhanden.</p>
-    </div>
+    <%- include('../partials/empty-state', {
+      icon: '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>',
+      title: 'Archiv leer',
+      text: 'Keine archivierten Alerts vorhanden.'
+    }) %>
   <% } else { %>
-    <div class="empty-state">
-      <div class="empty-state-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
-      </div>
-      <div class="empty-state-title">Keine Alerts</div>
-      <p class="empty-state-text">Es wurden noch keine Alerts aufgezeichnet.</p>
-    </div>
+    <%- include('../partials/empty-state', {
+      icon: '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+      title: 'Keine Alerts',
+      text: 'Es wurden noch keine Alerts aufgezeichnet.'
+    }) %>
   <% } %>
 <% } else { %>
   <div class="alerts-list">

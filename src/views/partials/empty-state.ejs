@@ -1,0 +1,33 @@
+<%
+/*
+ * Empty State Partial
+ *
+ * Parameters:
+ * - icon (optional): SVG string for the icon (64x64)
+ * - title (required): Main heading text
+ * - text (optional): Description text
+ * - buttonText (optional): Button/link text
+ * - buttonHref (optional): Button/link URL
+ * - buttonClass (optional): Button class, default 'btn-primary'
+ * - variant (optional): 'success' for positive empty states
+ */
+var emptyStateVariant = typeof variant !== 'undefined' ? variant : '';
+var emptyStateButtonClass = typeof buttonClass !== 'undefined' ? buttonClass : 'btn-primary';
+%>
+<div class="empty-state<%= emptyStateVariant === 'success' ? ' empty-state-success' : '' %>">
+  <% if (typeof icon !== 'undefined' && icon) { %>
+  <div class="empty-state-icon">
+    <%- icon %>
+  </div>
+  <% } %>
+
+  <div class="empty-state-title"><%= title %></div>
+
+  <% if (typeof text !== 'undefined' && text) { %>
+  <p class="empty-state-text"><%= text %></p>
+  <% } %>
+
+  <% if (typeof buttonText !== 'undefined' && buttonText && typeof buttonHref !== 'undefined' && buttonHref) { %>
+  <a href="<%= buttonHref %>" class="btn <%= emptyStateButtonClass %>"><%= buttonText %></a>
+  <% } %>
+</div>

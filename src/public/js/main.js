@@ -974,4 +974,26 @@
     init();
   }
 
+  // ==========================================
+  // Globale Keyboard-Shortcuts
+  // ==========================================
+
+  // Helper: Prüfen ob aktives Element ein Input ist
+  function isInputElement(element) {
+    var tagName = element.tagName.toLowerCase();
+    return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || element.isContentEditable;
+  }
+
+  // Such-Input fokussieren mit "/" (wie GitHub)
+  document.addEventListener('keydown', function(e) {
+    if (e.key === '/' && !isInputElement(e.target)) {
+      e.preventDefault();
+      var searchInput = document.getElementById('nodeSearchInput');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+  });
+
 })();
