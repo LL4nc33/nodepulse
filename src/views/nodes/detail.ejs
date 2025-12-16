@@ -664,8 +664,13 @@
     </div>
 
     <!-- VMs Section -->
-    <div class="proxmox-section">
-      <h3>Virtuelle Maschinen (VMs)</h3>
+    <div class="proxmox-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle">▼</span>
+        Virtuelle Maschinen (VMs)
+        <span class="section-count">(<%= proxmox.vms.length %>)</span>
+      </h3>
+      <div class="section-content">
       <% if (proxmox.vms.length === 0) { %>
         <p class="empty">Keine VMs vorhanden</p>
       <% } else { %>
@@ -758,11 +763,17 @@
           </table>
         </div>
       <% } %>
+      </div>
     </div>
 
     <!-- CTs Section -->
-    <div class="proxmox-section">
-      <h3>Container (LXC)</h3>
+    <div class="proxmox-section collapsible">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle">▼</span>
+        Container (LXC)
+        <span class="section-count">(<%= proxmox.cts.length %>)</span>
+      </h3>
+      <div class="section-content">
       <% if (proxmox.cts.length === 0) { %>
         <p class="empty">Keine Container vorhanden</p>
       <% } else { %>
@@ -855,11 +866,17 @@
           </table>
         </div>
       <% } %>
+      </div>
     </div>
 
     <!-- Storage Section -->
-    <div class="proxmox-section">
-      <h3>Storage</h3>
+    <div class="proxmox-section collapsible collapsed">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle">▶</span>
+        Storage
+        <span class="section-count">(<%= proxmox.storage.length %>)</span>
+      </h3>
+      <div class="section-content" style="display: none;">
       <% if (proxmox.storage.length === 0) { %>
         <p class="empty">Kein Storage vorhanden</p>
       <% } else { %>
@@ -904,11 +921,17 @@
           </table>
         </div>
       <% } %>
+      </div>
     </div>
 
     <!-- Snapshots Section -->
-    <div class="proxmox-section">
-      <h3>Snapshots</h3>
+    <div class="proxmox-section collapsible collapsed">
+      <h3 class="section-header" onclick="toggleSection(this)">
+        <span class="section-toggle">▶</span>
+        Snapshots
+        <span class="section-count">(<%= proxmox.snapshots.length %>)</span>
+      </h3>
+      <div class="section-content" style="display: none;">
       <% if (proxmox.snapshots.length === 0) { %>
         <p class="empty">Keine Snapshots vorhanden</p>
       <% } else { %>
@@ -941,6 +964,7 @@
           </table>
         </div>
       <% } %>
+      </div>
     </div>
   <% } %>
 </div>
@@ -1604,6 +1628,23 @@
 </div>
 
 <script>
+// Toggle collapsible section (ES5)
+function toggleSection(headerEl) {
+  var section = headerEl.parentElement;
+  var content = section.querySelector('.section-content');
+  var toggle = headerEl.querySelector('.section-toggle');
+
+  if (section.classList.contains('collapsed')) {
+    section.classList.remove('collapsed');
+    content.style.display = 'block';
+    toggle.textContent = '▼';
+  } else {
+    section.classList.add('collapsed');
+    content.style.display = 'none';
+    toggle.textContent = '▶';
+  }
+}
+
 // Format bytes to human readable
 function formatBytes(bytes) {
   if (!bytes || bytes === 0) return '0 B';
