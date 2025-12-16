@@ -1755,7 +1755,7 @@ function escapeForJsString(text) {
 var terminalTabBtn = document.querySelector('[data-tab="terminal"]');
 if (terminalTabBtn && !terminalTabBtn.hasAttribute('data-history-listener')) {
   terminalTabBtn.addEventListener('click', function() {
-    loadCommandHistory(<%= node.id %>);
+    loadCommandHistory(nodeId);
   });
   terminalTabBtn.setAttribute('data-history-listener', 'true');
 }
@@ -1872,10 +1872,10 @@ function renderServices() {
     html += '<td class="service-desc">' + escapeHtml(svc.description || '-') + '</td>';
     html += '<td class="service-actions">';
     if (svc.sub === 'running') {
-      html += '<button class="btn btn-sm btn-warning" onclick="controlService(<%= node.id %>, \'' + escapeForJsString(svc.name) + '\', \'restart\')">Restart</button>';
-      html += '<button class="btn btn-sm btn-danger" onclick="controlService(<%= node.id %>, \'' + escapeForJsString(svc.name) + '\', \'stop\')">Stop</button>';
+      html += '<button class="btn btn-sm btn-warning" onclick="controlService(' + nodeId + ', \'' + escapeForJsString(svc.name) + '\', \'restart\')">Restart</button>';
+      html += '<button class="btn btn-sm btn-danger" onclick="controlService(' + nodeId + ', \'' + escapeForJsString(svc.name) + '\', \'stop\')">Stop</button>';
     } else if (svc.sub === 'exited' || svc.sub === 'dead' || svc.sub === 'failed') {
-      html += '<button class="btn btn-sm btn-success" onclick="controlService(<%= node.id %>, \'' + escapeForJsString(svc.name) + '\', \'start\')">Start</button>';
+      html += '<button class="btn btn-sm btn-success" onclick="controlService(' + nodeId + ', \'' + escapeForJsString(svc.name) + '\', \'start\')">Start</button>';
     }
     html += '</td>';
     html += '</tr>';
@@ -1935,7 +1935,7 @@ var servicesTabBtn = document.querySelector('[data-tab="services"]');
 if (servicesTabBtn && !servicesTabBtn.hasAttribute('data-services-listener')) {
   servicesTabBtn.addEventListener('click', function() {
     if (servicesData.length === 0) {
-      loadServices(<%= node.id %>);
+      loadServices(nodeId);
     }
   });
   servicesTabBtn.setAttribute('data-services-listener', 'true');
@@ -2211,7 +2211,7 @@ var systemTabBtn = document.querySelector('[data-tab="system"]');
 if (systemTabBtn && !systemTabBtn.hasAttribute('data-sysinfo-listener')) {
   systemTabBtn.addEventListener('click', function() {
     if (!systemInfoData) {
-      loadSystemInfo(<%= node.id %>);
+      loadSystemInfo(nodeId);
     }
   });
   systemTabBtn.setAttribute('data-sysinfo-listener', 'true');
@@ -2665,7 +2665,7 @@ var networkTabBtn = document.querySelector('[data-tab="network"]');
 if (networkTabBtn && !networkTabBtn.hasAttribute('data-network-listener')) {
   networkTabBtn.addEventListener('click', function() {
     if (!networkData) {
-      loadNetworkDiagnostics(<%= node.id %>);
+      loadNetworkDiagnostics(nodeId);
     }
   });
   networkTabBtn.setAttribute('data-network-listener', 'true');

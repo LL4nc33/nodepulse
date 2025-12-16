@@ -59,7 +59,13 @@
   <%- include('../partials/node-detail/terminal-panel') %>
 </div>
 
-<!-- External JavaScript (kein Inline mehr!) -->
+<!-- Node ID für JavaScript (muss VOR detail-page.js geladen werden) -->
+<script>
+  var nodeId = <%= node.id %>;
+  var nodeName = '<%= node.name.replace(/'/g, "\\'") %>';
+</script>
+
+<!-- External JavaScript -->
 <script src="/static/js/detail-page.js"></script>
 
 <%- include('../partials/footer') %>
