@@ -2,7 +2,7 @@
 
 Ein leichtgewichtiges Homelab Dashboard und CLI-Tool zur Verwaltung von Servern, Proxmox-Hosts und Docker-Containern.
 
-![Version](https://img.shields.io/badge/version-0.3.1-green)
+![Version](https://img.shields.io/badge/version-0.3.2-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
@@ -76,6 +76,9 @@ Ein leichtgewichtiges Homelab Dashboard und CLI-Tool zur Verwaltung von Servern,
 - Touch-optimiert (44px min. Tap-Targets)
 - Side-Panel mit Quick-Navigation
 - Filter und Suche
+- Toast-Benachrichtigungen bei Aktionen
+- Einheitliche Loading-States und Error-Handling
+- Tab-Persistenz (URL-Hash + localStorage)
 
 ---
 
@@ -272,6 +275,7 @@ sudo systemctl start nodepulse
 | Frontend | EJS Templates, Vanilla JS (ES5) |
 | Styling | CSS3 mit Custom Properties |
 | SSH | ssh2 |
+| JS-Lib | NP.API, NP.UI, NP.Tabs (main.js) |
 
 ### Browser-Kompatibilitaet
 
@@ -302,8 +306,8 @@ nodepulse/
 │   │   ├── settings/   # Einstellungen
 │   │   └── alerts/     # Alert-Log
 │   ├── public/         # Statische Dateien
-│   │   ├── css/        # Stylesheets
-│   │   ├── js/         # Client-Side JS
+│   │   ├── css/        # Stylesheets (style.css)
+│   │   ├── js/         # Client-Side JS (main.js mit NP.*)
 │   │   └── img/        # Bilder, Icons
 │   └── index.js        # Entry Point
 ├── bin/                # CLI Entry Point

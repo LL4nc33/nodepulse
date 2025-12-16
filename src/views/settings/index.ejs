@@ -323,13 +323,13 @@ function syncRangeSlider(inputId, value) {
 // Show toast on success/error (ES5)
 (function() {
   <% if (typeof success !== 'undefined' && success) { %>
-  if (typeof Toast !== 'undefined') {
-    Toast.success('Einstellungen gespeichert!');
+  if (window.NP && NP.UI && NP.UI.toast) {
+    NP.UI.toast('Einstellungen gespeichert!', 'success');
   }
   <% } %>
   <% if (typeof error !== 'undefined' && error) { %>
-  if (typeof Toast !== 'undefined') {
-    Toast.error('<%= error %>');
+  if (window.NP && NP.UI && NP.UI.toast) {
+    NP.UI.toast('<%= error %>', 'error');
   }
   <% } %>
 })();

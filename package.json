@@ -1,6 +1,6 @@
 {
   "name": "nodepulse",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Homelab Dashboard + CLI für Infrastruktur-Management",
   "main": "src/index.js",
   "bin": {

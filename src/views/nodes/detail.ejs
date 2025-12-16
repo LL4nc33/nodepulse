@@ -619,6 +619,8 @@
         <span class="btn-text">Aktualisieren</span>
         <span class="btn-loading"><span class="spinner"></span> Lade...</span>
       </button>
+      <button class="btn btn-success" onclick="openCreateVmModal(<%= node.id %>)">+ VM erstellen</button>
+      <button class="btn btn-success" onclick="openCreateCtModal(<%= node.id %>)">+ CT erstellen</button>
       <button class="btn btn-secondary" onclick="toggleSnapshotModal()">Snapshot erstellen</button>
     </div>
   </div>
@@ -1183,6 +1185,269 @@
     </div>
   </div>
 </div>
+
+<!-- VM Create Modal -->
+<div class="modal" id="create-vm-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeCreateVmModal()"></div>
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3>Neue VM erstellen</h3>
+      <button class="btn-close" onclick="closeCreateVmModal()" aria-label="Modal schliessen">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="create-vm-loading" class="loading-state">
+        <span class="spinner"></span> Lade Ressourcen...
+      </div>
+      <form id="create-vm-form" onsubmit="submitCreateVm(event)" style="display: none;">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vm-vmid">VMID *</label>
+            <input type="number" id="vm-vmid" name="vmid" min="100" max="999999" required>
+            <small>100-999999</small>
+          </div>
+          <div class="form-group">
+            <label for="vm-name">Name *</label>
+            <input type="text" id="vm-name" name="name" pattern="[a-zA-Z0-9][a-zA-Z0-9._-]*" maxlength="63" required>
+            <small>Alphanumerisch, -, _, .</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="vm-iso">ISO Image *</label>
+          <select id="vm-iso" name="iso" required>
+            <option value="">-- ISO waehlen --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="vm-storage">Storage *</label>
+          <select id="vm-storage" name="storage" required>
+            <option value="">-- Storage waehlen --</option>
+          </select>
+          <small>Fuer VM-Disk</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vm-cores">CPU Cores *</label>
+            <input type="number" id="vm-cores" name="cores" min="1" max="128" value="2" required>
+          </div>
+          <div class="form-group">
+            <label for="vm-sockets">Sockets</label>
+            <input type="number" id="vm-sockets" name="sockets" min="1" max="8" value="1">
+          </div>
+          <div class="form-group">
+            <label for="vm-memory">RAM (MB) *</label>
+            <input type="number" id="vm-memory" name="memory" min="512" max="1048576" value="2048" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vm-disk">Disk (GB) *</label>
+            <input type="number" id="vm-disk" name="disk_size" min="1" max="10000" value="32" required>
+          </div>
+          <div class="form-group">
+            <label for="vm-ostype">OS Typ</label>
+            <select id="vm-ostype" name="ostype">
+              <option value="l26">Linux 2.6+ (l26)</option>
+              <option value="l24">Linux 2.4</option>
+              <option value="win11">Windows 11</option>
+              <option value="win10">Windows 10</option>
+              <option value="win8">Windows 8</option>
+              <option value="win7">Windows 7</option>
+              <option value="other">Andere</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="vm-bios">BIOS</label>
+            <select id="vm-bios" name="bios">
+              <option value="seabios">SeaBIOS (Legacy)</option>
+              <option value="ovmf">OVMF (UEFI)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vm-bridge">Network Bridge</label>
+            <select id="vm-bridge" name="net_bridge">
+              <option value="vmbr0">vmbr0</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="vm-netmodel">Network Model</label>
+            <select id="vm-netmodel" name="net_model">
+              <option value="virtio">VirtIO (empfohlen)</option>
+              <option value="e1000">Intel E1000</option>
+              <option value="rtl8139">Realtek RTL8139</option>
+              <option value="vmxnet3">VMware vmxnet3</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="vm-onboot" name="start_on_boot">
+              <span>Start bei Boot</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="vm-description">Beschreibung</label>
+          <input type="text" id="vm-description" name="description" maxlength="255">
+        </div>
+
+        <div id="create-vm-error" class="alert alert-error" style="display: none;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCreateVmModal()">Abbrechen</button>
+      <button class="btn btn-success" id="btn-create-vm" onclick="submitCreateVmBtn()" disabled>
+        <span class="btn-text">VM erstellen</span>
+        <span class="btn-loading"><span class="spinner"></span> Erstelle...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CT Create Modal -->
+<div class="modal" id="create-ct-modal" style="display: none;">
+  <div class="modal-backdrop" onclick="closeCreateCtModal()"></div>
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3>Neuen Container erstellen</h3>
+      <button class="btn-close" onclick="closeCreateCtModal()" aria-label="Modal schliessen">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="create-ct-loading" class="loading-state">
+        <span class="spinner"></span> Lade Ressourcen...
+      </div>
+      <form id="create-ct-form" onsubmit="submitCreateCt(event)" style="display: none;">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ct-ctid">CTID *</label>
+            <input type="number" id="ct-ctid" name="ctid" min="100" max="999999" required>
+            <small>100-999999</small>
+          </div>
+          <div class="form-group">
+            <label for="ct-hostname">Hostname *</label>
+            <input type="text" id="ct-hostname" name="hostname" pattern="[a-zA-Z0-9][a-zA-Z0-9._-]*" maxlength="63" required>
+            <small>Alphanumerisch, -, _</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ct-template">Template *</label>
+          <select id="ct-template" name="template" required>
+            <option value="">-- Template waehlen --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="ct-storage">Storage *</label>
+          <select id="ct-storage" name="storage" required>
+            <option value="">-- Storage waehlen --</option>
+          </select>
+          <small>Fuer Container Root-FS</small>
+        </div>
+
+        <div class="form-group">
+          <label for="ct-password">Root Passwort *</label>
+          <input type="password" id="ct-password" name="password" minlength="5" maxlength="64" required>
+          <small>Mindestens 5 Zeichen</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ct-cores">CPU Cores *</label>
+            <input type="number" id="ct-cores" name="cores" min="1" max="128" value="2" required>
+          </div>
+          <div class="form-group">
+            <label for="ct-memory">RAM (MB) *</label>
+            <input type="number" id="ct-memory" name="memory" min="64" max="1048576" value="1024" required>
+          </div>
+          <div class="form-group">
+            <label for="ct-swap">Swap (MB)</label>
+            <input type="number" id="ct-swap" name="swap" min="0" max="131072" value="512">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ct-disk">Disk (GB) *</label>
+            <input type="number" id="ct-disk" name="disk_size" min="1" max="10000" value="8" required>
+          </div>
+          <div class="form-group">
+            <label for="ct-bridge">Network Bridge</label>
+            <select id="ct-bridge" name="net_bridge">
+              <option value="vmbr0">vmbr0</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ct-ipconfig">IP Konfiguration</label>
+          <select id="ct-ipconfig-type" onchange="toggleCtIpConfig()">
+            <option value="dhcp">DHCP (automatisch)</option>
+            <option value="static">Statische IP</option>
+          </select>
+        </div>
+
+        <div id="ct-static-ip-fields" style="display: none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="ct-ip">IP/CIDR *</label>
+              <input type="text" id="ct-ip" name="ip_config" placeholder="192.168.1.100/24">
+              <small>z.B. 192.168.1.100/24</small>
+            </div>
+            <div class="form-group">
+              <label for="ct-gateway">Gateway</label>
+              <input type="text" id="ct-gateway" name="gateway" placeholder="192.168.1.1">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="ct-unprivileged" name="unprivileged" checked>
+              <span>Unprivileged (empfohlen)</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="ct-nesting" name="nesting">
+              <span>Nesting (fuer Docker)</span>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="ct-onboot" name="start_on_boot">
+              <span>Start bei Boot</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="ct-description">Beschreibung</label>
+          <input type="text" id="ct-description" name="description" maxlength="255">
+        </div>
+
+        <div id="create-ct-error" class="alert alert-error" style="display: none;"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCreateCtModal()">Abbrechen</button>
+      <button class="btn btn-success" id="btn-create-ct" onclick="submitCreateCtBtn()" disabled>
+        <span class="btn-text">CT erstellen</span>
+        <span class="btn-loading"><span class="spinner"></span> Erstelle...</span>
+      </button>
+    </div>
+  </div>
+</div>
 <% } %>
 
 <!-- Logs Modal -->
@@ -1469,7 +1734,7 @@ function applyDockerFilters() {
   }
 }
 
-// Discovery function
+// Discovery function - uses NP.API and NP.UI
 function runDiscovery(nodeId) {
   var resultEl = document.getElementById('test-result');
   var btnEl = document.getElementById('btn-discover');
@@ -1477,157 +1742,59 @@ function runDiscovery(nodeId) {
 
   if (!resultEl) return;
 
-  // Show loading
-  resultEl.className = 'alert alert-info';
-  resultEl.textContent = 'Discovery läuft... (kann 1-2 Minuten dauern)';
-  resultEl.style.display = 'block';
+  // Show loading using NP.UI
+  NP.UI.showAlert(resultEl, 'info', 'Discovery läuft... (kann 1-2 Minuten dauern)');
+  NP.UI.setButtonLoading(btnEl, true);
+  NP.UI.setButtonsLoading('.btn-discover-secondary', true);
 
-  // Set loading state on all discovery buttons
-  if (btnEl) {
-    btnEl.classList.add('loading');
-    btnEl.disabled = true;
-  }
-  for (var i = 0; i < secondaryBtns.length; i++) {
-    secondaryBtns[i].classList.add('loading');
-    secondaryBtns[i].disabled = true;
-  }
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/discover', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 180000; // 3 minutes
-
-  function resetButtons() {
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    for (var i = 0; i < secondaryBtns.length; i++) {
-      secondaryBtns[i].classList.remove('loading');
-      secondaryBtns[i].disabled = false;
-    }
-  }
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      resetButtons();
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+  // Use NP.API for the request
+  NP.API.post('/api/nodes/' + nodeId + '/discover', null, { timeout: 180000 })
+    .then(function(data) {
+      var msg = 'Discovery erfolgreich! Node-Typ: ' + (data.nodeType || 'Unbekannt');
+      if (data.hardwareError) {
+        msg += ' (Hardware-Warnung: ' + data.hardwareError + ')';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        var msg = 'Discovery erfolgreich! Node-Typ: ' + (response.data.nodeType || 'Unbekannt');
-        if (response.data.hardwareError) {
-          msg += ' (Hardware-Warnung: ' + response.data.hardwareError + ')';
-        }
-        msg += '. Seite wird neu geladen...';
-        resultEl.className = 'alert alert-success';
-        resultEl.textContent = msg;
-        setTimeout(function() {
-          window.location.reload();
-        }, 1500);
-      } else {
-        var errMsg = response.error ? response.error.message : 'Discovery fehlgeschlagen';
-        resultEl.className = 'alert alert-error';
-        resultEl.textContent = 'Fehler: ' + errMsg;
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    resetButtons();
-    resultEl.className = 'alert alert-error';
-    resultEl.textContent = 'Netzwerkfehler bei Discovery';
-  };
-
-  xhr.ontimeout = function() {
-    resetButtons();
-    resultEl.className = 'alert alert-error';
-    resultEl.textContent = 'Discovery Timeout (3 Minuten)';
-  };
-
-  xhr.send();
+      msg += '. Seite wird neu geladen...';
+      NP.UI.showAlert(resultEl, 'success', msg);
+      NP.UI.toast(msg, 'success');
+      setTimeout(function() {
+        window.location.reload();
+      }, 1500);
+    })
+    .catch(function(error) {
+      var errMsg = error.message || 'Discovery fehlgeschlagen';
+      NP.UI.showAlert(resultEl, 'error', 'Fehler: ' + errMsg);
+      NP.UI.toast(errMsg, 'error');
+    })
+    .finally(function() {
+      NP.UI.setButtonLoading(btnEl, false);
+      NP.UI.setButtonsLoading('.btn-discover-secondary', false);
+    });
 }
 
-// Docker functions
+// Docker functions - uses NP.API and NP.UI
 function refreshDocker(nodeId) {
   var resultEl = document.getElementById('docker-result');
   var btnEl = document.getElementById('btn-refresh-docker');
 
-  if (resultEl) {
-    resultEl.className = 'alert alert-info';
-    resultEl.textContent = 'Docker-Daten werden geladen...';
-    resultEl.style.display = 'block';
-  }
+  NP.UI.showAlert(resultEl, 'info', 'Docker-Daten werden geladen...');
+  NP.UI.setButtonLoading(btnEl, true);
 
-  if (btnEl) {
-    btnEl.classList.add('loading');
-    btnEl.disabled = true;
-  }
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/docker', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 120000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (btnEl) {
-        btnEl.classList.remove('loading');
-        btnEl.disabled = false;
-      }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Docker-Daten aktualisiert. Seite wird neu geladen...';
-        }
-        setTimeout(function() {
-          window.location.reload();
-        }, 1000);
-      } else {
-        if (resultEl) {
-          resultEl.className = 'alert alert-error';
-          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Netzwerkfehler';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Timeout (2 Minuten)';
-    }
-  };
-
-  xhr.send();
+  NP.API.post('/api/nodes/' + nodeId + '/docker', null, { timeout: 120000 })
+    .then(function(data) {
+      NP.UI.showAlert(resultEl, 'success', 'Docker-Daten aktualisiert. Seite wird neu geladen...');
+      NP.UI.toast('Docker-Daten aktualisiert', 'success');
+      setTimeout(function() {
+        window.location.reload();
+      }, 1000);
+    })
+    .catch(function(error) {
+      NP.UI.showAlert(resultEl, 'error', 'Fehler: ' + (error.message || 'Unbekannter Fehler'));
+      NP.UI.toast(error.message || 'Docker-Fehler', 'error');
+    })
+    .finally(function() {
+      NP.UI.setButtonLoading(btnEl, false);
+    });
 }
 
 function containerAction(nodeId, containerId, action) {
@@ -1640,58 +1807,20 @@ function containerAction(nodeId, containerId, action) {
     'unpause': 'Fortsetzen'
   };
 
-  if (resultEl) {
-    resultEl.className = 'alert alert-info';
-    resultEl.textContent = 'Container wird ' + (actionNames[action] || action) + '...';
-    resultEl.style.display = 'block';
-  }
+  NP.UI.showAlert(resultEl, 'info', 'Container wird ' + (actionNames[action] || action) + '...');
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/docker/containers/' + containerId + '/' + action, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Container ' + action + ' erfolgreich. Aktualisiere...';
-        }
-        setTimeout(function() {
-          refreshDocker(nodeId);
-        }, 500);
-      } else {
-        if (resultEl) {
-          resultEl.className = 'alert alert-error';
-          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Netzwerkfehler';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Timeout (60 Sekunden)';
-    }
-  };
-
-  xhr.send();
+  NP.API.post('/api/nodes/' + nodeId + '/docker/containers/' + containerId + '/' + action, null, { timeout: 60000 })
+    .then(function(data) {
+      NP.UI.showAlert(resultEl, 'success', 'Container ' + action + ' erfolgreich. Aktualisiere...');
+      NP.UI.toast('Container ' + action + ' erfolgreich', 'success');
+      setTimeout(function() {
+        refreshDocker(nodeId);
+      }, 500);
+    })
+    .catch(function(error) {
+      NP.UI.showAlert(resultEl, 'error', 'Fehler: ' + (error.message || 'Unbekannter Fehler'));
+      NP.UI.toast(error.message || 'Fehler', 'error');
+    });
 }
 
 // Track active logs XHR for cancellation
@@ -2278,81 +2407,29 @@ function convertToTemplate() {
   xhr.send('{}');
 }
 
-// Proxmox functions
+// Proxmox functions - uses NP.API and NP.UI
 function refreshProxmox(nodeId) {
   var resultEl = document.getElementById('proxmox-result');
   var btnEl = document.getElementById('btn-refresh-proxmox');
 
-  if (resultEl) {
-    resultEl.className = 'alert alert-info';
-    resultEl.textContent = 'Proxmox-Daten werden geladen...';
-    resultEl.style.display = 'block';
-  }
+  NP.UI.showAlert(resultEl, 'info', 'Proxmox-Daten werden geladen...');
+  NP.UI.setButtonLoading(btnEl, true);
 
-  if (btnEl) {
-    btnEl.classList.add('loading');
-    btnEl.disabled = true;
-  }
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/proxmox', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 180000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (btnEl) {
-        btnEl.classList.remove('loading');
-        btnEl.disabled = false;
-      }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Proxmox-Daten aktualisiert. Seite wird neu geladen...';
-        }
-        setTimeout(function() {
-          window.location.reload();
-        }, 1000);
-      } else {
-        if (resultEl) {
-          resultEl.className = 'alert alert-error';
-          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Netzwerkfehler';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Timeout (3 Minuten)';
-    }
-  };
-
-  xhr.send();
+  NP.API.post('/api/nodes/' + nodeId + '/proxmox', null, { timeout: 180000 })
+    .then(function(data) {
+      NP.UI.showAlert(resultEl, 'success', 'Proxmox-Daten aktualisiert. Seite wird neu geladen...');
+      NP.UI.toast('Proxmox-Daten aktualisiert', 'success');
+      setTimeout(function() {
+        window.location.reload();
+      }, 1000);
+    })
+    .catch(function(error) {
+      NP.UI.showAlert(resultEl, 'error', 'Fehler: ' + (error.message || 'Unbekannter Fehler'));
+      NP.UI.toast(error.message || 'Proxmox-Fehler', 'error');
+    })
+    .finally(function() {
+      NP.UI.setButtonLoading(btnEl, false);
+    });
 }
 
 function proxmoxAction(nodeId, vmType, vmid, action) {
@@ -2375,20 +2452,53 @@ function proxmoxAction(nodeId, vmType, vmid, action) {
     }
   }
 
-  if (resultEl) {
-    resultEl.className = 'alert alert-info';
-    resultEl.textContent = typeName + ' ' + vmid + ' wird ' + (actionNames[action] || action) + '...';
-    resultEl.style.display = 'block';
-  }
+  NP.UI.showAlert(resultEl, 'info', typeName + ' ' + vmid + ' wird ' + (actionNames[action] || action) + '...');
 
   var endpoint = vmType === 'vm' ? 'vms' : 'cts';
+  NP.API.post('/api/nodes/' + nodeId + '/proxmox/' + endpoint + '/' + vmid + '/' + action, null, { timeout: 180000 })
+    .then(function(data) {
+      NP.UI.showAlert(resultEl, 'success', typeName + ' ' + action + ' erfolgreich. Aktualisiere...');
+      NP.UI.toast(typeName + ' ' + action + ' erfolgreich', 'success');
+      setTimeout(function() {
+        refreshProxmox(nodeId);
+      }, 1000);
+    })
+    .catch(function(error) {
+      NP.UI.showAlert(resultEl, 'error', 'Fehler: ' + (error.message || 'Unbekannter Fehler'));
+      NP.UI.toast(error.message || 'Fehler', 'error');
+    });
+}
+
+// =====================================================
+// VM/CT Creation Modal Functions
+// =====================================================
+
+var createVmNodeId = null;
+var createCtNodeId = null;
+
+function openCreateVmModal(nodeId) {
+  createVmNodeId = nodeId;
+  var modal = document.getElementById('create-vm-modal');
+  var loading = document.getElementById('create-vm-loading');
+  var form = document.getElementById('create-vm-form');
+  var btn = document.getElementById('btn-create-vm');
+  var error = document.getElementById('create-vm-error');
+
+  if (modal) modal.style.display = 'flex';
+  if (loading) loading.style.display = 'flex';
+  if (form) form.style.display = 'none';
+  if (btn) btn.disabled = true;
+  if (error) error.style.display = 'none';
+
+  // Load resources from API
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/proxmox/' + endpoint + '/' + vmid + '/' + action, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 180000;
+  xhr.open('GET', '/api/nodes/' + nodeId + '/proxmox/resources', true);
+  xhr.timeout = 60000;
 
   xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
+      if (loading) loading.style.display = 'none';
+
       var response;
       try {
         response = JSON.parse(xhr.responseText);
@@ -2397,37 +2507,450 @@ function proxmoxAction(nodeId, vmType, vmid, action) {
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = typeName + ' ' + action + ' erfolgreich. Aktualisiere...';
-        }
-        setTimeout(function() {
-          refreshProxmox(nodeId);
-        }, 1000);
+        populateVmForm(response.data);
+        if (form) form.style.display = 'block';
+        if (btn) btn.disabled = false;
       } else {
-        if (resultEl) {
-          resultEl.className = 'alert alert-error';
-          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+        if (error) {
+          error.textContent = 'Fehler beim Laden der Ressourcen: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+          error.style.display = 'block';
         }
       }
     }
   };
 
   xhr.onerror = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Netzwerkfehler';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Timeout (3 Minuten)';
+    if (loading) loading.style.display = 'none';
+    if (error) {
+      error.textContent = 'Netzwerkfehler beim Laden der Ressourcen';
+      error.style.display = 'block';
     }
   };
 
   xhr.send();
+}
+
+function populateVmForm(data) {
+  // Populate ISOs
+  var isoSelect = document.getElementById('vm-iso');
+  if (isoSelect && data.isos) {
+    isoSelect.innerHTML = '<option value="">-- ISO waehlen --</option>';
+    data.isos.forEach(function(iso) {
+      var opt = document.createElement('option');
+      opt.value = iso.volid;
+      opt.textContent = iso.filename + ' (' + iso.storage + ')';
+      isoSelect.appendChild(opt);
+    });
+  }
+
+  // Populate Storage (only those supporting images/rootdir)
+  var storageSelect = document.getElementById('vm-storage');
+  if (storageSelect && data.storage) {
+    storageSelect.innerHTML = '<option value="">-- Storage waehlen --</option>';
+    data.storage.forEach(function(s) {
+      if (s.content && (s.content.indexOf('images') > -1 || s.content.indexOf('rootdir') > -1)) {
+        var opt = document.createElement('option');
+        opt.value = s.name;
+        var avail = s.available_bytes ? ' - ' + formatBytes(s.available_bytes) + ' frei' : '';
+        opt.textContent = s.name + ' (' + s.type + ')' + avail;
+        storageSelect.appendChild(opt);
+      }
+    });
+  }
+
+  // Populate Bridges
+  var bridgeSelect = document.getElementById('vm-bridge');
+  if (bridgeSelect && data.bridges) {
+    bridgeSelect.innerHTML = '';
+    if (data.bridges.length === 0) {
+      var opt = document.createElement('option');
+      opt.value = 'vmbr0';
+      opt.textContent = 'vmbr0 (Standard)';
+      bridgeSelect.appendChild(opt);
+    } else {
+      data.bridges.forEach(function(br) {
+        var opt = document.createElement('option');
+        opt.value = br.name;
+        opt.textContent = br.name + (br.cidr ? ' (' + br.cidr + ')' : '');
+        bridgeSelect.appendChild(opt);
+      });
+    }
+  }
+
+  // Set next VMID
+  var vmidInput = document.getElementById('vm-vmid');
+  if (vmidInput && data.nextid) {
+    vmidInput.value = data.nextid;
+  }
+}
+
+function closeCreateVmModal() {
+  var modal = document.getElementById('create-vm-modal');
+  if (modal) modal.style.display = 'none';
+
+  // Reset form
+  var form = document.getElementById('create-vm-form');
+  if (form) form.reset();
+  var error = document.getElementById('create-vm-error');
+  if (error) error.style.display = 'none';
+  var btn = document.getElementById('btn-create-vm');
+  if (btn) {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+  createVmNodeId = null;
+}
+
+function submitCreateVmBtn() {
+  var form = document.getElementById('create-vm-form');
+  if (form) {
+    // Trigger form submit
+    var event = new Event('submit', { cancelable: true });
+    form.dispatchEvent(event);
+  }
+}
+
+function submitCreateVm(event) {
+  event.preventDefault();
+
+  if (!createVmNodeId) return;
+
+  var btn = document.getElementById('btn-create-vm');
+  var error = document.getElementById('create-vm-error');
+
+  if (btn) {
+    btn.classList.add('loading');
+    btn.disabled = true;
+  }
+  if (error) error.style.display = 'none';
+
+  var formData = {
+    vmid: parseInt(document.getElementById('vm-vmid').value, 10),
+    name: document.getElementById('vm-name').value,
+    iso: document.getElementById('vm-iso').value,
+    storage: document.getElementById('vm-storage').value,
+    cores: parseInt(document.getElementById('vm-cores').value, 10),
+    sockets: parseInt(document.getElementById('vm-sockets').value, 10),
+    memory: parseInt(document.getElementById('vm-memory').value, 10),
+    disk_size: parseInt(document.getElementById('vm-disk').value, 10),
+    ostype: document.getElementById('vm-ostype').value,
+    bios: document.getElementById('vm-bios').value,
+    net_bridge: document.getElementById('vm-bridge').value,
+    net_model: document.getElementById('vm-netmodel').value,
+    start_on_boot: document.getElementById('vm-onboot').checked,
+    description: document.getElementById('vm-description').value
+  };
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/nodes/' + createVmNodeId + '/proxmox/vms/create', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 180000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        alert('VM ' + formData.vmid + ' erfolgreich erstellt!');
+        closeCreateVmModal();
+        window.location.reload();
+      } else {
+        if (error) {
+          error.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+          error.style.display = 'block';
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    if (btn) {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+    if (error) {
+      error.textContent = 'Netzwerkfehler';
+      error.style.display = 'block';
+    }
+  };
+
+  xhr.ontimeout = function() {
+    if (btn) {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+    if (error) {
+      error.textContent = 'Timeout (3 Minuten)';
+      error.style.display = 'block';
+    }
+  };
+
+  xhr.send(JSON.stringify(formData));
+}
+
+// CT Creation Functions
+function openCreateCtModal(nodeId) {
+  createCtNodeId = nodeId;
+  var modal = document.getElementById('create-ct-modal');
+  var loading = document.getElementById('create-ct-loading');
+  var form = document.getElementById('create-ct-form');
+  var btn = document.getElementById('btn-create-ct');
+  var error = document.getElementById('create-ct-error');
+
+  if (modal) modal.style.display = 'flex';
+  if (loading) loading.style.display = 'flex';
+  if (form) form.style.display = 'none';
+  if (btn) btn.disabled = true;
+  if (error) error.style.display = 'none';
+
+  // Load resources from API
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/nodes/' + nodeId + '/proxmox/resources', true);
+  xhr.timeout = 60000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (loading) loading.style.display = 'none';
+
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        populateCtForm(response.data);
+        if (form) form.style.display = 'block';
+        if (btn) btn.disabled = false;
+      } else {
+        if (error) {
+          error.textContent = 'Fehler beim Laden der Ressourcen: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+          error.style.display = 'block';
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    if (loading) loading.style.display = 'none';
+    if (error) {
+      error.textContent = 'Netzwerkfehler beim Laden der Ressourcen';
+      error.style.display = 'block';
+    }
+  };
+
+  xhr.send();
+}
+
+function populateCtForm(data) {
+  // Populate Templates
+  var templateSelect = document.getElementById('ct-template');
+  if (templateSelect && data.templates) {
+    templateSelect.innerHTML = '<option value="">-- Template waehlen --</option>';
+    data.templates.forEach(function(tpl) {
+      var opt = document.createElement('option');
+      opt.value = tpl.volid;
+      opt.textContent = tpl.filename + ' (' + tpl.storage + ')';
+      templateSelect.appendChild(opt);
+    });
+  }
+
+  // Populate Storage (only those supporting rootdir)
+  var storageSelect = document.getElementById('ct-storage');
+  if (storageSelect && data.storage) {
+    storageSelect.innerHTML = '<option value="">-- Storage waehlen --</option>';
+    data.storage.forEach(function(s) {
+      if (s.content && s.content.indexOf('rootdir') > -1) {
+        var opt = document.createElement('option');
+        opt.value = s.name;
+        var avail = s.available_bytes ? ' - ' + formatBytes(s.available_bytes) + ' frei' : '';
+        opt.textContent = s.name + ' (' + s.type + ')' + avail;
+        storageSelect.appendChild(opt);
+      }
+    });
+  }
+
+  // Populate Bridges
+  var bridgeSelect = document.getElementById('ct-bridge');
+  if (bridgeSelect && data.bridges) {
+    bridgeSelect.innerHTML = '';
+    if (data.bridges.length === 0) {
+      var opt = document.createElement('option');
+      opt.value = 'vmbr0';
+      opt.textContent = 'vmbr0 (Standard)';
+      bridgeSelect.appendChild(opt);
+    } else {
+      data.bridges.forEach(function(br) {
+        var opt = document.createElement('option');
+        opt.value = br.name;
+        opt.textContent = br.name + (br.cidr ? ' (' + br.cidr + ')' : '');
+        bridgeSelect.appendChild(opt);
+      });
+    }
+  }
+
+  // Set next CTID
+  var ctidInput = document.getElementById('ct-ctid');
+  if (ctidInput && data.nextid) {
+    ctidInput.value = data.nextid;
+  }
+}
+
+function closeCreateCtModal() {
+  var modal = document.getElementById('create-ct-modal');
+  if (modal) modal.style.display = 'none';
+
+  // Reset form
+  var form = document.getElementById('create-ct-form');
+  if (form) form.reset();
+  var error = document.getElementById('create-ct-error');
+  if (error) error.style.display = 'none';
+  var btn = document.getElementById('btn-create-ct');
+  if (btn) {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+  // Reset IP config
+  var staticFields = document.getElementById('ct-static-ip-fields');
+  if (staticFields) staticFields.style.display = 'none';
+  var ipTypeSelect = document.getElementById('ct-ipconfig-type');
+  if (ipTypeSelect) ipTypeSelect.value = 'dhcp';
+
+  createCtNodeId = null;
+}
+
+function toggleCtIpConfig() {
+  var ipTypeSelect = document.getElementById('ct-ipconfig-type');
+  var staticFields = document.getElementById('ct-static-ip-fields');
+  var ipInput = document.getElementById('ct-ip');
+
+  if (ipTypeSelect && staticFields) {
+    if (ipTypeSelect.value === 'static') {
+      staticFields.style.display = 'block';
+      if (ipInput) ipInput.required = true;
+    } else {
+      staticFields.style.display = 'none';
+      if (ipInput) ipInput.required = false;
+    }
+  }
+}
+
+function submitCreateCtBtn() {
+  var form = document.getElementById('create-ct-form');
+  if (form) {
+    var event = new Event('submit', { cancelable: true });
+    form.dispatchEvent(event);
+  }
+}
+
+function submitCreateCt(event) {
+  event.preventDefault();
+
+  if (!createCtNodeId) return;
+
+  var btn = document.getElementById('btn-create-ct');
+  var error = document.getElementById('create-ct-error');
+
+  if (btn) {
+    btn.classList.add('loading');
+    btn.disabled = true;
+  }
+  if (error) error.style.display = 'none';
+
+  var ipConfigType = document.getElementById('ct-ipconfig-type').value;
+  var ipConfig = 'dhcp';
+  var gateway = '';
+
+  if (ipConfigType === 'static') {
+    ipConfig = document.getElementById('ct-ip').value;
+    gateway = document.getElementById('ct-gateway').value;
+  }
+
+  var formData = {
+    ctid: parseInt(document.getElementById('ct-ctid').value, 10),
+    hostname: document.getElementById('ct-hostname').value,
+    template: document.getElementById('ct-template').value,
+    storage: document.getElementById('ct-storage').value,
+    password: document.getElementById('ct-password').value,
+    cores: parseInt(document.getElementById('ct-cores').value, 10),
+    memory: parseInt(document.getElementById('ct-memory').value, 10),
+    swap: parseInt(document.getElementById('ct-swap').value, 10),
+    disk_size: parseInt(document.getElementById('ct-disk').value, 10),
+    net_bridge: document.getElementById('ct-bridge').value,
+    ip_config: ipConfig,
+    gateway: gateway,
+    unprivileged: document.getElementById('ct-unprivileged').checked,
+    nesting: document.getElementById('ct-nesting').checked,
+    start_on_boot: document.getElementById('ct-onboot').checked,
+    description: document.getElementById('ct-description').value
+  };
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/nodes/' + createCtNodeId + '/proxmox/cts/create', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 180000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+
+      var response;
+      try {
+        response = JSON.parse(xhr.responseText);
+      } catch (e) {
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
+        alert('CT ' + formData.ctid + ' erfolgreich erstellt!');
+        closeCreateCtModal();
+        window.location.reload();
+      } else {
+        if (error) {
+          error.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
+          error.style.display = 'block';
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    if (btn) {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+    if (error) {
+      error.textContent = 'Netzwerkfehler';
+      error.style.display = 'block';
+    }
+  };
+
+  xhr.ontimeout = function() {
+    if (btn) {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+    if (error) {
+      error.textContent = 'Timeout (3 Minuten)';
+      error.style.display = 'block';
+    }
+  };
+
+  xhr.send(JSON.stringify(formData));
 }
 
 // Track active snapshot XHR for cancellation
