@@ -2151,6 +2151,540 @@ router.delete('/nodes/:id/proxmox/snapshots/:vmType/:vmid/:snapName', asyncHandl
 }));
 
 // =====================================================
+// Proxmox VM/CT Creation Helper Endpoints
+// =====================================================
+
+// Get all Proxmox resources for VM/CT creation (ISOs, Templates, Storage, Bridges, NextID)
+router.get('/nodes/:id/proxmox/resources', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Verify it's a Proxmox host
+  var discovery = db.discovery.get(nodeId);
+  if (!discovery || !discovery.is_proxmox_host) {
+    return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
+  }
+
+  try {
+    var data = await collector.runProxmoxResources(node);
+    apiResponse(res, 200, data);
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Get available ISOs
+router.get('/nodes/:id/proxmox/isos', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  var discovery = db.discovery.get(nodeId);
+  if (!discovery || !discovery.is_proxmox_host) {
+    return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
+  }
+
+  try {
+    var data = await collector.runProxmoxResources(node);
+    apiResponse(res, 200, { isos: data.isos || [] });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Get available CT templates
+router.get('/nodes/:id/proxmox/templates', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  var discovery = db.discovery.get(nodeId);
+  if (!discovery || !discovery.is_proxmox_host) {
+    return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
+  }
+
+  try {
+    var data = await collector.runProxmoxResources(node);
+    apiResponse(res, 200, { templates: data.templates || [] });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Get available storage with content types
+router.get('/nodes/:id/proxmox/storage/available', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  var discovery = db.discovery.get(nodeId);
+  if (!discovery || !discovery.is_proxmox_host) {
+    return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
+  }
+
+  try {
+    var data = await collector.runProxmoxResources(node);
+    apiResponse(res, 200, { storage: data.storage || [] });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Get available network bridges
+router.get('/nodes/:id/proxmox/bridges', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  var discovery = db.discovery.get(nodeId);
+  if (!discovery || !discovery.is_proxmox_host) {
+    return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
+  }
+
+  try {
+    var data = await collector.runProxmoxResources(node);
+    apiResponse(res, 200, { bridges: data.bridges || [] });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Get next available VMID
+router.get('/nodes/:id/proxmox/nextid', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  var discovery = db.discovery.get(nodeId);
+  if (!discovery || !discovery.is_proxmox_host) {
+    return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
+  }
+
+  try {
+    var data = await collector.runProxmoxResources(node);
+    apiResponse(res, 200, { nextid: data.nextid || 100 });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// =====================================================
+// Proxmox VM/CT Creation Endpoints
+// =====================================================
+
+// Validation helper for VM/CT names
+function isValidVmName(name) {
+  if (!name || typeof name !== 'string') return false;
+  if (name.length > 63) return false;
+  return /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name);
+}
+
+// Escape shell argument (single quotes)
+function shellEscape(str) {
+  if (!str) return "''";
+  return "'" + String(str).replace(/'/g, "'\\''") + "'";
+}
+
+// Create new VM
+router.post('/nodes/:id/proxmox/vms/create', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  var discovery = db.discovery.get(nodeId);
+  if (!discovery || !discovery.is_proxmox_host) {
+    return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
+  }
+
+  // Extract and validate parameters
+  var vmid = parseInt(req.body.vmid, 10);
+  var name = req.body.name;
+  var iso = req.body.iso;
+  var storage = req.body.storage;
+  var cores = parseInt(req.body.cores, 10) || 2;
+  var sockets = parseInt(req.body.sockets, 10) || 1;
+  var memory = parseInt(req.body.memory, 10) || 2048;
+  var diskSize = parseInt(req.body.disk_size, 10) || 32;
+  var ostype = req.body.ostype || 'l26';
+  var bios = req.body.bios || 'seabios';
+  var netBridge = req.body.net_bridge || 'vmbr0';
+  var netModel = req.body.net_model || 'virtio';
+  var startOnBoot = req.body.start_on_boot === true || req.body.start_on_boot === 'true';
+  var description = req.body.description || '';
+
+  // === VALIDATION ===
+
+  // VMID: 100-999999
+  if (isNaN(vmid) || vmid < 100 || vmid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'VMID muss zwischen 100 und 999999 liegen' });
+  }
+
+  // Name: alphanumeric, -, _, ., max 63 chars, must start with alphanumeric
+  if (!isValidVmName(name)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_NAME', message: 'Name muss mit Buchstabe/Zahl beginnen und darf nur a-z, 0-9, -, _, . enthalten (max 63 Zeichen)' });
+  }
+
+  // ISO: required, must be volid format (storage:iso/filename.iso)
+  if (!iso || typeof iso !== 'string' || !/^[a-zA-Z0-9_-]+:iso\/[^\s]+\.iso$/i.test(iso)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ISO', message: 'ISO muss im Format storage:iso/filename.iso sein' });
+  }
+
+  // Storage: required
+  if (!storage || typeof storage !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(storage)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_STORAGE', message: 'Ungueltiger Storage-Name' });
+  }
+
+  // Cores: 1-128
+  if (isNaN(cores) || cores < 1 || cores > 128) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CORES', message: 'Cores muss zwischen 1 und 128 liegen' });
+  }
+
+  // Sockets: 1-8
+  if (isNaN(sockets) || sockets < 1 || sockets > 8) {
+    return apiResponse(res, 400, null, { code: 'INVALID_SOCKETS', message: 'Sockets muss zwischen 1 und 8 liegen' });
+  }
+
+  // Memory: 512-1048576 MB
+  if (isNaN(memory) || memory < 512 || memory > 1048576) {
+    return apiResponse(res, 400, null, { code: 'INVALID_MEMORY', message: 'Memory muss zwischen 512 MB und 1 TB liegen' });
+  }
+
+  // Disk size: 1-10000 GB
+  if (isNaN(diskSize) || diskSize < 1 || diskSize > 10000) {
+    return apiResponse(res, 400, null, { code: 'INVALID_DISK_SIZE', message: 'Disk-Groesse muss zwischen 1 und 10000 GB liegen' });
+  }
+
+  // OS Type
+  var validOsTypes = ['l26', 'l24', 'win11', 'win10', 'win8', 'win7', 'wvista', 'wxp', 'w2k8', 'w2k3', 'w2k', 'solaris', 'other'];
+  if (!validOsTypes.includes(ostype)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_OSTYPE', message: 'Ungueltiger OS-Typ. Erlaubt: ' + validOsTypes.join(', ') });
+  }
+
+  // BIOS
+  if (bios !== 'seabios' && bios !== 'ovmf') {
+    return apiResponse(res, 400, null, { code: 'INVALID_BIOS', message: 'BIOS muss seabios oder ovmf sein' });
+  }
+
+  // Network bridge
+  if (!/^[a-zA-Z0-9_-]+$/.test(netBridge)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_NET_BRIDGE', message: 'Ungueltiger Network-Bridge Name' });
+  }
+
+  // Network model
+  var validNetModels = ['virtio', 'e1000', 'rtl8139', 'vmxnet3'];
+  if (!validNetModels.includes(netModel)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_NET_MODEL', message: 'Ungueltiges Netzwerk-Modell. Erlaubt: ' + validNetModels.join(', ') });
+  }
+
+  // Description (max 255 chars, safe characters only)
+  if (description && description.length > 255) {
+    return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung darf maximal 255 Zeichen lang sein' });
+  }
+  if (description && !/^[a-zA-Z0-9\s\-_.,\u00C0-\u017F]*$/.test(description)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung enthaelt ungueltige Zeichen' });
+  }
+
+  try {
+    // Build the qm create command
+    var command = 'qm create ' + vmid;
+    command += ' --name ' + shellEscape(name);
+    command += ' --cores ' + cores;
+    command += ' --sockets ' + sockets;
+    command += ' --memory ' + memory;
+    command += ' --ostype ' + ostype;
+    command += ' --bios ' + bios;
+    command += ' --scsihw virtio-scsi-single';
+    command += ' --scsi0 ' + storage + ':' + diskSize + ',iothread=1';
+    command += ' --ide2 ' + iso + ',media=cdrom';
+    command += ' --boot order=scsi0\\;ide2';
+    command += ' --net0 ' + netModel + ',bridge=' + netBridge;
+    command += ' --onboot ' + (startOnBoot ? '1' : '0');
+
+    if (description) {
+      command += ' --description ' + shellEscape(description);
+    }
+
+    var result = await collector.runProxmoxCommand(node, command, 120000);
+
+    if (result.exitCode !== 0) {
+      // Map common Proxmox errors to user-friendly messages
+      var errMsg = result.stderr || 'VM-Erstellung fehlgeschlagen';
+      if (errMsg.indexOf('already exists') > -1) {
+        return apiResponse(res, 409, null, { code: 'VMID_EXISTS', message: 'VM mit dieser VMID existiert bereits' });
+      }
+      if (errMsg.indexOf('storage') > -1 && errMsg.indexOf('does not exist') > -1) {
+        return apiResponse(res, 400, null, { code: 'STORAGE_NOT_FOUND', message: 'Storage existiert nicht' });
+      }
+      if (errMsg.indexOf('not enough space') > -1) {
+        return apiResponse(res, 400, null, { code: 'NO_SPACE', message: 'Nicht genuegend Speicherplatz auf Storage' });
+      }
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: errMsg });
+    }
+
+    // Refresh Proxmox data
+    try {
+      await collector.runProxmox(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 201, {
+      vmid: vmid,
+      name: name,
+      type: 'vm',
+      created: true,
+      message: 'VM erfolgreich erstellt'
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// Create new CT (Container)
+router.post('/nodes/:id/proxmox/cts/create', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  var discovery = db.discovery.get(nodeId);
+  if (!discovery || !discovery.is_proxmox_host) {
+    return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
+  }
+
+  // Extract and validate parameters
+  var ctid = parseInt(req.body.ctid, 10);
+  var hostname = req.body.hostname;
+  var template = req.body.template;
+  var storage = req.body.storage;
+  var password = req.body.password;
+  var sshPublicKeys = req.body.ssh_public_keys || '';
+  var cores = parseInt(req.body.cores, 10) || 2;
+  var memory = parseInt(req.body.memory, 10) || 1024;
+  var diskSize = parseInt(req.body.disk_size, 10) || 8;
+  var swap = parseInt(req.body.swap, 10) || 512;
+  var netBridge = req.body.net_bridge || 'vmbr0';
+  var ipConfig = req.body.ip_config || 'dhcp';
+  var gateway = req.body.gateway || '';
+  var unprivileged = req.body.unprivileged !== false && req.body.unprivileged !== 'false';
+  var nesting = req.body.nesting === true || req.body.nesting === 'true';
+  var startOnBoot = req.body.start_on_boot === true || req.body.start_on_boot === 'true';
+  var description = req.body.description || '';
+
+  // === VALIDATION ===
+
+  // CTID: 100-999999
+  if (isNaN(ctid) || ctid < 100 || ctid > 999999) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'CTID muss zwischen 100 und 999999 liegen' });
+  }
+
+  // Hostname: alphanumeric, -, max 63 chars, must start with alphanumeric
+  if (!isValidVmName(hostname)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_HOSTNAME', message: 'Hostname muss mit Buchstabe/Zahl beginnen und darf nur a-z, 0-9, -, _ enthalten (max 63 Zeichen)' });
+  }
+
+  // Template: required, must be volid format (storage:vztmpl/filename)
+  if (!template || typeof template !== 'string' || !/^[a-zA-Z0-9_-]+:vztmpl\/[^\s]+$/.test(template)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_TEMPLATE', message: 'Template muss im Format storage:vztmpl/filename sein' });
+  }
+
+  // Storage: required
+  if (!storage || typeof storage !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(storage)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_STORAGE', message: 'Ungueltiger Storage-Name' });
+  }
+
+  // Password or SSH key required
+  if (!password && !sshPublicKeys) {
+    return apiResponse(res, 400, null, { code: 'MISSING_AUTH', message: 'Passwort oder SSH Public Key erforderlich' });
+  }
+
+  // Password validation (if provided)
+  if (password) {
+    if (password.length < 5) {
+      return apiResponse(res, 400, null, { code: 'INVALID_PASSWORD', message: 'Passwort muss mindestens 5 Zeichen lang sein' });
+    }
+    if (password.length > 64) {
+      return apiResponse(res, 400, null, { code: 'INVALID_PASSWORD', message: 'Passwort darf maximal 64 Zeichen lang sein' });
+    }
+  }
+
+  // Cores: 1-128
+  if (isNaN(cores) || cores < 1 || cores > 128) {
+    return apiResponse(res, 400, null, { code: 'INVALID_CORES', message: 'Cores muss zwischen 1 und 128 liegen' });
+  }
+
+  // Memory: 64-1048576 MB (CTs can have less memory than VMs)
+  if (isNaN(memory) || memory < 64 || memory > 1048576) {
+    return apiResponse(res, 400, null, { code: 'INVALID_MEMORY', message: 'Memory muss zwischen 64 MB und 1 TB liegen' });
+  }
+
+  // Disk size: 1-10000 GB
+  if (isNaN(diskSize) || diskSize < 1 || diskSize > 10000) {
+    return apiResponse(res, 400, null, { code: 'INVALID_DISK_SIZE', message: 'Disk-Groesse muss zwischen 1 und 10000 GB liegen' });
+  }
+
+  // Swap: 0-131072 MB
+  if (isNaN(swap) || swap < 0 || swap > 131072) {
+    return apiResponse(res, 400, null, { code: 'INVALID_SWAP', message: 'Swap muss zwischen 0 und 128 GB liegen' });
+  }
+
+  // Network bridge
+  if (!/^[a-zA-Z0-9_-]+$/.test(netBridge)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_NET_BRIDGE', message: 'Ungueltiger Network-Bridge Name' });
+  }
+
+  // IP config: dhcp or valid CIDR
+  var ipPart = 'dhcp';
+  if (ipConfig !== 'dhcp') {
+    // Validate CIDR format
+    if (!/^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$/.test(ipConfig)) {
+      return apiResponse(res, 400, null, { code: 'INVALID_IP_CONFIG', message: 'IP muss dhcp oder im CIDR-Format sein (z.B. 192.168.1.100/24)' });
+    }
+    ipPart = 'ip=' + ipConfig;
+
+    // Gateway required for static IP
+    if (gateway) {
+      if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(gateway)) {
+        return apiResponse(res, 400, null, { code: 'INVALID_GATEWAY', message: 'Ungueltige Gateway-IP' });
+      }
+      ipPart += ',gw=' + gateway;
+    }
+  }
+
+  // Description (max 255 chars, safe characters only)
+  if (description && description.length > 255) {
+    return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung darf maximal 255 Zeichen lang sein' });
+  }
+  if (description && !/^[a-zA-Z0-9\s\-_.,\u00C0-\u017F]*$/.test(description)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung enthaelt ungueltige Zeichen' });
+  }
+
+  try {
+    // Build the pct create command
+    var command = 'pct create ' + ctid + ' ' + template;
+    command += ' --hostname ' + shellEscape(hostname);
+    command += ' --rootfs ' + storage + ':' + diskSize;
+    command += ' --cores ' + cores;
+    command += ' --memory ' + memory;
+    command += ' --swap ' + swap;
+
+    if (password) {
+      command += ' --password ' + shellEscape(password);
+    }
+
+    if (sshPublicKeys) {
+      command += ' --ssh-public-keys ' + shellEscape(sshPublicKeys);
+    }
+
+    command += ' --net0 name=eth0,bridge=' + netBridge + ',' + ipPart;
+    command += ' --unprivileged ' + (unprivileged ? '1' : '0');
+
+    if (nesting) {
+      command += ' --features nesting=1';
+    }
+
+    command += ' --onboot ' + (startOnBoot ? '1' : '0');
+
+    if (description) {
+      command += ' --description ' + shellEscape(description);
+    }
+
+    var result = await collector.runProxmoxCommand(node, command, 180000);
+
+    if (result.exitCode !== 0) {
+      // Map common Proxmox errors to user-friendly messages
+      var errMsg = result.stderr || 'CT-Erstellung fehlgeschlagen';
+      if (errMsg.indexOf('already exists') > -1) {
+        return apiResponse(res, 409, null, { code: 'CTID_EXISTS', message: 'CT mit dieser CTID existiert bereits' });
+      }
+      if (errMsg.indexOf('storage') > -1 && errMsg.indexOf('does not exist') > -1) {
+        return apiResponse(res, 400, null, { code: 'STORAGE_NOT_FOUND', message: 'Storage existiert nicht' });
+      }
+      if (errMsg.indexOf('not enough space') > -1) {
+        return apiResponse(res, 400, null, { code: 'NO_SPACE', message: 'Nicht genuegend Speicherplatz auf Storage' });
+      }
+      if (errMsg.indexOf('template') > -1 && errMsg.indexOf('not found') > -1) {
+        return apiResponse(res, 400, null, { code: 'TEMPLATE_NOT_FOUND', message: 'Template nicht gefunden' });
+      }
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: errMsg });
+    }
+
+    // Refresh Proxmox data
+    try {
+      await collector.runProxmox(node);
+    } catch (refreshErr) {
+      // Ignore refresh errors
+    }
+
+    apiResponse(res, 201, {
+      ctid: ctid,
+      hostname: hostname,
+      type: 'ct',
+      created: true,
+      message: 'CT erfolgreich erstellt'
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PROXMOX_ERROR', message: err.message });
+  }
+}));
+
+// =====================================================
 // Settings API
 // =====================================================
 

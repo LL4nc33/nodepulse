@@ -1,10 +1,25 @@
 #!/bin/bash
 # nodepulse Discovery Script
 # Erkennt Node-Typ und Features
+# Robuste JSON-Ausgabe mit korrektem Escaping
 
-# Escape string for JSON (remove control characters, escape quotes/backslashes)
+# Escape string for JSON - handles all special characters
 json_escape() {
-    printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'
+    local str="$1"
+    printf '%s' "$str" | \
+        tr -d '\000-\011\013-\037' | \
+        sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g' | \
+        tr '\n' ' '
+}
+
+# Safe number output (returns 0 if empty/invalid)
+safe_num() {
+    local val="$1"
+    if [ -z "$val" ] || ! [[ "$val" =~ ^[0-9]+$ ]]; then
+        echo "0"
+    else
+        echo "$val"
+    fi
 }
 
 echo "{"
@@ -25,7 +40,7 @@ if command -v pveversion &>/dev/null; then
         CLUSTER_NODES=$(pvecm nodes 2>/dev/null | tail -n +2 | wc -l)
         echo "\"is_proxmox_cluster\": true,"
         echo "\"proxmox_cluster_name\": \"$(json_escape "$CLUSTER_NAME")\","
-        echo "\"proxmox_cluster_nodes\": $CLUSTER_NODES,"
+        echo "\"proxmox_cluster_nodes\": $(safe_num "$CLUSTER_NODES"),"
     else
         echo "\"is_proxmox_cluster\": false,"
     fi
@@ -39,7 +54,7 @@ if command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
     CONTAINER_COUNT=$(docker ps -aq 2>/dev/null | wc -l)
     echo "\"has_docker\": true,"
     echo "\"docker_version\": \"$(json_escape "$DOCKER_VERSION")\","
-    echo "\"docker_containers\": $CONTAINER_COUNT,"
+    echo "\"docker_containers\": $(safe_num "$CONTAINER_COUNT"),"
 else
     echo "\"has_docker\": false,"
 fi
@@ -84,6 +99,7 @@ else
 fi
 
 # Hostname
-echo "\"hostname\": \"$(json_escape "$(hostname)")\""
+HOSTNAME=$(hostname 2>/dev/null || echo "unknown")
+echo "\"hostname\": \"$(json_escape "$HOSTNAME")\""
 
 echo "}"

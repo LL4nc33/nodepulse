@@ -1,10 +1,25 @@
 #!/bin/bash
 # nodepulse Docker Collection Script
 # Sammelt Container, Images, Volumes, Networks
+# Robuste JSON-Ausgabe mit korrektem Escaping
 
-# Escape string for JSON (remove control characters, escape quotes/backslashes)
+# Escape string for JSON - handles all special characters
 json_escape() {
-    printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'
+    local str="$1"
+    printf '%s' "$str" | \
+        tr -d '\000-\011\013-\037' | \
+        sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g' | \
+        tr '\n' ' '
+}
+
+# Safe number output (returns 0 if empty/invalid)
+safe_num() {
+    local val="$1"
+    if [ -z "$val" ] || ! [[ "$val" =~ ^[0-9]+$ ]]; then
+        echo "0"
+    else
+        echo "$val"
+    fi
 }
 
 # Check if Docker is available
@@ -17,36 +32,23 @@ echo "{"
 
 # === CONTAINERS ===
 echo '"containers": ['
-FIRST=1
+CONTAINER_LIST=""
 while IFS='|' read -r id name image status state ports created; do
-    if [ -z "$id" ]; then continue; fi
-    if [ $FIRST -eq 1 ]; then
-        FIRST=0
-    else
-        echo ","
-    fi
-    # Escape all string fields
-    name=$(json_escape "$name")
-    image=$(json_escape "$image")
-    status=$(json_escape "$status")
-    state=$(json_escape "$state")
-    ports=$(json_escape "$ports")
-    created=$(json_escape "$created")
-    echo "  {\"id\": \"$id\", \"name\": \"$name\", \"image\": \"$image\", \"status\": \"$status\", \"state\": \"$state\", \"ports\": \"$ports\", \"created\": \"$created\"}"
+    [ -z "$id" ] && continue
+
+    [ -n "$CONTAINER_LIST" ] && CONTAINER_LIST="$CONTAINER_LIST,"
+    CONTAINER_LIST="$CONTAINER_LIST{\"id\": \"$(json_escape "$id")\", \"name\": \"$(json_escape "$name")\", \"image\": \"$(json_escape "$image")\", \"status\": \"$(json_escape "$status")\", \"state\": \"$(json_escape "$state")\", \"ports\": \"$(json_escape "$ports")\", \"created\": \"$(json_escape "$created")\"}"
 done < <(docker ps -a --format '{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.State}}|{{.Ports}}|{{.CreatedAt}}' 2>/dev/null)
+echo "$CONTAINER_LIST"
 echo "],"
 
 # === IMAGES ===
 echo '"images": ['
-FIRST=1
+IMAGE_LIST=""
 while IFS='|' read -r id repo tag size created; do
-    if [ -z "$id" ]; then continue; fi
-    if [ $FIRST -eq 1 ]; then
-        FIRST=0
-    else
-        echo ","
-    fi
-    # Convert size to bytes (approximate) - use awk, bc might not be installed
+    [ -z "$id" ] && continue
+
+    # Convert size to bytes (approximate) - use awk
     size_bytes=0
     if echo "$size" | grep -qE '[0-9.]+GB'; then
         size_num=$(echo "$size" | grep -oE '[0-9.]+')
@@ -58,55 +60,41 @@ while IFS='|' read -r id repo tag size created; do
         size_num=$(echo "$size" | grep -oE '[0-9.]+')
         size_bytes=$(awk "BEGIN {printf \"%.0f\", $size_num * 1024}" 2>/dev/null)
     fi
-    size_bytes=${size_bytes:-0}
-    # Escape all string fields
-    repo=$(json_escape "$repo")
-    tag=$(json_escape "$tag")
-    size=$(json_escape "$size")
-    created=$(json_escape "$created")
-    echo "  {\"id\": \"$id\", \"repository\": \"$repo\", \"tag\": \"$tag\", \"size\": \"$size\", \"size_bytes\": ${size_bytes:-0}, \"created\": \"$created\"}"
+
+    [ -n "$IMAGE_LIST" ] && IMAGE_LIST="$IMAGE_LIST,"
+    IMAGE_LIST="$IMAGE_LIST{\"id\": \"$(json_escape "$id")\", \"repository\": \"$(json_escape "$repo")\", \"tag\": \"$(json_escape "$tag")\", \"size\": \"$(json_escape "$size")\", \"size_bytes\": $(safe_num "$size_bytes"), \"created\": \"$(json_escape "$created")\"}"
 done < <(docker images --format '{{.ID}}|{{.Repository}}|{{.Tag}}|{{.Size}}|{{.CreatedAt}}' 2>/dev/null)
+echo "$IMAGE_LIST"
 echo "],"
 
 # === VOLUMES ===
 echo '"volumes": ['
-FIRST=1
+VOLUME_LIST=""
 while IFS='|' read -r name driver mountpoint; do
-    if [ -z "$name" ]; then continue; fi
-    if [ $FIRST -eq 1 ]; then
-        FIRST=0
-    else
-        echo ","
-    fi
+    [ -z "$name" ] && continue
+
     # Check if volume is in use
     in_use=0
     if docker ps -q --filter volume="$name" 2>/dev/null | grep -q .; then
         in_use=1
     fi
-    # Escape all string fields
-    name=$(json_escape "$name")
-    driver=$(json_escape "$driver")
-    mountpoint=$(json_escape "$mountpoint")
-    echo "  {\"name\": \"$name\", \"driver\": \"$driver\", \"mountpoint\": \"$mountpoint\", \"in_use\": $in_use}"
+
+    [ -n "$VOLUME_LIST" ] && VOLUME_LIST="$VOLUME_LIST,"
+    VOLUME_LIST="$VOLUME_LIST{\"name\": \"$(json_escape "$name")\", \"driver\": \"$(json_escape "$driver")\", \"mountpoint\": \"$(json_escape "$mountpoint")\", \"in_use\": $in_use}"
 done < <(docker volume ls --format '{{.Name}}|{{.Driver}}|{{.Mountpoint}}' 2>/dev/null)
+echo "$VOLUME_LIST"
 echo "],"
 
 # === NETWORKS ===
 echo '"networks": ['
-FIRST=1
+NETWORK_LIST=""
 while IFS='|' read -r id name driver scope; do
-    if [ -z "$id" ]; then continue; fi
-    if [ $FIRST -eq 1 ]; then
-        FIRST=0
-    else
-        echo ","
-    fi
-    # Escape all string fields
-    name=$(json_escape "$name")
-    driver=$(json_escape "$driver")
-    scope=$(json_escape "$scope")
-    echo "  {\"id\": \"$id\", \"name\": \"$name\", \"driver\": \"$driver\", \"scope\": \"$scope\"}"
+    [ -z "$id" ] && continue
+
+    [ -n "$NETWORK_LIST" ] && NETWORK_LIST="$NETWORK_LIST,"
+    NETWORK_LIST="$NETWORK_LIST{\"id\": \"$(json_escape "$id")\", \"name\": \"$(json_escape "$name")\", \"driver\": \"$(json_escape "$driver")\", \"scope\": \"$(json_escape "$scope")\"}"
 done < <(docker network ls --format '{{.ID}}|{{.Name}}|{{.Driver}}|{{.Scope}}' 2>/dev/null)
+echo "$NETWORK_LIST"
 echo "],"
 
 # === SUMMARY ===
@@ -117,11 +105,11 @@ VOLUME_COUNT=$(docker volume ls -q 2>/dev/null | wc -l)
 NETWORK_COUNT=$(docker network ls -q 2>/dev/null | wc -l)
 
 echo "\"summary\": {"
-echo "  \"containers_total\": ${CONTAINER_COUNT:-0},"
-echo "  \"containers_running\": ${RUNNING_COUNT:-0},"
-echo "  \"images\": ${IMAGE_COUNT:-0},"
-echo "  \"volumes\": ${VOLUME_COUNT:-0},"
-echo "  \"networks\": ${NETWORK_COUNT:-0}"
+echo "  \"containers_total\": $(safe_num "$CONTAINER_COUNT"),"
+echo "  \"containers_running\": $(safe_num "$RUNNING_COUNT"),"
+echo "  \"images\": $(safe_num "$IMAGE_COUNT"),"
+echo "  \"volumes\": $(safe_num "$VOLUME_COUNT"),"
+echo "  \"networks\": $(safe_num "$NETWORK_COUNT")"
 echo "}"
 
 echo "}"

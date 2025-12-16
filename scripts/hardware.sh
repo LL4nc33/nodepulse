@@ -1,10 +1,25 @@
 #!/bin/bash
 # nodepulse Hardware Script
 # Sammelt Hardware-Infos
+# Robuste JSON-Ausgabe mit korrektem Escaping
 
-# Escape string for JSON (remove control characters, escape quotes/backslashes)
+# Escape string for JSON - handles all special characters
 json_escape() {
-    printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'
+    local str="$1"
+    printf '%s' "$str" | \
+        tr -d '\000-\011\013-\037' | \
+        sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g' | \
+        tr '\n' ' '
+}
+
+# Safe number output (returns 0 if empty/invalid)
+safe_num() {
+    local val="$1"
+    if [ -z "$val" ] || ! [[ "$val" =~ ^[0-9]+$ ]]; then
+        echo "0"
+    else
+        echo "$val"
+    fi
 }
 
 echo "{"
@@ -39,15 +54,19 @@ CPU_MODEL=$(grep 'model name' /proc/cpuinfo 2>/dev/null | head -1 | cut -d: -f2 
 CPU_VENDOR=$(grep 'vendor_id' /proc/cpuinfo 2>/dev/null | head -1 | cut -d: -f2 | xargs || echo "unknown")
 CPU_CORES=$(nproc --all 2>/dev/null || echo 1)
 CPU_THREADS=$(grep -c processor /proc/cpuinfo 2>/dev/null || echo 1)
-CPU_MAX_MHZ=$(lscpu 2>/dev/null | grep 'CPU max MHz' | awk '{print $4}' || echo "null")
+CPU_MAX_MHZ=$(lscpu 2>/dev/null | grep 'CPU max MHz' | awk '{print $4}')
 CPU_ARCH=$(uname -m)
 VIRT_FLAG=$(grep -oE '(vmx|svm)' /proc/cpuinfo 2>/dev/null | head -1 || echo "none")
 
 echo "  \"model\": \"$(json_escape "$CPU_MODEL")\","
 echo "  \"vendor\": \"$(json_escape "$CPU_VENDOR")\","
-echo "  \"cores\": ${CPU_CORES:-1},"
-echo "  \"threads\": ${CPU_THREADS:-1},"
-echo "  \"max_mhz\": ${CPU_MAX_MHZ:-null},"
+echo "  \"cores\": $(safe_num "$CPU_CORES"),"
+echo "  \"threads\": $(safe_num "$CPU_THREADS"),"
+if [ -n "$CPU_MAX_MHZ" ] && [[ "$CPU_MAX_MHZ" =~ ^[0-9.]+$ ]]; then
+    echo "  \"max_mhz\": $CPU_MAX_MHZ,"
+else
+    echo "  \"max_mhz\": null,"
+fi
 echo "  \"arch\": \"$(json_escape "$CPU_ARCH")\","
 echo "  \"virt_support\": \"$(json_escape "$VIRT_FLAG")\","
 
@@ -64,8 +83,8 @@ echo "},"
 echo "\"memory\": {"
 MEM_TOTAL=$(free -b 2>/dev/null | awk '/Mem:/ {print $2}' || echo 0)
 SWAP_TOTAL=$(free -b 2>/dev/null | awk '/Swap:/ {print $2}' || echo 0)
-echo "  \"total_bytes\": ${MEM_TOTAL:-0},"
-echo "  \"swap_total_bytes\": ${SWAP_TOTAL:-0}"
+echo "  \"total_bytes\": $(safe_num "$MEM_TOTAL"),"
+echo "  \"swap_total_bytes\": $(safe_num "$SWAP_TOTAL")"
 
 if command -v dmidecode &>/dev/null && [ "$(id -u)" -eq 0 ]; then
     RAM_TYPE=$(dmidecode -t memory 2>/dev/null | grep -m1 "Type:" | grep -v "Error" | awk '{print $2}' || echo "")
@@ -81,52 +100,63 @@ echo "},"
 
 # === STORAGE ===
 echo "\"disks\": ["
+DISK_LIST=""
 if command -v lsblk &>/dev/null; then
-    lsblk -Jbo NAME,SIZE,TYPE,MODEL,ROTA,TRAN 2>/dev/null | \
-    python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-disks = [d for d in data.get('blockdevices', []) if d.get('type') == 'disk']
-for i, d in enumerate(disks):
-    comma = ',' if i > 0 else ''
-    print(f\"{comma}{json.dumps(d)}\")
-" 2>/dev/null || echo ""
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        NAME=$(echo "$line" | awk '{print $1}')
+        SIZE=$(echo "$line" | awk '{print $2}')
+        TYPE=$(echo "$line" | awk '{print $3}')
+        MODEL=$(echo "$line" | awk '{$1=$2=$3=$4=$5=$6=""; print $0}' | xargs)
+        ROTA=$(echo "$line" | awk '{print $4}')
+        TRAN=$(echo "$line" | awk '{print $5}')
+
+        [ "$TYPE" != "disk" ] && continue
+        [ -z "$NAME" ] && continue
+
+        IS_SSD=0
+        if [ "$ROTA" = "0" ]; then
+            IS_SSD=1
+        fi
+
+        [ -n "$DISK_LIST" ] && DISK_LIST="$DISK_LIST,"
+        DISK_LIST="$DISK_LIST{\"name\": \"$(json_escape "$NAME")\", \"size_bytes\": $(safe_num "$SIZE"), \"model\": \"$(json_escape "$MODEL")\", \"is_ssd\": $IS_SSD, \"transport\": \"$(json_escape "$TRAN")\"}"
+    done < <(lsblk -bno NAME,SIZE,TYPE,ROTA,TRAN,MODEL 2>/dev/null)
 fi
+echo "$DISK_LIST"
 echo "],"
 
 # === NETWORK ===
 echo "\"network\": ["
-if command -v ip &>/dev/null; then
-    ip -j addr show 2>/dev/null | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-for i, iface in enumerate(data):
-    comma = ',' if i > 0 else ''
-    info = {
-        'name': iface.get('ifname'),
-        'mac': iface.get('address'),
-        'state': iface.get('operstate'),
-        'ips': [{'family': a.get('family'), 'address': a.get('local')} for a in iface.get('addr_info', [])]
-    }
-    print(f\"{comma}{json.dumps(info)}\")
-" 2>/dev/null || echo ""
-fi
+NET_LIST=""
+while IFS= read -r iface; do
+    [ -z "$iface" ] && continue
+
+    MAC=$(cat /sys/class/net/"$iface"/address 2>/dev/null || echo "")
+    STATE=$(cat /sys/class/net/"$iface"/operstate 2>/dev/null || echo "unknown")
+
+    # Get IPs
+    IPV4=$(ip -4 addr show "$iface" 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1)
+    IPV6=$(ip -6 addr show "$iface" 2>/dev/null | grep -oP 'inet6 \K[0-9a-f:]+' | grep -v "^fe80" | head -1)
+
+    [ -n "$NET_LIST" ] && NET_LIST="$NET_LIST,"
+    NET_LIST="$NET_LIST{\"name\": \"$(json_escape "$iface")\", \"mac\": \"$(json_escape "$MAC")\", \"state\": \"$(json_escape "$STATE")\", \"ipv4\": \"$(json_escape "$IPV4")\", \"ipv6\": \"$(json_escape "$IPV6")\"}"
+done < <(ls /sys/class/net 2>/dev/null)
+echo "$NET_LIST"
 echo "],"
 
 # === GPU ===
 echo "\"gpu\": ["
+GPU_LIST=""
 if command -v lspci &>/dev/null; then
-    FIRST=1
-    while read -r line; do
-        if [ -z "$line" ]; then continue; fi
-        if [ $FIRST -eq 1 ]; then
-            FIRST=0
-        else
-            echo ","
-        fi
-        echo "  {\"description\": \"$(json_escape "$line")\"}"
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+
+        [ -n "$GPU_LIST" ] && GPU_LIST="$GPU_LIST,"
+        GPU_LIST="$GPU_LIST{\"description\": \"$(json_escape "$line")\"}"
     done < <(lspci 2>/dev/null | grep -iE 'vga|3d|display')
 fi
+echo "$GPU_LIST"
 echo "]"
 
 echo "}"

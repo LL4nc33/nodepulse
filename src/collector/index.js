@@ -402,18 +402,46 @@ async function runProxmox(node) {
 /**
  * Execute a Proxmox command on a node
  * @param {Object} node - Node object from database
- * @param {string} command - Proxmox command to execute (qm or pct)
+ * @param {string} command - Proxmox command to execute (qm, pct, pvesm, pveam, pvesh)
  * @param {number} timeout - Timeout in ms (default: 60000)
  * @returns {Promise<{stdout: string, stderr: string, exitCode: number}>}
  */
 async function runProxmoxCommand(node, command, timeout = 60000) {
-  // Validate command starts with qm or pct
-  if (!command.startsWith('qm ') && !command.startsWith('pct ')) {
-    throw new Error('Command must start with "qm " or "pct "');
+  // Validate command starts with allowed Proxmox commands
+  var allowedPrefixes = ['qm ', 'pct ', 'pvesm ', 'pveam ', 'pvesh '];
+  var isAllowed = allowedPrefixes.some(function(prefix) {
+    return command.startsWith(prefix);
+  });
+
+  if (!isAllowed) {
+    throw new Error('Command must start with one of: qm, pct, pvesm, pveam, pvesh');
   }
 
-  const result = await ssh.execute(node, command, timeout);
+  var result = await ssh.execute(node, command, timeout);
   return result;
+}
+
+/**
+ * Run Proxmox resources collection on a node
+ * Collects ISOs, CT templates, storage pools, and network bridges for VM/CT creation
+ * @param {Object} node - Node object from database
+ * @returns {Promise<Object>} Proxmox resources (isos, templates, storage, bridges, nextid)
+ */
+async function runProxmoxResources(node) {
+  var script = getScript('proxmox-resources.sh');
+  var result = await ssh.executeScript(node, script, 60000);
+
+  if (result.exitCode !== 0 && !result.stdout) {
+    var errMsg = result.stderr || 'Proxmox resources script failed';
+    throw new Error(errMsg);
+  }
+
+  var data = parseScriptOutput(result.stdout, node.name);
+
+  // Update node online status
+  db.nodes.setOnline(node.id, true);
+
+  return data;
 }
 
 /**
@@ -630,6 +658,7 @@ module.exports = {
   runDockerCommand,
   runProxmox,
   runProxmoxCommand,
+  runProxmoxResources,
   runFullDiscovery,
   runSystemInfo,
   runNetworkDiagnostics,

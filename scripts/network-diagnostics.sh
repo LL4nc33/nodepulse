@@ -1,27 +1,44 @@
 #!/bin/bash
 # nodepulse Network Diagnostics Script
 # Sammelt Netzwerk-Informationen und fuehrt Diagnose-Tests durch
+# Robuste JSON-Ausgabe mit korrektem Escaping
 
-# Escape string for JSON
+# Escape string for JSON - handles all special characters
 json_escape() {
-    printf '%s' "$1" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g'
+    local str="$1"
+    printf '%s' "$str" | \
+        tr -d '\000-\011\013-\037' | \
+        sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g' | \
+        tr '\n' ' '
+}
+
+# Safe number output (returns 0 if empty/invalid)
+safe_num() {
+    local val="$1"
+    if [ -z "$val" ] || ! [[ "$val" =~ ^[0-9.]+$ ]]; then
+        echo "0"
+    else
+        echo "$val"
+    fi
 }
 
 echo "{"
 
 # === INTERFACES ===
 echo "\"interfaces\": ["
-ip -o link show 2>/dev/null | while read -r num name rest; do
-    IFACE=$(echo "$name" | tr -d ':')
-    STATE=$(echo "$rest" | grep -oP 'state \K\w+' || echo "unknown")
-    MAC=$(echo "$rest" | grep -oP 'link/ether \K[0-9a-f:]+' || echo "")
-    MTU=$(echo "$rest" | grep -oP 'mtu \K\d+' || echo "")
+IFACE_LIST=""
+while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    IFACE=$(echo "$line" | awk '{print $2}' | tr -d ':')
+    [ -z "$IFACE" ] && continue
 
-    # Get IP addresses
+    STATE=$(echo "$line" | grep -oP 'state \K\w+' || echo "unknown")
+    MAC=$(echo "$line" | grep -oP 'link/ether \K[0-9a-f:]+' || echo "")
+    MTU=$(echo "$line" | grep -oP 'mtu \K\d+' || echo "")
+
     IPV4=$(ip -4 addr show "$IFACE" 2>/dev/null | grep -oP 'inet \K[0-9./]+' | head -1)
     IPV6=$(ip -6 addr show "$IFACE" 2>/dev/null | grep -oP 'inet6 \K[0-9a-f:/]+' | grep -v "^fe80" | head -1)
 
-    # Get RX/TX stats
     RX_BYTES=$(cat /sys/class/net/"$IFACE"/statistics/rx_bytes 2>/dev/null || echo "0")
     TX_BYTES=$(cat /sys/class/net/"$IFACE"/statistics/tx_bytes 2>/dev/null || echo "0")
     RX_PACKETS=$(cat /sys/class/net/"$IFACE"/statistics/rx_packets 2>/dev/null || echo "0")
@@ -29,31 +46,30 @@ ip -o link show 2>/dev/null | while read -r num name rest; do
     RX_ERRORS=$(cat /sys/class/net/"$IFACE"/statistics/rx_errors 2>/dev/null || echo "0")
     TX_ERRORS=$(cat /sys/class/net/"$IFACE"/statistics/tx_errors 2>/dev/null || echo "0")
 
-    # Get speed if available
-    SPEED=$(cat /sys/class/net/"$IFACE"/speed 2>/dev/null || echo "null")
+    SPEED=$(cat /sys/class/net/"$IFACE"/speed 2>/dev/null || echo "-1")
     [ "$SPEED" = "-1" ] && SPEED="null"
 
-    printf '%s{"name": "%s", "state": "%s", "mac": "%s", "mtu": "%s", "ipv4": "%s", "ipv6": "%s", "speed": %s, "rx_bytes": %s, "tx_bytes": %s, "rx_packets": %s, "tx_packets": %s, "rx_errors": %s, "tx_errors": %s}' \
-        "${FIRST_IFACE:-}" "$IFACE" "$STATE" "$MAC" "$MTU" "$IPV4" "$IPV6" "$SPEED" "$RX_BYTES" "$TX_BYTES" "$RX_PACKETS" "$TX_PACKETS" "$RX_ERRORS" "$TX_ERRORS"
-    FIRST_IFACE=","
-done
+    [ -n "$IFACE_LIST" ] && IFACE_LIST="$IFACE_LIST,"
+    IFACE_LIST="$IFACE_LIST{\"name\": \"$(json_escape "$IFACE")\", \"state\": \"$(json_escape "$STATE")\", \"mac\": \"$(json_escape "$MAC")\", \"mtu\": \"$(json_escape "$MTU")\", \"ipv4\": \"$(json_escape "$IPV4")\", \"ipv6\": \"$(json_escape "$IPV6")\", \"speed\": $SPEED, \"rx_bytes\": $(safe_num "$RX_BYTES"), \"tx_bytes\": $(safe_num "$TX_BYTES"), \"rx_packets\": $(safe_num "$RX_PACKETS"), \"tx_packets\": $(safe_num "$TX_PACKETS"), \"rx_errors\": $(safe_num "$RX_ERRORS"), \"tx_errors\": $(safe_num "$TX_ERRORS")}"
+done < <(ip -o link show 2>/dev/null)
+echo "$IFACE_LIST"
 echo "],"
 
 # === ROUTING TABLE ===
 echo "\"routes\": ["
-FIRST=1
-ip route 2>/dev/null | while IFS= read -r line; do
+ROUTE_LIST=""
+while IFS= read -r line; do
+    [ -z "$line" ] && continue
     DST=$(echo "$line" | awk '{print $1}')
     VIA=$(echo "$line" | grep -oP 'via \K[0-9.]+' || echo "")
     DEV=$(echo "$line" | grep -oP 'dev \K\w+' || echo "")
     METRIC=$(echo "$line" | grep -oP 'metric \K\d+' || echo "0")
     PROTO=$(echo "$line" | grep -oP 'proto \K\w+' || echo "")
 
-    [ $FIRST -eq 0 ] && printf ","
-    printf '{"destination": "%s", "gateway": "%s", "device": "%s", "metric": %s, "protocol": "%s"}' \
-        "$(json_escape "$DST")" "$VIA" "$DEV" "$METRIC" "$PROTO"
-    FIRST=0
-done
+    [ -n "$ROUTE_LIST" ] && ROUTE_LIST="$ROUTE_LIST,"
+    ROUTE_LIST="$ROUTE_LIST{\"destination\": \"$(json_escape "$DST")\", \"gateway\": \"$(json_escape "$VIA")\", \"device\": \"$(json_escape "$DEV")\", \"metric\": $(safe_num "$METRIC"), \"protocol\": \"$(json_escape "$PROTO")\"}"
+done < <(ip route 2>/dev/null | head -20)
+echo "$ROUTE_LIST"
 echo "],"
 
 # === DNS CONFIGURATION ===
@@ -61,67 +77,105 @@ echo "\"dns\": {"
 
 # Nameservers
 echo "  \"nameservers\": ["
-grep "^nameserver" /etc/resolv.conf 2>/dev/null | awk '{printf "%s\"%s\"", (NR>1?",":""), $2}' || echo ""
+NS_LIST=""
+while IFS= read -r line; do
+    NS=$(echo "$line" | awk '{print $2}')
+    [ -z "$NS" ] && continue
+    [ -n "$NS_LIST" ] && NS_LIST="$NS_LIST,"
+    NS_LIST="$NS_LIST\"$(json_escape "$NS")\""
+done < <(grep "^nameserver" /etc/resolv.conf 2>/dev/null)
+echo "$NS_LIST"
 echo "  ],"
 
 # Search domains
 echo "  \"search_domains\": ["
-grep "^search" /etc/resolv.conf 2>/dev/null | cut -d' ' -f2- | tr ' ' '\n' | awk '{printf "%s\"%s\"", (NR>1?",":""), $1}' || echo ""
+SEARCH_LIST=""
+SEARCH_LINE=$(grep "^search" /etc/resolv.conf 2>/dev/null | cut -d' ' -f2-)
+for domain in $SEARCH_LINE; do
+    [ -z "$domain" ] && continue
+    [ -n "$SEARCH_LIST" ] && SEARCH_LIST="$SEARCH_LIST,"
+    SEARCH_LIST="$SEARCH_LIST\"$(json_escape "$domain")\""
+done
+echo "$SEARCH_LIST"
 echo "  ],"
 
 # DNS options
-DNS_OPTIONS=$(grep "^options" /etc/resolv.conf 2>/dev/null | cut -d' ' -f2- || echo "")
+DNS_OPTIONS=$(grep "^options" /etc/resolv.conf 2>/dev/null | cut -d' ' -f2-)
 echo "  \"options\": \"$(json_escape "$DNS_OPTIONS")\""
 echo "},"
 
 # === ARP TABLE ===
 echo "\"arp\": ["
-ip neigh 2>/dev/null | grep -v "FAILED" | head -50 | awk '{
-    ip=$1
-    dev=$3
-    mac=$5
-    state=$NF
-    printf "%s{\"ip\": \"%s\", \"device\": \"%s\", \"mac\": \"%s\", \"state\": \"%s\"}", (NR>1?",":""), ip, dev, mac, state
-}' 2>/dev/null || echo ""
+ARP_LIST=""
+while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    echo "$line" | grep -q "FAILED" && continue
+    ARP_IP=$(echo "$line" | awk '{print $1}')
+    ARP_DEV=$(echo "$line" | awk '{print $3}')
+    ARP_MAC=$(echo "$line" | awk '{print $5}')
+    ARP_STATE=$(echo "$line" | awk '{print $NF}')
+    [ -z "$ARP_IP" ] && continue
+
+    [ -n "$ARP_LIST" ] && ARP_LIST="$ARP_LIST,"
+    ARP_LIST="$ARP_LIST{\"ip\": \"$(json_escape "$ARP_IP")\", \"device\": \"$(json_escape "$ARP_DEV")\", \"mac\": \"$(json_escape "$ARP_MAC")\", \"state\": \"$(json_escape "$ARP_STATE")\"}"
+done < <(ip neigh 2>/dev/null | head -50)
+echo "$ARP_LIST"
 echo "],"
 
 # === LISTENING PORTS ===
 echo "\"listening_ports\": ["
-ss -tulpn 2>/dev/null | tail -n +2 | awk '{
-    proto = $1
-    state = $2
-    local = $5
-    split(local, a, ":")
-    port = a[length(a)]
-    addr = substr(local, 1, length(local)-length(port)-1)
-    if (addr == "") addr = "*"
-    process = $7
-    gsub(/.*"/, "", process)
-    gsub(/".*/, "", process)
-    gsub(/users:\(\(/, "", process)
-    gsub(/,.*/, "", process)
-    printf "%s{\"proto\": \"%s\", \"address\": \"%s\", \"port\": \"%s\", \"process\": \"%s\"}", (NR>1?",":""), proto, addr, port, process
-}' 2>/dev/null || echo ""
+PORT_LIST=""
+while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    PROTO=$(echo "$line" | awk '{print $1}')
+    LOCAL=$(echo "$line" | awk '{print $5}')
+    PORT=$(echo "$LOCAL" | rev | cut -d: -f1 | rev)
+    ADDR=$(echo "$LOCAL" | rev | cut -d: -f2- | rev)
+    [ "$ADDR" = "" ] && ADDR="*"
+    PROC=$(echo "$line" | awk '{print $7}' | sed 's/.*"\([^"]*\)".*/\1/' | cut -d, -f1)
+
+    [ -n "$PORT_LIST" ] && PORT_LIST="$PORT_LIST,"
+    PORT_LIST="$PORT_LIST{\"proto\": \"$(json_escape "$PROTO")\", \"address\": \"$(json_escape "$ADDR")\", \"port\": \"$(json_escape "$PORT")\", \"process\": \"$(json_escape "$PROC")\"}"
+done < <(ss -tulpn 2>/dev/null | tail -n +2 | head -50)
+echo "$PORT_LIST"
 echo "],"
 
 # === ACTIVE CONNECTIONS ===
+CONN_EST=$(ss -t state established 2>/dev/null | tail -n +2 | wc -l)
+CONN_TW=$(ss -t state time-wait 2>/dev/null | tail -n +2 | wc -l)
+CONN_CW=$(ss -t state close-wait 2>/dev/null | tail -n +2 | wc -l)
+CONN_SS=$(ss -t state syn-sent 2>/dev/null | tail -n +2 | wc -l)
+CONN_SR=$(ss -t state syn-recv 2>/dev/null | tail -n +2 | wc -l)
+CONN_FW1=$(ss -t state fin-wait-1 2>/dev/null | tail -n +2 | wc -l)
+CONN_FW2=$(ss -t state fin-wait-2 2>/dev/null | tail -n +2 | wc -l)
+CONN_LA=$(ss -t state last-ack 2>/dev/null | tail -n +2 | wc -l)
+CONN_CL=$(ss -t state closing 2>/dev/null | tail -n +2 | wc -l)
+
 echo "\"connections\": {"
-echo "  \"established\": $(ss -t state established 2>/dev/null | tail -n +2 | wc -l),"
-echo "  \"time_wait\": $(ss -t state time-wait 2>/dev/null | tail -n +2 | wc -l),"
-echo "  \"close_wait\": $(ss -t state close-wait 2>/dev/null | tail -n +2 | wc -l),"
-echo "  \"syn_sent\": $(ss -t state syn-sent 2>/dev/null | tail -n +2 | wc -l),"
-echo "  \"syn_recv\": $(ss -t state syn-recv 2>/dev/null | tail -n +2 | wc -l),"
-echo "  \"fin_wait1\": $(ss -t state fin-wait-1 2>/dev/null | tail -n +2 | wc -l),"
-echo "  \"fin_wait2\": $(ss -t state fin-wait-2 2>/dev/null | tail -n +2 | wc -l),"
-echo "  \"last_ack\": $(ss -t state last-ack 2>/dev/null | tail -n +2 | wc -l),"
-echo "  \"closing\": $(ss -t state closing 2>/dev/null | tail -n +2 | wc -l)"
+echo "  \"established\": $(safe_num "$CONN_EST"),"
+echo "  \"time_wait\": $(safe_num "$CONN_TW"),"
+echo "  \"close_wait\": $(safe_num "$CONN_CW"),"
+echo "  \"syn_sent\": $(safe_num "$CONN_SS"),"
+echo "  \"syn_recv\": $(safe_num "$CONN_SR"),"
+echo "  \"fin_wait1\": $(safe_num "$CONN_FW1"),"
+echo "  \"fin_wait2\": $(safe_num "$CONN_FW2"),"
+echo "  \"last_ack\": $(safe_num "$CONN_LA"),"
+echo "  \"closing\": $(safe_num "$CONN_CL")"
 echo "},"
 
 # === TOP CONNECTIONS BY REMOTE ===
 echo "\"top_connections\": ["
-ss -tn state established 2>/dev/null | tail -n +2 | awk '{print $4}' | cut -d: -f1 | sort | uniq -c | sort -rn | head -10 | awk '{
-    printf "%s{\"remote_ip\": \"%s\", \"count\": %d}", (NR>1?",":""), $2, $1
-}' 2>/dev/null || echo ""
+TOP_CONN=""
+while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    COUNT=$(echo "$line" | awk '{print $1}')
+    REMOTE=$(echo "$line" | awk '{print $2}')
+    [ -z "$REMOTE" ] && continue
+
+    [ -n "$TOP_CONN" ] && TOP_CONN="$TOP_CONN,"
+    TOP_CONN="$TOP_CONN{\"remote_ip\": \"$(json_escape "$REMOTE")\", \"count\": $(safe_num "$COUNT")}"
+done < <(ss -tn state established 2>/dev/null | tail -n +2 | awk '{print $4}' | cut -d: -f1 | sort | uniq -c | sort -rn | head -10)
+echo "$TOP_CONN"
 echo "],"
 
 # === GATEWAY INFO ===
@@ -129,8 +183,8 @@ echo "\"gateway\": {"
 DEFAULT_GW=$(ip route 2>/dev/null | grep "^default" | head -1)
 GW_IP=$(echo "$DEFAULT_GW" | grep -oP 'via \K[0-9.]+')
 GW_DEV=$(echo "$DEFAULT_GW" | grep -oP 'dev \K\w+')
-echo "  \"ip\": \"$GW_IP\","
-echo "  \"device\": \"$GW_DEV\","
+echo "  \"ip\": \"$(json_escape "$GW_IP")\","
+echo "  \"device\": \"$(json_escape "$GW_DEV")\","
 
 # Test gateway reachability
 if [ -n "$GW_IP" ]; then
@@ -138,7 +192,7 @@ if [ -n "$GW_IP" ]; then
     if [ $? -eq 0 ]; then
         GW_LATENCY=$(echo "$GW_PING" | grep -oP 'time=\K[0-9.]+')
         echo "  \"reachable\": true,"
-        echo "  \"latency_ms\": $GW_LATENCY"
+        echo "  \"latency_ms\": $(safe_num "$GW_LATENCY")"
     else
         echo "  \"reachable\": false,"
         echo "  \"latency_ms\": null"
@@ -153,7 +207,7 @@ echo "},"
 echo "\"internet\": {"
 
 # Test DNS resolution
-DNS_TEST=$(host -W 2 google.com 2>/dev/null)
+host -W 2 google.com >/dev/null 2>&1
 if [ $? -eq 0 ]; then
     DNS_OK="true"
 else
@@ -161,7 +215,7 @@ else
 fi
 echo "  \"dns_working\": $DNS_OK,"
 
-# Test HTTP connectivity (try multiple targets)
+# Test HTTP connectivity
 HTTP_OK="false"
 HTTP_TARGET=""
 for target in "1.1.1.1" "8.8.8.8" "google.com"; do
@@ -172,7 +226,7 @@ for target in "1.1.1.1" "8.8.8.8" "google.com"; do
     fi
 done
 echo "  \"connectivity\": $HTTP_OK,"
-echo "  \"tested_target\": \"$HTTP_TARGET\""
+echo "  \"tested_target\": \"$(json_escape "$HTTP_TARGET")\""
 echo "},"
 
 # === FIREWALL STATUS ===
@@ -187,7 +241,7 @@ if command -v ufw &>/dev/null; then
     UFW_STATUS=$(ufw status 2>/dev/null | head -1)
     if echo "$UFW_STATUS" | grep -q "active"; then
         FW_STATUS="active"
-        FW_RULES_COUNT=$(ufw status numbered 2>/dev/null | grep -c "^\[")
+        FW_RULES_COUNT=$(ufw status numbered 2>/dev/null | grep -c "^\[" || echo "0")
     else
         FW_STATUS="inactive"
     fi
@@ -195,18 +249,18 @@ elif command -v firewall-cmd &>/dev/null; then
     FW_TYPE="firewalld"
     if firewall-cmd --state 2>/dev/null | grep -q "running"; then
         FW_STATUS="active"
-        FW_RULES_COUNT=$(firewall-cmd --list-all 2>/dev/null | grep -c "")
+        FW_RULES_COUNT=$(firewall-cmd --list-all 2>/dev/null | wc -l || echo "0")
     fi
 elif command -v iptables &>/dev/null; then
     FW_TYPE="iptables"
-    FW_RULES_COUNT=$(iptables -L -n 2>/dev/null | grep -c "^[A-Z]")
-    if [ "$FW_RULES_COUNT" -gt 3 ]; then
+    FW_RULES_COUNT=$(iptables -L -n 2>/dev/null | grep -c "^[A-Z]" || echo "0")
+    if [ "$FW_RULES_COUNT" -gt 3 ] 2>/dev/null; then
         FW_STATUS="active"
     fi
 elif command -v nft &>/dev/null; then
     FW_TYPE="nftables"
-    NFT_RULES=$(nft list ruleset 2>/dev/null | wc -l)
-    if [ "$NFT_RULES" -gt 0 ]; then
+    NFT_RULES=$(nft list ruleset 2>/dev/null | wc -l || echo "0")
+    if [ "$NFT_RULES" -gt 0 ] 2>/dev/null; then
         FW_STATUS="active"
         FW_RULES_COUNT=$NFT_RULES
     fi
@@ -214,31 +268,33 @@ fi
 
 echo "  \"type\": \"$FW_TYPE\","
 echo "  \"status\": \"$FW_STATUS\","
-echo "  \"rules_count\": $FW_RULES_COUNT"
+echo "  \"rules_count\": $(safe_num "$FW_RULES_COUNT")"
 echo "},"
 
 # === NETWORK STATISTICS ===
 echo "\"statistics\": {"
 
-# TCP stats
-TCP_ACTIVE=$(cat /proc/net/snmp 2>/dev/null | grep "^Tcp:" | tail -1 | awk '{print $6}')
-TCP_PASSIVE=$(cat /proc/net/snmp 2>/dev/null | grep "^Tcp:" | tail -1 | awk '{print $7}')
-TCP_FAILED=$(cat /proc/net/snmp 2>/dev/null | grep "^Tcp:" | tail -1 | awk '{print $8}')
-TCP_RESETS=$(cat /proc/net/snmp 2>/dev/null | grep "^Tcp:" | tail -1 | awk '{print $9}')
+# TCP stats from /proc/net/snmp
+TCP_LINE=$(cat /proc/net/snmp 2>/dev/null | grep "^Tcp:" | tail -1)
+TCP_ACTIVE=$(echo "$TCP_LINE" | awk '{print $6}')
+TCP_PASSIVE=$(echo "$TCP_LINE" | awk '{print $7}')
+TCP_FAILED=$(echo "$TCP_LINE" | awk '{print $8}')
+TCP_RESETS=$(echo "$TCP_LINE" | awk '{print $9}')
 
-echo "  \"tcp_active_opens\": ${TCP_ACTIVE:-0},"
-echo "  \"tcp_passive_opens\": ${TCP_PASSIVE:-0},"
-echo "  \"tcp_failed_attempts\": ${TCP_FAILED:-0},"
-echo "  \"tcp_resets\": ${TCP_RESETS:-0},"
+echo "  \"tcp_active_opens\": $(safe_num "$TCP_ACTIVE"),"
+echo "  \"tcp_passive_opens\": $(safe_num "$TCP_PASSIVE"),"
+echo "  \"tcp_failed_attempts\": $(safe_num "$TCP_FAILED"),"
+echo "  \"tcp_resets\": $(safe_num "$TCP_RESETS"),"
 
 # UDP stats
-UDP_IN=$(cat /proc/net/snmp 2>/dev/null | grep "^Udp:" | tail -1 | awk '{print $2}')
-UDP_OUT=$(cat /proc/net/snmp 2>/dev/null | grep "^Udp:" | tail -1 | awk '{print $5}')
-UDP_ERRORS=$(cat /proc/net/snmp 2>/dev/null | grep "^Udp:" | tail -1 | awk '{print $4}')
+UDP_LINE=$(cat /proc/net/snmp 2>/dev/null | grep "^Udp:" | tail -1)
+UDP_IN=$(echo "$UDP_LINE" | awk '{print $2}')
+UDP_OUT=$(echo "$UDP_LINE" | awk '{print $5}')
+UDP_ERRORS=$(echo "$UDP_LINE" | awk '{print $4}')
 
-echo "  \"udp_in_datagrams\": ${UDP_IN:-0},"
-echo "  \"udp_out_datagrams\": ${UDP_OUT:-0},"
-echo "  \"udp_errors\": ${UDP_ERRORS:-0}"
+echo "  \"udp_in_datagrams\": $(safe_num "$UDP_IN"),"
+echo "  \"udp_out_datagrams\": $(safe_num "$UDP_OUT"),"
+echo "  \"udp_errors\": $(safe_num "$UDP_ERRORS")"
 echo "}"
 
 echo "}"
