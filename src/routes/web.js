@@ -74,6 +74,7 @@ router.get('/', asyncHandler(async (req, res) => {
     tags,
     tagFilter,
     thresholds,
+    dashboardRefreshInterval: parseInt(settings.dashboard_refresh_interval, 10) || 5,
     stats: {
       total: nodes.length,
       online: onlineCount,
@@ -444,6 +445,7 @@ router.post('/settings', asyncHandler(async (req, res) => {
     'auto_discovery_enabled',
     'rediscovery_on_connect',
     'monitoring_default_interval',
+    'dashboard_refresh_interval',
     'stats_retention_hours',
     'alert_cpu_warning',
     'alert_cpu_critical',

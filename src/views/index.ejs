@@ -386,6 +386,9 @@ var thresholds = {
   temp_critical: <%= thresholds.temp_critical %>
 };
 
+// Dashboard-Refresh-Interval aus Settings (in Sekunden)
+var dashboardRefreshInterval = <%= dashboardRefreshInterval %>;
+
 // Debounce Helper (ES5-kompatibel)
 var debounceTimers = {};
 function debounce(func, delay, key) {
@@ -541,7 +544,7 @@ var debouncedFilter = debounce(filterNodesAndCards, 300, 'nodeFilter');
 
 // Auto-Refresh (ES5)
 var autoRefreshInterval = null;
-var autoRefreshCountdown = 30;
+var autoRefreshCountdown = dashboardRefreshInterval;
 var autoRefreshPaused = false;
 var countdownInterval = null;
 
@@ -554,7 +557,7 @@ function updateCountdownDisplay() {
 
 function startAutoRefresh() {
   autoRefreshPaused = false;
-  autoRefreshCountdown = 30;
+  autoRefreshCountdown = dashboardRefreshInterval;
   updateCountdownDisplay();
 
   // Update icons
@@ -654,7 +657,7 @@ function refreshDashboardData() {
         }
       }
       // Countdown zurücksetzen
-      autoRefreshCountdown = 30;
+      autoRefreshCountdown = dashboardRefreshInterval;
     }
   };
 
