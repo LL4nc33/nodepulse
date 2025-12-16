@@ -37,6 +37,7 @@ async function init() {
       }
     } catch (err) {
       console.error('[DB] Migration error:', err.message);
+      throw err;  // Re-throw to prevent app start with incomplete schema
     }
 
     // Migration: Add parent_id and auto_discovered_from columns for Node Hierarchy
@@ -55,6 +56,7 @@ async function init() {
       }
     } catch (err) {
       console.error('[DB] Migration error (hierarchy):', err.message);
+      throw err;  // Re-throw to prevent app start with incomplete schema
     }
 
     // Run seed data
@@ -988,7 +990,18 @@ const alerts = {
   /**
    * Get active alerts count by level
    */
-  getActiveCountByLevel() {
+  getActiveCountByLevel(level) {
+    if (level) {
+      // Return count for specific level
+      const stmt = getDb().prepare(`
+        SELECT COUNT(*) as count
+        FROM alerts_history
+        WHERE resolved_at IS NULL AND alert_level = ?
+      `);
+      return stmt.get(level).count;
+    }
+
+    // Return all levels if no specific level requested
     const stmt = getDb().prepare(`
       SELECT alert_level, COUNT(*) as count
       FROM alerts_history

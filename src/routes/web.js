@@ -2,15 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const collector = require('../collector');
-
-// Helper function for byte formatting (used in templates)
-function formatBytes(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
+const { formatBytes } = require('../lib/utils');
 
 // =====================================================
 // Helper: Wrap async route handlers
@@ -555,6 +547,7 @@ router.get('/alerts', asyncHandler(async (req, res) => {
   const allNodes = db.nodes.getAll();
   const onlineCount = allNodes.filter(n => n.online).length;
 
+  // Get alerts (node_name already included via LEFT JOIN in db.alerts.getAll())
   let alerts = [];
   if (filter === 'active') {
     alerts = db.alerts.getActive();
@@ -563,15 +556,6 @@ router.get('/alerts', asyncHandler(async (req, res) => {
   } else {
     alerts = db.alerts.getAll();
   }
-
-  // Add node names to alerts
-  alerts = alerts.map(alert => {
-    const node = db.nodes.getById(alert.node_id);
-    return {
-      ...alert,
-      node_name: node ? node.name : 'Unbekannt'
-    };
-  });
 
   // Get alert counts
   const alertCounts = {

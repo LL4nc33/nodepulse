@@ -3103,17 +3103,10 @@ router.get('/alerts/count', asyncHandler(async (req, res) => {
   apiResponse(res, 200, counts);
 }));
 
-// Get all active alerts
+// Get all active alerts (node_name already included via LEFT JOIN)
 router.get('/alerts', asyncHandler(async (req, res) => {
   const alerts = db.alerts.getActive();
-  const alertsWithNodes = alerts.map(alert => {
-    const node = db.nodes.getById(alert.node_id);
-    return {
-      ...alert,
-      node_name: node ? node.name : 'Unbekannt'
-    };
-  });
-  apiResponse(res, 200, alertsWithNodes);
+  apiResponse(res, 200, alerts);
 }));
 
 // Acknowledge an alert

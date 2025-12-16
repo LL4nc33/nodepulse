@@ -12,14 +12,7 @@ function toggleSection(headerEl) {
   }
 }
 
-// Format bytes to human readable
-function formatBytes(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  var k = 1024;
-  var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  var i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
+// formatBytes is available as window.NP.UI.formatBytes from main.js
 
 // Tab switching with URL hash persistence
 var tabBtns = document.querySelectorAll('.tab-btn');
@@ -959,7 +952,7 @@ function populateVmForm(data) {
       if (s.content && (s.content.indexOf('images') > -1 || s.content.indexOf('rootdir') > -1)) {
         var opt = document.createElement('option');
         opt.value = s.name;
-        var avail = s.available_bytes ? ' - ' + formatBytes(s.available_bytes) + ' frei' : '';
+        var avail = s.available_bytes ? ' - ' + window.NP.UI.formatBytes(s.available_bytes) + ' frei' : '';
         opt.textContent = s.name + ' (' + s.type + ')' + avail;
         storageSelect.appendChild(opt);
       }
@@ -1182,7 +1175,7 @@ function populateCtForm(data) {
       if (s.content && s.content.indexOf('rootdir') > -1) {
         var opt = document.createElement('option');
         opt.value = s.name;
-        var avail = s.available_bytes ? ' - ' + formatBytes(s.available_bytes) + ' frei' : '';
+        var avail = s.available_bytes ? ' - ' + window.NP.UI.formatBytes(s.available_bytes) + ' frei' : '';
         opt.textContent = s.name + ' (' + s.type + ')' + avail;
         storageSelect.appendChild(opt);
       }

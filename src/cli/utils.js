@@ -4,6 +4,7 @@
 
 const http = require('http');
 const https = require('https');
+const { formatBytes } = require('../lib/utils');
 
 // Default API configuration
 const DEFAULT_HOST = process.env.NP_HOST || 'localhost';
@@ -90,21 +91,7 @@ function apiRequest(method, path, data, options) {
   });
 }
 
-/**
- * Format bytes to human readable
- * @param {number} bytes
- * @returns {string}
- */
-function formatBytes(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  var units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  var i = 0;
-  while (bytes >= 1024 && i < units.length - 1) {
-    bytes /= 1024;
-    i++;
-  }
-  return bytes.toFixed(1) + ' ' + units[i];
-}
+// formatBytes is imported from ../lib/utils
 
 /**
  * Format percentage
