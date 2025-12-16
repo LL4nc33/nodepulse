@@ -427,7 +427,7 @@
     <!-- Containers Section -->
     <div class="docker-section collapsible">
       <h3 class="section-header" onclick="toggleSection(this)">
-        <span class="section-toggle">▼</span>
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Container
         <span class="section-count">(<%= docker.containers.length %>)</span>
       </h3>
@@ -502,7 +502,7 @@
     <!-- Images Section -->
     <div class="docker-section collapsible">
       <h3 class="section-header" onclick="toggleSection(this)">
-        <span class="section-toggle">▼</span>
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Images
         <span class="section-count">(<%= docker.images.length %>)</span>
       </h3>
@@ -545,7 +545,7 @@
     <!-- Volumes Section -->
     <div class="docker-section collapsible">
       <h3 class="section-header" onclick="toggleSection(this)">
-        <span class="section-toggle">▼</span>
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Volumes
         <span class="section-count">(<%= docker.volumes.length %>)</span>
       </h3>
@@ -590,7 +590,7 @@
     <!-- Networks Section -->
     <div class="docker-section collapsible">
       <h3 class="section-header" onclick="toggleSection(this)">
-        <span class="section-toggle">▼</span>
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Networks
         <span class="section-count">(<%= docker.networks.length %>)</span>
       </h3>
@@ -690,7 +690,7 @@
     <!-- VMs Section -->
     <div class="proxmox-section collapsible">
       <h3 class="section-header" onclick="toggleSection(this)">
-        <span class="section-toggle">▼</span>
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Virtuelle Maschinen (VMs)
         <span class="section-count">(<%= proxmox.vms.length %>)</span>
       </h3>
@@ -793,7 +793,7 @@
     <!-- CTs Section -->
     <div class="proxmox-section collapsible">
       <h3 class="section-header" onclick="toggleSection(this)">
-        <span class="section-toggle">▼</span>
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Container (LXC)
         <span class="section-count">(<%= proxmox.cts.length %>)</span>
       </h3>
@@ -896,7 +896,7 @@
     <!-- Storage Section -->
     <div class="proxmox-section collapsible collapsed">
       <h3 class="section-header" onclick="toggleSection(this)">
-        <span class="section-toggle">▶</span>
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Storage
         <span class="section-count">(<%= proxmox.storage.length %>)</span>
       </h3>
@@ -951,7 +951,7 @@
     <!-- Snapshots Section -->
     <div class="proxmox-section collapsible collapsed">
       <h3 class="section-header" onclick="toggleSection(this)">
-        <span class="section-toggle">▶</span>
+        <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Snapshots
         <span class="section-count">(<%= proxmox.snapshots.length %>)</span>
       </h3>
@@ -1656,16 +1656,13 @@
 function toggleSection(headerEl) {
   var section = headerEl.parentElement;
   var content = section.querySelector('.section-content');
-  var toggle = headerEl.querySelector('.section-toggle');
 
   if (section.classList.contains('collapsed')) {
     section.classList.remove('collapsed');
     content.style.display = 'block';
-    toggle.textContent = '▼';
   } else {
     section.classList.add('collapsed');
     content.style.display = 'none';
-    toggle.textContent = '▶';
   }
 }
 

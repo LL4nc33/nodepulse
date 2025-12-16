@@ -2888,10 +2888,36 @@ a:focus {
 .proxmox-section .section-toggle,
 .docker-section .section-toggle,
 .collapsible-section .section-toggle {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
   width: 1rem;
-  text-align: center;
+  height: 1rem;
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-transition: transform 0.2s ease;
+  transition: transform 0.2s ease;
+}
+
+.proxmox-section .section-toggle svg,
+.docker-section .section-toggle svg,
+.collapsible-section .section-toggle svg {
+  width: 12px;
+  height: 12px;
+  stroke: var(--color-text-muted);
+  stroke-width: 2;
+  fill: none;
+}
+
+.proxmox-section.collapsed .section-toggle,
+.docker-section.collapsed .section-toggle,
+.collapsible-section.collapsed .section-toggle {
+  -webkit-transform: rotate(-90deg);
+  transform: rotate(-90deg);
 }
 
 .proxmox-section .section-count,
@@ -4370,16 +4396,22 @@ a:focus {
 }
 
 .side-panel-section-header::before {
-  content: "▼";
-  font-size: 0.625rem;
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
   margin-right: 0.5rem;
+  border-right: 2px solid var(--color-text-muted);
+  border-bottom: 2px solid var(--color-text-muted);
+  -webkit-transform: rotate(45deg);
+  transform: rotate(45deg);
   -webkit-transition: transform 0.2s;
   transition: transform 0.2s;
 }
 
 .side-panel-section.collapsed .side-panel-section-header::before {
-  -webkit-transform: rotate(-90deg);
-  transform: rotate(-90deg);
+  -webkit-transform: rotate(-45deg);
+  transform: rotate(-45deg);
 }
 
 .side-panel-section.collapsed .side-panel-section-content {
