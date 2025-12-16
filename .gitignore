@@ -34,3 +34,7 @@ build/
 # Development
 CHANGELOG.md
 DEVELOPMENT.md
+
+# Test artifacts
+.playwright-mcp/
+nul
