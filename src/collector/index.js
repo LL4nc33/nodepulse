@@ -173,8 +173,11 @@ async function runStats(node, saveHistory = true) {
   // Update node online status
   db.nodes.setOnline(node.id, true);
 
+  // Load settings once for re-discovery and alerts (cached, efficient for RPi 2B)
+  const settings = db.settings.getAll();
+
   // Re-Discovery wenn Node von offline auf online wechselt
-  if (wasOffline && db.settings.get('rediscovery_on_connect') === 'true') {
+  if (wasOffline && settings.rediscovery_on_connect === 'true') {
     // Discovery im Hintergrund ausführen (nicht-blocking)
     runFullDiscovery(node).catch(err => {
       console.error(`Re-Discovery für Node ${node.id} fehlgeschlagen:`, err.message);
@@ -184,14 +187,14 @@ async function runStats(node, saveHistory = true) {
   // Check alerts if thresholds are configured
   try {
     const thresholds = {
-      cpu_warning: parseFloat(db.settings.get('alert_cpu_warning') || '80'),
-      cpu_critical: parseFloat(db.settings.get('alert_cpu_critical') || '95'),
-      ram_warning: parseFloat(db.settings.get('alert_ram_warning') || '85'),
-      ram_critical: parseFloat(db.settings.get('alert_ram_critical') || '95'),
-      disk_warning: parseFloat(db.settings.get('alert_disk_warning') || '80'),
-      disk_critical: parseFloat(db.settings.get('alert_disk_critical') || '95'),
-      temp_warning: parseFloat(db.settings.get('alert_temp_warning') || '70'),
-      temp_critical: parseFloat(db.settings.get('alert_temp_critical') || '85')
+      cpu_warning: parseFloat(settings.alert_cpu_warning || '80'),
+      cpu_critical: parseFloat(settings.alert_cpu_critical || '95'),
+      ram_warning: parseFloat(settings.alert_ram_warning || '85'),
+      ram_critical: parseFloat(settings.alert_ram_critical || '95'),
+      disk_warning: parseFloat(settings.alert_disk_warning || '80'),
+      disk_critical: parseFloat(settings.alert_disk_critical || '95'),
+      temp_warning: parseFloat(settings.alert_temp_warning || '70'),
+      temp_critical: parseFloat(settings.alert_temp_critical || '85')
     };
 
     alertsService.checkAlerts(node.id, data, thresholds);

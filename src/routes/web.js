@@ -178,7 +178,7 @@ router.post('/nodes/add', asyncHandler(async (req, res) => {
   }
 
   try {
-    // Settings für Defaults laden
+    // Settings für Defaults laden (gecacht, effizient)
     const settings = db.settings.getAll();
     const defaultMonitoringInterval = parseInt(settings.monitoring_default_interval, 10) || 30;
 
@@ -193,10 +193,9 @@ router.post('/nodes/add', asyncHandler(async (req, res) => {
       monitoring_interval: defaultMonitoringInterval,
     });
 
-    // Auto-Discovery wenn aktiviert
+    // Auto-Discovery wenn aktiviert (non-blocking)
     if (settings.auto_discovery_enabled === 'true') {
       const node = db.nodes.getByIdWithCredentials(id);
-      // Discovery im Hintergrund ausführen (nicht-blocking)
       collector.runFullDiscovery(node).catch(err => {
         console.error(`Auto-Discovery für Node ${id} fehlgeschlagen:`, err.message);
         db.nodes.setOnline(id, false, err.message);
