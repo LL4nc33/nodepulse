@@ -69,10 +69,23 @@
   <div class="side-panel-section">
     <div class="side-panel-section-header">Tags</div>
     <div class="side-panel-section-content">
-      <div style="padding: 0.5rem 1rem;">
+      <div class="side-panel-tags">
         <% if (sidebarTags.length > 0) { %>
-          <% sidebarTags.forEach(function(tag) { %>
-            <span class="tag" style="background-color: <%= tag.color %>20; border: 1px solid <%= tag.color %>; margin: 0.25rem;"><%= tag.name %></span>
+          <%
+            var activeTag = typeof tagFilter !== 'undefined' ? tagFilter : null;
+          %>
+          <% if (activeTag) { %>
+            <a href="/" class="tag tag-clear" title="Filter entfernen">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              Alle
+            </a>
+          <% } %>
+          <% sidebarTags.forEach(function(tag) {
+            var isActive = activeTag === tag.name;
+          %>
+            <a href="/?tag=<%= encodeURIComponent(tag.name) %>" class="tag tag-link <%= isActive ? 'active' : '' %>" style="--tag-color: <%= tag.color %>;" title="Nach '<%= tag.name %>' filtern"><%= tag.name %></a>
           <% }); %>
         <% } else { %>
           <span class="empty">Keine Tags</span>

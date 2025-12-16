@@ -23,14 +23,35 @@ const asyncHandler = (fn) => (req, res, next) => {
 // =====================================================
 
 router.get('/', asyncHandler(async (req, res) => {
-  const nodes = db.nodes.getAll();
-  const nodeTree = db.nodes.getHierarchyTree();
+  let nodes = db.nodes.getAll();
+  let nodeTree = db.nodes.getHierarchyTree();
   const tags = db.tags.getAll();
+  const settings = db.settings.getAll();
+
+  // Tag filter from query
+  const tagFilter = req.query.tag || null;
+
+  // Filter nodes by tag if specified
+  if (tagFilter) {
+    nodes = nodes.filter(n => {
+      if (!n.tags) return false;
+      const nodeTags = n.tags.split(',').map(t => t.trim());
+      return nodeTags.includes(tagFilter);
+    });
+    // For filtered view, show flat list instead of tree
+    nodeTree = [];
+  }
+
   const onlineCount = nodes.filter(n => n.online).length;
 
   // Load stats for each node (for monitoring cards view)
-  const nodesWithStats = db.stats.getAllNodesWithStats();
-  const settings = db.settings.getAll();
+  let nodesWithStats = db.stats.getAllNodesWithStats();
+
+  // Also filter stats by tag
+  if (tagFilter) {
+    const filteredNodeIds = nodes.map(n => n.id);
+    nodesWithStats = nodesWithStats.filter(n => filteredNodeIds.includes(n.id));
+  }
 
   // Alert thresholds
   const thresholds = {
@@ -44,11 +65,8 @@ router.get('/', asyncHandler(async (req, res) => {
     temp_critical: parseInt(settings.alert_temp_critical, 10) || 85,
   };
 
-  // Tag filter from query
-  const tagFilter = req.query.tag || null;
-
   res.render('index', {
-    title: 'Dashboard',
+    title: tagFilter ? `Dashboard - ${tagFilter}` : 'Dashboard',
     currentPath: '/',
     nodes,
     nodeTree,

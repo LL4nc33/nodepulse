@@ -37,6 +37,19 @@
     </div>
 
     <% if (nodes.length === 0) { %>
+      <% if (typeof tagFilter !== 'undefined' && tagFilter) { %>
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+            <line x1="7" y1="7" x2="7.01" y2="7"/>
+          </svg>
+        </div>
+        <div class="empty-state-title">Keine Nodes mit Tag "<%= tagFilter %>"</div>
+        <p class="empty-state-text">Es gibt keine Nodes mit diesem Tag. Waehle einen anderen Tag oder zeige alle Nodes an.</p>
+        <a href="/" class="btn btn-primary">Alle Nodes anzeigen</a>
+      </div>
+      <% } else { %>
       <div class="empty-state">
         <div class="empty-state-icon">
           <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -47,10 +60,23 @@
           </svg>
         </div>
         <div class="empty-state-title">Keine Nodes vorhanden</div>
-        <p class="empty-state-text">Füge deinen ersten Server, Raspberry Pi oder Docker-Host hinzu, um mit dem Monitoring zu starten.</p>
-        <a href="/nodes/add" class="btn btn-primary">+ Ersten Node hinzufügen</a>
+        <p class="empty-state-text">Fuege deinen ersten Server, Raspberry Pi oder Docker-Host hinzu, um mit dem Monitoring zu starten.</p>
+        <a href="/nodes/add" class="btn btn-primary">+ Ersten Node hinzufuegen</a>
       </div>
+      <% } %>
     <% } else { %>
+      <% if (typeof tagFilter !== 'undefined' && tagFilter) { %>
+      <!-- Active Tag Filter Banner -->
+      <div class="active-filter-banner">
+        <span class="active-filter-label">Gefiltert nach Tag:</span>
+        <span class="active-filter-tag"><%= tagFilter %></span>
+        <a href="/" class="active-filter-clear" title="Filter entfernen">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </a>
+      </div>
+      <% } %>
       <!-- Search/Filter Bar -->
       <div class="node-list-filter">
         <input type="text" id="nodeSearchInput" class="node-list-search" placeholder="Nodes suchen..." onkeyup="filterNodesAndCards()">
