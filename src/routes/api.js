@@ -2168,7 +2168,7 @@ router.get('/nodes/:id/proxmox/resources', asyncHandler(async (req, res) => {
   }
 
   // Verify it's a Proxmox host
-  var discovery = db.discovery.getByNodeId(nodeId);
+  var discovery = db.discovery.getForNode(nodeId);
   if (!discovery || !discovery.is_proxmox_host) {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
   }
@@ -2194,7 +2194,7 @@ router.get('/nodes/:id/proxmox/isos', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  var discovery = db.discovery.getByNodeId(nodeId);
+  var discovery = db.discovery.getForNode(nodeId);
   if (!discovery || !discovery.is_proxmox_host) {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
   }
@@ -2220,7 +2220,7 @@ router.get('/nodes/:id/proxmox/templates', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  var discovery = db.discovery.getByNodeId(nodeId);
+  var discovery = db.discovery.getForNode(nodeId);
   if (!discovery || !discovery.is_proxmox_host) {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
   }
@@ -2246,7 +2246,7 @@ router.get('/nodes/:id/proxmox/storage/available', asyncHandler(async (req, res)
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  var discovery = db.discovery.getByNodeId(nodeId);
+  var discovery = db.discovery.getForNode(nodeId);
   if (!discovery || !discovery.is_proxmox_host) {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
   }
@@ -2272,7 +2272,7 @@ router.get('/nodes/:id/proxmox/bridges', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  var discovery = db.discovery.getByNodeId(nodeId);
+  var discovery = db.discovery.getForNode(nodeId);
   if (!discovery || !discovery.is_proxmox_host) {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
   }
@@ -2298,7 +2298,7 @@ router.get('/nodes/:id/proxmox/nextid', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  var discovery = db.discovery.getByNodeId(nodeId);
+  var discovery = db.discovery.getForNode(nodeId);
   if (!discovery || !discovery.is_proxmox_host) {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
   }
@@ -2341,7 +2341,7 @@ router.post('/nodes/:id/proxmox/vms/create', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  var discovery = db.discovery.getByNodeId(nodeId);
+  var discovery = db.discovery.getForNode(nodeId);
   if (!discovery || !discovery.is_proxmox_host) {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
   }
@@ -2503,7 +2503,7 @@ router.post('/nodes/:id/proxmox/cts/create', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  var discovery = db.discovery.getByNodeId(nodeId);
+  var discovery = db.discovery.getForNode(nodeId);
   if (!discovery || !discovery.is_proxmox_host) {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
   }
