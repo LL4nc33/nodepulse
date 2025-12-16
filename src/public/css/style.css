@@ -264,6 +264,24 @@ a:focus {
 }
 
 .theme-toggle svg {
+  display: none;
+}
+
+/* Dark Mode (default): Show sun icon to switch to light */
+.theme-toggle .icon-sun {
+  display: block;
+}
+
+.theme-toggle .icon-moon {
+  display: none;
+}
+
+/* Light Mode: Show moon icon to switch to dark */
+.light-mode .theme-toggle .icon-sun {
+  display: none;
+}
+
+.light-mode .theme-toggle .icon-moon {
   display: block;
 }
 
@@ -7013,5 +7031,389 @@ a:focus {
   100% {
     transform: scale(1) rotate(0);
     opacity: 1;
+  }
+}
+
+/* -----------------------------------------------------
+   12. System Info UI (Premium Style)
+   ----------------------------------------------------- */
+.system-info-container {
+  padding: 0;
+}
+
+.system-info-header {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.system-info-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-heading);
+}
+
+.system-info-content {
+  min-height: 200px;
+}
+
+/* System Info Grid */
+.sysinfo-grid {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* System Info Cards */
+.sysinfo-card {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 280px;
+  flex: 1 1 280px;
+  min-width: 280px;
+  max-width: 100%;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  -webkit-transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sysinfo-card:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sysinfo-card-header {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, var(--color-bg-surface) 0%, var(--color-bg-elevated) 100%);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sysinfo-card-header svg {
+  color: var(--color-accent);
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.sysinfo-card-header h4 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-heading);
+}
+
+.sysinfo-card-body {
+  padding: 1rem 1.25rem;
+}
+
+/* System Info Rows */
+.sysinfo-row {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-box-align: start;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.sysinfo-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.sysinfo-row:first-child {
+  padding-top: 0;
+}
+
+.sysinfo-label {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  margin-right: 1rem;
+}
+
+.sysinfo-value {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  text-align: right;
+  word-break: break-word;
+}
+
+/* Badges */
+.sysinfo-badge {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.sysinfo-badge-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.sysinfo-badge-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.sysinfo-badge-error {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.sysinfo-badge-info {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+}
+
+/* Text modifiers */
+.sysinfo-warn {
+  color: var(--color-warning);
+}
+
+.sysinfo-error {
+  color: var(--color-error);
+}
+
+.sysinfo-success {
+  color: var(--color-success);
+}
+
+.sysinfo-mono {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  font-size: 0.8125rem;
+  background: var(--color-bg-surface);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.sysinfo-small {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Collapsible Sections */
+.sysinfo-section {
+  margin-top: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-bg-elevated);
+}
+
+.sysinfo-section-header {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: var(--color-bg-surface);
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  color: var(--color-text-heading);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+  -webkit-transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease;
+}
+
+.sysinfo-section-header:hover {
+  background: var(--color-accent-bg);
+}
+
+.sysinfo-toggle {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-muted);
+  -webkit-transition: transform 0.2s ease;
+  transition: transform 0.2s ease;
+}
+
+.sysinfo-section.expanded .sysinfo-toggle {
+  -webkit-transform: rotate(180deg);
+  transform: rotate(180deg);
+}
+
+.sysinfo-section-body {
+  display: none;
+  padding: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.sysinfo-section.expanded .sysinfo-section-body {
+  display: block;
+}
+
+/* Tables in System Info */
+.sysinfo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.sysinfo-table th,
+.sysinfo-table td {
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.sysinfo-table th {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-bg-surface);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sysinfo-table tr:last-child td {
+  border-bottom: none;
+}
+
+.sysinfo-table tr:hover td {
+  background: var(--color-bg-surface);
+}
+
+/* Logs Section */
+.sysinfo-logs {
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--color-bg-surface);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.sysinfo-log-line {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding: 0.125rem 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.sysinfo-log-line:last-child {
+  border-bottom: none;
+}
+
+/* Loading State */
+.sysinfo-loading {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  padding: 3rem;
+  color: var(--color-text-muted);
+}
+
+.sysinfo-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  -webkit-animation: sysinfo-spin 0.8s linear infinite;
+  animation: sysinfo-spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@-webkit-keyframes sysinfo-spin {
+  to { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+@keyframes sysinfo-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.sysinfo-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-muted);
+}
+
+.sysinfo-empty svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .sysinfo-card {
+    -webkit-flex: 1 1 100%;
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .sysinfo-row {
+    -webkit-box-orient: vertical;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-align: start;
+    -webkit-align-items: flex-start;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .sysinfo-value {
+    text-align: left;
+  }
+
+  .sysinfo-table {
+    display: block;
+    overflow-x: auto;
   }
 }
