@@ -595,6 +595,108 @@ router.get('/nodes/:id/system-info', asyncHandler(async (req, res) => {
 }));
 
 // =====================================================
+// Network Diagnostics API
+// =====================================================
+
+// Get network diagnostics for a node
+router.get('/nodes/:id/network', asyncHandler(async (req, res) => {
+  const node = db.nodes.getByIdWithCredentials(req.params.id);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    const networkData = await collector.runNetworkDiagnostics(node);
+    apiResponse(res, 200, networkData);
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'NETWORK_ERROR', message: err.message });
+  }
+}));
+
+// Run ping test from a node
+router.post('/nodes/:id/network/ping', asyncHandler(async (req, res) => {
+  const node = db.nodes.getByIdWithCredentials(req.params.id);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  const target = req.body.target;
+  if (!target || typeof target !== 'string') {
+    return apiResponse(res, 400, null, { code: 'INVALID_TARGET', message: 'target ist erforderlich' });
+  }
+
+  // Basic validation
+  if (target.length > 255) {
+    return apiResponse(res, 400, null, { code: 'INVALID_TARGET', message: 'target darf maximal 255 Zeichen lang sein' });
+  }
+
+  const count = parseInt(req.body.count, 10) || 4;
+  if (count < 1 || count > 20) {
+    return apiResponse(res, 400, null, { code: 'INVALID_COUNT', message: 'count muss zwischen 1 und 20 liegen' });
+  }
+
+  try {
+    const result = await collector.runPingTest(node, target, count);
+    apiResponse(res, 200, result);
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'PING_ERROR', message: err.message });
+  }
+}));
+
+// Run DNS lookup from a node
+router.post('/nodes/:id/network/dns', asyncHandler(async (req, res) => {
+  const node = db.nodes.getByIdWithCredentials(req.params.id);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  const hostname = req.body.hostname;
+  if (!hostname || typeof hostname !== 'string') {
+    return apiResponse(res, 400, null, { code: 'INVALID_HOSTNAME', message: 'hostname ist erforderlich' });
+  }
+
+  if (hostname.length > 255) {
+    return apiResponse(res, 400, null, { code: 'INVALID_HOSTNAME', message: 'hostname darf maximal 255 Zeichen lang sein' });
+  }
+
+  try {
+    const result = await collector.runDnsLookup(node, hostname);
+    apiResponse(res, 200, result);
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'DNS_ERROR', message: err.message });
+  }
+}));
+
+// Run traceroute from a node
+router.post('/nodes/:id/network/traceroute', asyncHandler(async (req, res) => {
+  const node = db.nodes.getByIdWithCredentials(req.params.id);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  const target = req.body.target;
+  if (!target || typeof target !== 'string') {
+    return apiResponse(res, 400, null, { code: 'INVALID_TARGET', message: 'target ist erforderlich' });
+  }
+
+  if (target.length > 255) {
+    return apiResponse(res, 400, null, { code: 'INVALID_TARGET', message: 'target darf maximal 255 Zeichen lang sein' });
+  }
+
+  const maxHops = parseInt(req.body.maxHops, 10) || 20;
+  if (maxHops < 1 || maxHops > 64) {
+    return apiResponse(res, 400, null, { code: 'INVALID_MAXHOPS', message: 'maxHops muss zwischen 1 und 64 liegen' });
+  }
+
+  try {
+    const result = await collector.runTraceroute(node, target, maxHops);
+    apiResponse(res, 200, result);
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'TRACEROUTE_ERROR', message: err.message });
+  }
+}));
+
+// =====================================================
 // Tags API
 // =====================================================
 

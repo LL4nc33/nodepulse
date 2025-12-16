@@ -477,6 +477,151 @@ async function runSystemInfo(node) {
   return data;
 }
 
+/**
+ * Run network diagnostics on a node
+ * Collects network configuration, routing, connections, and performs tests
+ * @param {Object} node - Node object from database
+ * @returns {Promise<Object>} Network diagnostics data
+ */
+async function runNetworkDiagnostics(node) {
+  const script = getScript('network-diagnostics.sh');
+  const result = await ssh.executeScript(node, script, 60000);
+
+  if (result.exitCode !== 0 && !result.stdout) {
+    const errMsg = result.stderr || 'Network diagnostics script failed';
+    throw new Error(errMsg);
+  }
+
+  const data = parseScriptOutput(result.stdout, node.name);
+
+  // Update node online status
+  db.nodes.setOnline(node.id, true);
+
+  return data;
+}
+
+/**
+ * Run a ping test from a node to a target
+ * @param {Object} node - Node object from database
+ * @param {string} target - IP or hostname to ping
+ * @param {number} count - Number of pings (default: 4)
+ * @returns {Promise<Object>} Ping results
+ */
+async function runPingTest(node, target, count = 4) {
+  // Sanitize target to prevent command injection
+  const sanitizedTarget = target.replace(/[;&|`$()]/g, '');
+  const command = `ping -c ${count} -W 5 ${sanitizedTarget} 2>&1`;
+
+  const result = await ssh.execute(node, command, 30000);
+
+  // Parse ping output
+  const lines = result.stdout.split('\n');
+  const stats = {
+    target: sanitizedTarget,
+    transmitted: 0,
+    received: 0,
+    loss_percent: 100,
+    min_ms: null,
+    avg_ms: null,
+    max_ms: null,
+    raw: result.stdout
+  };
+
+  // Parse statistics line
+  const statsLine = lines.find(function(l) { return l.indexOf('packets transmitted') > -1; });
+  if (statsLine) {
+    const match = statsLine.match(/(\d+) packets transmitted, (\d+) received/);
+    if (match) {
+      stats.transmitted = parseInt(match[1], 10);
+      stats.received = parseInt(match[2], 10);
+      stats.loss_percent = stats.transmitted > 0
+        ? Math.round((1 - stats.received / stats.transmitted) * 100)
+        : 100;
+    }
+  }
+
+  // Parse RTT line
+  const rttLine = lines.find(function(l) { return l.indexOf('min/avg/max') > -1; });
+  if (rttLine) {
+    const match = rttLine.match(/([\d.]+)\/([\d.]+)\/([\d.]+)/);
+    if (match) {
+      stats.min_ms = parseFloat(match[1]);
+      stats.avg_ms = parseFloat(match[2]);
+      stats.max_ms = parseFloat(match[3]);
+    }
+  }
+
+  return stats;
+}
+
+/**
+ * Run a DNS lookup from a node
+ * @param {Object} node - Node object from database
+ * @param {string} hostname - Hostname to resolve
+ * @returns {Promise<Object>} DNS results
+ */
+async function runDnsLookup(node, hostname) {
+  // Sanitize hostname
+  const sanitizedHostname = hostname.replace(/[;&|`$()]/g, '');
+  const command = `host ${sanitizedHostname} 2>&1 || nslookup ${sanitizedHostname} 2>&1`;
+
+  const result = await ssh.execute(node, command, 10000);
+
+  const data = {
+    hostname: sanitizedHostname,
+    success: result.exitCode === 0,
+    addresses: [],
+    raw: result.stdout
+  };
+
+  // Extract IP addresses from output
+  const ipMatches = result.stdout.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g);
+  if (ipMatches) {
+    data.addresses = ipMatches.filter(function(ip, index, self) {
+      return self.indexOf(ip) === index; // unique
+    });
+  }
+
+  return data;
+}
+
+/**
+ * Run a traceroute from a node
+ * @param {Object} node - Node object from database
+ * @param {string} target - IP or hostname to trace
+ * @param {number} maxHops - Maximum hops (default: 20)
+ * @returns {Promise<Object>} Traceroute results
+ */
+async function runTraceroute(node, target, maxHops = 20) {
+  // Sanitize target
+  const sanitizedTarget = target.replace(/[;&|`$()]/g, '');
+  const command = `traceroute -m ${maxHops} -w 2 ${sanitizedTarget} 2>&1 || tracepath ${sanitizedTarget} 2>&1`;
+
+  const result = await ssh.execute(node, command, 60000);
+
+  const lines = result.stdout.split('\n');
+  var hops = [];
+
+  lines.forEach(function(line) {
+    // Match traceroute output format: " 1  192.168.1.1 (192.168.1.1)  1.234 ms"
+    var match = line.match(/^\s*(\d+)\s+(\S+)\s+\(?([\d.]+)?\)?\s+([\d.]+)\s*ms/);
+    if (match) {
+      hops.push({
+        hop: parseInt(match[1], 10),
+        host: match[2],
+        ip: match[3] || match[2],
+        time_ms: parseFloat(match[4])
+      });
+    }
+  });
+
+  return {
+    target: sanitizedTarget,
+    hops: hops,
+    raw: result.stdout
+  };
+}
+
 module.exports = {
   runDiscovery,
   runHardware,
@@ -487,6 +632,10 @@ module.exports = {
   runProxmoxCommand,
   runFullDiscovery,
   runSystemInfo,
+  runNetworkDiagnostics,
+  runPingTest,
+  runDnsLookup,
+  runTraceroute,
   determineNodeType,
   getTagsFromDiscovery,
   applyAutoTags,
