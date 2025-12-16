@@ -2895,6 +2895,10 @@ a:focus {
   padding: 1rem;
 }
 
+.proxmox-section.collapsed .section-content {
+  display: none;
+}
+
 .proxmox-section h3 {
   margin-bottom: 1rem;
   color: var(--color-text);
