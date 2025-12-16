@@ -310,6 +310,11 @@
    * @param {Object} alert - Alert object with type, level, nodeName, value
    */
   function showAlert(alert) {
+    // Check if toast notifications are enabled (global setting)
+    if (window.npToastEnabled === false) {
+      return null;
+    }
+
     var type = alert.level === 'critical' ? 'error' : 'warning';
     var message = alert.nodeName + ': ' + alert.type.toUpperCase() + ' ' + alert.value;
 

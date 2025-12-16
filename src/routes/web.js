@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const collector = require('../collector');
 
 // Helper function for byte formatting (used in templates)
 function formatBytes(bytes) {
@@ -17,6 +18,15 @@ function formatBytes(bytes) {
 const asyncHandler = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
 };
+
+// =====================================================
+// Middleware: Global Settings für alle Views
+// =====================================================
+router.use((req, res, next) => {
+  const settings = db.settings.getAll();
+  res.locals.toastNotificationsEnabled = settings.toast_notifications_enabled === 'true';
+  next();
+});
 
 // =====================================================
 // Dashboard
@@ -168,6 +178,10 @@ router.post('/nodes/add', asyncHandler(async (req, res) => {
   }
 
   try {
+    // Settings für Defaults laden
+    const settings = db.settings.getAll();
+    const defaultMonitoringInterval = parseInt(settings.monitoring_default_interval, 10) || 30;
+
     const id = db.nodes.create({
       name: name.trim(),
       host: host.trim(),
@@ -176,7 +190,18 @@ router.post('/nodes/add', asyncHandler(async (req, res) => {
       ssh_password: ssh_password ? ssh_password : null,
       ssh_key_path: ssh_key_path ? ssh_key_path.trim() : null,
       notes: notes ? notes.trim() : null,
+      monitoring_interval: defaultMonitoringInterval,
     });
+
+    // Auto-Discovery wenn aktiviert
+    if (settings.auto_discovery_enabled === 'true') {
+      const node = db.nodes.getByIdWithCredentials(id);
+      // Discovery im Hintergrund ausführen (nicht-blocking)
+      collector.runFullDiscovery(node).catch(err => {
+        console.error(`Auto-Discovery für Node ${id} fehlgeschlagen:`, err.message);
+        db.nodes.setOnline(id, false, err.message);
+      });
+    }
 
     res.redirect(`/nodes/${id}`);
   } catch (err) {
@@ -407,6 +432,7 @@ router.get('/monitoring/:id', asyncHandler(async (req, res) => {
     stats: currentStats,
     history,
     thresholds,
+    chartDefaultHours: parseInt(settings.chart_default_hours, 10) || 24,
     formatBytes,
   });
 }));

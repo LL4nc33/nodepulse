@@ -427,7 +427,22 @@ router.post('/nodes/:id/create-child', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Parent-Node nicht gefunden' });
   }
 
-  const { type, vmid, name, host, ssh_user, ssh_port, ssh_key_path, ssh_password } = req.body;
+  let { type, vmid, name, host, ssh_user, ssh_port, ssh_key_path, ssh_password } = req.body;
+
+  // Inherit credentials from parent if setting is enabled and no credentials provided
+  const settings = db.settings.getAll();
+  if (settings.import_inherit_credentials !== 'false') {
+    if (!ssh_user || !ssh_user.trim()) {
+      ssh_user = parentNode.ssh_user;
+    }
+    if (!ssh_password && !ssh_key_path) {
+      ssh_password = parentNode.ssh_password;
+      ssh_key_path = parentNode.ssh_key_path;
+    }
+    if (!ssh_port) {
+      ssh_port = parentNode.ssh_port;
+    }
+  }
 
   // Validation
   if (!type || !['vm', 'ct'].includes(type)) {

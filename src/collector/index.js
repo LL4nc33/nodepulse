@@ -167,8 +167,19 @@ async function runStats(node, saveHistory = true) {
     db.stats.saveHistory(node.id, data);
   }
 
+  // Check if node was offline before (for re-discovery)
+  const wasOffline = !node.online;
+
   // Update node online status
   db.nodes.setOnline(node.id, true);
+
+  // Re-Discovery wenn Node von offline auf online wechselt
+  if (wasOffline && db.settings.get('rediscovery_on_connect') === 'true') {
+    // Discovery im Hintergrund ausführen (nicht-blocking)
+    runFullDiscovery(node).catch(err => {
+      console.error(`Re-Discovery für Node ${node.id} fehlgeschlagen:`, err.message);
+    });
+  }
 
   // Check alerts if thresholds are configured
   try {

@@ -178,8 +178,8 @@ const nodes = {
    */
   create(node) {
     const stmt = getDb().prepare(`
-      INSERT INTO nodes (name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes)
-      VALUES (@name, @host, @ssh_port, @ssh_user, @ssh_password, @ssh_key_path, @notes)
+      INSERT INTO nodes (name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes, monitoring_interval)
+      VALUES (@name, @host, @ssh_port, @ssh_user, @ssh_password, @ssh_key_path, @notes, @monitoring_interval)
     `);
     const result = stmt.run({
       name: node.name,
@@ -189,6 +189,7 @@ const nodes = {
       ssh_password: node.ssh_password || null,
       ssh_key_path: node.ssh_key_path || null,
       notes: node.notes || null,
+      monitoring_interval: node.monitoring_interval || 30,
     });
     return result.lastInsertRowid;
   },
