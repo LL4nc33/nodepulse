@@ -376,6 +376,104 @@ for hwmon in /sys/class/hwmon/hwmon*; do
 done
 
 echo "$THERMAL_LIST"
+echo "],"
+
+# === POWER SENSORS ===
+echo "\"power\": ["
+POWER_LIST=""
+
+# Method 1: Intel RAPL (Running Average Power Limit)
+# Provides package, core, uncore, dram power consumption
+if [ -d "/sys/class/powercap/intel-rapl" ]; then
+    for rapl in /sys/class/powercap/intel-rapl/intel-rapl:*/; do
+        [ ! -d "$rapl" ] && continue
+
+        NAME_FILE="${rapl}name"
+        ENERGY_FILE="${rapl}energy_uj"
+        MAX_ENERGY_FILE="${rapl}max_energy_range_uj"
+
+        if [ -f "$NAME_FILE" ] && [ -f "$ENERGY_FILE" ]; then
+            POWER_NAME=$(cat "$NAME_FILE" 2>/dev/null | xargs)
+            ENERGY_UJ=$(cat "$ENERGY_FILE" 2>/dev/null || echo "")
+            MAX_ENERGY_UJ=$(cat "$MAX_ENERGY_FILE" 2>/dev/null || echo "")
+
+            # Energy is in microjoules, we track it for rate calculation later
+            [ -n "$POWER_LIST" ] && POWER_LIST="$POWER_LIST,"
+            if [ -n "$ENERGY_UJ" ]; then
+                POWER_LIST="$POWER_LIST{\"name\": \"$(json_escape \"$POWER_NAME\")\", \"source\": \"rapl\", \"energy_uj\": $ENERGY_UJ"
+                if [ -n "$MAX_ENERGY_UJ" ]; then
+                    POWER_LIST="$POWER_LIST, \"max_energy_uj\": $MAX_ENERGY_UJ"
+                fi
+                POWER_LIST="$POWER_LIST}"
+            fi
+        fi
+    done
+fi
+
+# Method 2: hwmon power sensors
+# Direct power readings in microwatts
+for hwmon in /sys/class/hwmon/hwmon*; do
+    [ ! -d "$hwmon" ] && continue
+
+    HWMON_NAME=$(cat "$hwmon/name" 2>/dev/null || echo "unknown")
+
+    # Find all power*_input files
+    for power_file in "$hwmon"/power*_input; do
+        [ ! -f "$power_file" ] && continue
+
+        # Extract sensor number (power1_input -> 1)
+        SENSOR_NUM=$(basename "$power_file" | grep -oE '[0-9]+')
+
+        # Get label if exists
+        LABEL_FILE="${hwmon}/power${SENSOR_NUM}_label"
+        if [ -f "$LABEL_FILE" ]; then
+            SENSOR_LABEL=$(cat "$LABEL_FILE" 2>/dev/null | xargs)
+        else
+            SENSOR_LABEL="Power $SENSOR_NUM"
+        fi
+
+        # Power in microwatts
+        POWER_UW=$(cat "$power_file" 2>/dev/null || echo "")
+        if [ -n "$POWER_UW" ] && [ "$POWER_UW" -gt 0 ] 2>/dev/null; then
+            # Convert to watts
+            POWER_W=$(echo "scale=2; $POWER_UW / 1000000" | bc 2>/dev/null || echo "")
+            if [ -z "$POWER_W" ]; then
+                # Fallback without bc
+                POWER_W=$(awk "BEGIN {printf \"%.2f\", $POWER_UW / 1000000}")
+            fi
+
+            # Get max/cap if available
+            POWER_MAX="null"
+            POWER_CAP="null"
+            MAX_FILE="${hwmon}/power${SENSOR_NUM}_max"
+            CAP_FILE="${hwmon}/power${SENSOR_NUM}_cap"
+            if [ -f "$MAX_FILE" ]; then
+                MAX_UW=$(cat "$MAX_FILE" 2>/dev/null || echo "")
+                if [ -n "$MAX_UW" ] && [ "$MAX_UW" -gt 0 ] 2>/dev/null; then
+                    POWER_MAX=$(echo "scale=2; $MAX_UW / 1000000" | bc 2>/dev/null || awk "BEGIN {printf \"%.2f\", $MAX_UW / 1000000}")
+                fi
+            fi
+            if [ -f "$CAP_FILE" ]; then
+                CAP_UW=$(cat "$CAP_FILE" 2>/dev/null || echo "")
+                if [ -n "$CAP_UW" ] && [ "$CAP_UW" -gt 0 ] 2>/dev/null; then
+                    POWER_CAP=$(echo "scale=2; $CAP_UW / 1000000" | bc 2>/dev/null || awk "BEGIN {printf \"%.2f\", $CAP_UW / 1000000}")
+                fi
+            fi
+
+            [ -n "$POWER_LIST" ] && POWER_LIST="$POWER_LIST,"
+            POWER_LIST="$POWER_LIST{\"name\": \"$(json_escape \"$HWMON_NAME\")\", \"label\": \"$(json_escape \"$SENSOR_LABEL\")\", \"source\": \"hwmon\", \"power_w\": $POWER_W"
+            if [ "$POWER_MAX" != "null" ]; then
+                POWER_LIST="$POWER_LIST, \"power_max_w\": $POWER_MAX"
+            fi
+            if [ "$POWER_CAP" != "null" ]; then
+                POWER_LIST="$POWER_LIST, \"power_cap_w\": $POWER_CAP"
+            fi
+            POWER_LIST="$POWER_LIST}"
+        fi
+    done
+done
+
+echo "$POWER_LIST"
 echo "]"
 
 echo "}"

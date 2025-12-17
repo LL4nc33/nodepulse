@@ -141,6 +141,9 @@ CREATE TABLE IF NOT EXISTS node_hardware (
     -- Thermal sensors (JSON array)
     thermal_json TEXT,
 
+    -- Power sensors (JSON array)
+    power_json TEXT,
+
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
 );
