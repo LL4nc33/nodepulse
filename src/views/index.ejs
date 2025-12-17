@@ -142,20 +142,41 @@
       function renderNodeTree(nodeList, level) {
         nodeList.forEach(function(node) {
           var stats = statsMap[node.id] || {};
+          var hasChildren = node.children && node.children.length > 0;
+          var isParent = hasChildren;
       %>
-          <div class="node-list-row<%= level > 0 ? ' child-level-' + level : '' %>"
+          <div class="node-list-row<%= isParent ? ' parent-node' : '' %><%= level > 0 ? ' child-level-' + level : '' %>"
                data-node-id="<%= node.id %>"
+               data-parent-id="<%= node.parent_id || '' %>"
                data-name="<%= node.name.toLowerCase() %>"
                data-type="<%= node.node_type || 'unknown' %>"
-               data-status="<%= node.online ? 'online' : 'offline' %>">
+               data-status="<%= node.online ? 'online' : 'offline' %>"
+               data-has-children="<%= hasChildren ? 'true' : 'false' %>">
             <div class="node-list-status">
               <span class="node-list-status-dot <%= node.online ? 'online' : 'offline' %>"></span>
             </div>
             <div class="node-list-icon">
+              <% if (isParent) { %>
+                <button class="tree-toggle" onclick="toggleChildren(<%= node.id %>); event.stopPropagation();" title="Expand/Collapse">
+                  <svg class="icon-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              <% } else { %>
+                <span class="tree-spacer"></span>
+              <% } %>
               <%- include('partials/node-type-icon', { nodeType: node.node_type || 'unknown', size: 22 }) %>
             </div>
             <div class="node-list-name">
               <a href="/nodes/<%= node.id %>"><%= node.name %></a>
+              <% if (isParent && node.aggregate) { %>
+                <span class="aggregate-stats">
+                  (Total: <%= node.aggregate.total_cpu_cores %> cores,
+                  <%= formatBytes(node.aggregate.total_ram_bytes) %>,
+                  <%= node.aggregate.total_vms %> VMs,
+                  <%= node.aggregate.total_nodes %> nodes)
+                </span>
+              <% } %>
               <span class="node-list-host-mobile"><%= node.host %></span>
             </div>
             <div class="node-list-host"><%= node.host %></div>
@@ -1104,6 +1125,79 @@ function updateDashboard(nodes) {
   updateCardsView(nodes);
 }
 
+// Toggle Parent-Child Nodes (Grouped View)
+function toggleChildren(parentId) {
+  var allRows = document.querySelectorAll('.node-list-row');
+  var parentRow = null;
+
+  // Find parent row
+  for (var i = 0; i < allRows.length; i++) {
+    if (allRows[i].getAttribute('data-node-id') == parentId) {
+      parentRow = allRows[i];
+      break;
+    }
+  }
+
+  if (!parentRow) return;
+
+  var chevron = parentRow.querySelector('.icon-chevron');
+  var isExpanded = parentRow.classList.contains('expanded');
+
+  // Toggle child rows
+  for (var i = 0; i < allRows.length; i++) {
+    var row = allRows[i];
+    var rowParentId = row.getAttribute('data-parent-id');
+
+    if (rowParentId == parentId) {
+      if (isExpanded) {
+        row.style.display = 'none';
+      } else {
+        row.style.display = '';
+      }
+    }
+  }
+
+  // Toggle chevron and class
+  if (isExpanded) {
+    parentRow.classList.remove('expanded');
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
+  } else {
+    parentRow.classList.add('expanded');
+    if (chevron) chevron.style.transform = 'rotate(90deg)';
+  }
+
+  // Save state
+  try {
+    localStorage.setItem('node-' + parentId + '-expanded', !isExpanded ? '1' : '0');
+  } catch (e) {}
+}
+
+// Init Grouped View expand/collapse state
+function initGroupedViewState() {
+  var parentRows = document.querySelectorAll('.node-list-row[data-has-children="true"]');
+
+  for (var i = 0; i < parentRows.length; i++) {
+    var row = parentRows[i];
+    var nodeId = row.getAttribute('data-node-id');
+
+    // Check saved state
+    var savedState = '1'; // Default: expanded
+    try {
+      savedState = localStorage.getItem('node-' + nodeId + '-expanded') || '1';
+    } catch (e) {}
+
+    if (savedState === '0') {
+      // Should be collapsed
+      toggleChildren(nodeId);
+    } else {
+      // Should be expanded (default)
+      row.classList.add('expanded');
+      var chevron = row.querySelector('.icon-chevron');
+      if (chevron) chevron.style.transform = 'rotate(90deg)';
+    }
+  }
+}
+
 // Init auto-refresh
 (function() {
   try {
@@ -1116,6 +1210,9 @@ function updateDashboard(nodes) {
   } catch (e) {
     startAutoRefresh();
   }
+
+  // Init grouped view state
+  initGroupedViewState();
 })();
 </script>
     <% } %>

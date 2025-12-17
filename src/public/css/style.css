@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-17T17:20:24.096Z
+   Generated: 2025-12-17T17:47:07.316Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -2689,7 +2689,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: dashboard.css (1039 lines)
+   FROM: dashboard.css (1142 lines)
    ============================================================ */
 
 /* =====================================================
@@ -3416,6 +3416,109 @@ a:focus {
 
 .mini-bar-value.critical {
   color: var(--color-error-text);
+}
+
+/* =====================================================
+   Grouped View (Parent-Child Nodes)
+   ===================================================== */
+
+/* Tree Toggle Button */
+.tree-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 0.5rem;
+  width: 20px;
+  height: 20px;
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  transition: color 0.2s ease;
+}
+
+.tree-toggle:hover {
+  color: var(--color-accent);
+}
+
+.tree-toggle:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Chevron Icon */
+.icon-chevron {
+  transition: transform 0.2s ease;
+  transform: rotate(0deg);
+}
+
+/* Tree Spacer (for non-parent nodes) */
+.tree-spacer {
+  display: inline-block;
+  width: 20px;
+  margin-right: 0.5rem;
+}
+
+/* Parent Node Styling */
+.node-list-row[data-has-children="true"] {
+  font-weight: 600;
+  background: var(--color-bg-surface);
+}
+
+.node-list-row[data-has-children="true"]:hover {
+  background: var(--color-bg-elevated);
+}
+
+.node-list-row.expanded {
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Child Node Styling */
+.node-list-row[data-parent-id] {
+  padding-left: 2.5rem;
+  background: var(--color-bg);
+  font-weight: 400;
+}
+
+.node-list-row[data-parent-id]:hover {
+  background: var(--color-bg-surface);
+}
+
+/* Aggregate Stats */
+.aggregate-stats {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  margin-left: 0.5rem;
+  opacity: 0.8;
+}
+
+/* Count Badges (VMs, Containers) */
+.count-badge {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  padding: 0.125rem 0.5rem;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.uptime-value {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 /* Responsive: Hide absolute values on mobile */
