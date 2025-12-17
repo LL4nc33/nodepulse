@@ -32,8 +32,8 @@ build/
 .claude/
 
 # Development
-CHANGELOG.md
 DEVELOPMENT.md
+MODERNIZATION-PLAN.md
 
 # Test artifacts
 .playwright-mcp/
