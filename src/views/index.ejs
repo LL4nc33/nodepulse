@@ -69,7 +69,21 @@
       <% } %>
       <!-- Search/Filter Bar -->
       <div class="node-list-filter">
-        <input type="text" id="nodeSearchInput" class="node-list-search" placeholder="Nodes suchen..." onkeyup="debouncedFilter()">
+        <input
+          type="text"
+          id="nodeSearchInput"
+          class="node-list-search"
+          placeholder="Suche: cpu>80, ram<20, tags:prod, node:name..."
+          title="Erweiterte Suche: cpu/ram/disk>80, vms>5, containers>10, tags:prod, node:name, status:online"
+          onkeyup="debouncedFilter()">
+        <div class="search-hint">
+          <svg class="icon-info" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>Erweiterte Suche: cpu>80, ram<20, disk>50, tags:prod, vms>5</span>
+        </div>
         <select id="nodeTypeFilter" class="node-list-type-select" onchange="filterNodesAndCards()">
           <option value="">Alle Typen</option>
           <option value="proxmox-host">Proxmox</option>
@@ -252,7 +266,14 @@
                data-node-id="<%= node.id %>"
                data-name="<%= node.name.toLowerCase() %>"
                data-type="<%= node.node_type || 'unknown' %>"
-               data-status="<%= node.online ? 'online' : 'offline' %>">
+               data-status="<%= node.online ? 'online' : 'offline' %>"
+               data-cpu="<%= stats.cpu_percent || 0 %>"
+               data-ram="<%= stats.ram_percent || 0 %>"
+               data-disk="<%= stats.disk_percent || 0 %>"
+               data-vms="<%= (stats.vms_running || 0) + (stats.cts_running || 0) %>"
+               data-containers="<%= stats.containers_running || 0 %>"
+               data-uptime="<%= stats.uptime_seconds || 0 %>"
+               data-tags="<%= node.tags || '' %>">
             <div class="node-list-status">
               <span class="node-list-status-dot <%= node.online ? 'online' : 'offline' %>"></span>
             </div>
@@ -372,7 +393,14 @@
                data-node-id="<%= node.id %>"
                data-name="<%= node.name.toLowerCase() %>"
                data-type="<%= node.node_type || 'unknown' %>"
-               data-status="<%= node.online ? 'online' : 'offline' %>">
+               data-status="<%= node.online ? 'online' : 'offline' %>"
+               data-cpu="<%= stats.cpu_percent || 0 %>"
+               data-ram="<%= stats.ram_percent || 0 %>"
+               data-disk="<%= stats.disk_percent || 0 %>"
+               data-vms="<%= (stats.vms_running || 0) + (stats.cts_running || 0) %>"
+               data-containers="<%= stats.containers_running || 0 %>"
+               data-uptime="<%= stats.uptime_seconds || 0 %>"
+               data-tags="<%= node.tags || '' %>">
             <div class="node-list-status">
               <span class="node-list-status-dot <%= node.online ? 'online' : 'offline' %>"></span>
             </div>
@@ -608,7 +636,7 @@ function debounce(func, delay, key) {
   };
 }
 
-// ES5 Node Filter Function
+// ES5 Node Filter Function with Advanced Search
 function filterNodes() {
   var searchInput = document.getElementById('nodeSearchInput');
   var typeFilter = document.getElementById('nodeTypeFilter');
@@ -616,19 +644,51 @@ function filterNodes() {
   var rows = document.querySelectorAll('.node-list-row');
   var visibleCount = 0;
 
-  var searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+  var searchQuery = searchInput ? searchInput.value : '';
   var typeValue = typeFilter ? typeFilter.value : '';
   var statusValue = statusFilter ? statusFilter.value : '';
 
+  // Parse advanced search query
+  var parsedQuery = null;
+  if (searchQuery && typeof parseSearchQuery === 'function') {
+    parsedQuery = parseSearchQuery(searchQuery);
+  }
+
   for (var i = 0; i < rows.length; i++) {
     var row = rows[i];
-    var name = row.getAttribute('data-name') || '';
+    var nodeId = row.getAttribute('data-node-id');
     var type = row.getAttribute('data-type') || '';
     var status = row.getAttribute('data-status') || '';
 
-    var matchesSearch = name.indexOf(searchTerm) > -1;
+    var matchesSearch = true;
     var matchesType = !typeValue || type === typeValue;
     var matchesStatus = !statusValue || status === statusValue;
+
+    // Advanced search with parser
+    if (parsedQuery) {
+      // Build node object from data attributes and stats
+      var nodeData = {
+        id: nodeId,
+        name: row.getAttribute('data-name') || '',
+        host: row.querySelector('.node-list-host') ? row.querySelector('.node-list-host').textContent : '',
+        node_type: type,
+        online: status === 'online',
+        cpu_percent: parseFloat(row.getAttribute('data-cpu')) || 0,
+        ram_percent: parseFloat(row.getAttribute('data-ram')) || 0,
+        disk_percent: parseFloat(row.getAttribute('data-disk')) || 0,
+        vms_running: parseInt(row.getAttribute('data-vms')) || 0,
+        cts_running: 0,
+        containers_running: parseInt(row.getAttribute('data-containers')) || 0,
+        uptime_seconds: parseInt(row.getAttribute('data-uptime')) || 0,
+        tags: row.getAttribute('data-tags') || ''
+      };
+
+      matchesSearch = matchNode(nodeData, parsedQuery);
+    } else if (searchQuery) {
+      // Fallback: Simple text search
+      var name = row.getAttribute('data-name') || '';
+      matchesSearch = name.indexOf(searchQuery.toLowerCase()) > -1;
+    }
 
     if (matchesSearch && matchesType && matchesStatus) {
       row.style.display = '';
