@@ -145,12 +145,29 @@
               <span class="node-list-host-mobile"><%= node.host %></span>
             </div>
             <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-uptime">
+              <% if (node.online && stats.uptime_seconds) {
+                var uptimeDays = Math.floor(stats.uptime_seconds / 86400);
+                var uptimeHours = Math.floor((stats.uptime_seconds % 86400) / 3600);
+                var uptimeMins = Math.floor((stats.uptime_seconds % 3600) / 60);
+                var uptimeDisplay = uptimeDays > 0 ? (uptimeDays + 'd ' + uptimeHours + 'h') : (uptimeHours > 0 ? (uptimeHours + 'h ' + uptimeMins + 'm') : (uptimeMins + 'm'));
+              %>
+                <span class="uptime-value"><%= uptimeDisplay %></span>
+              <% } else { %>
+                <span class="uptime-na">-</span>
+              <% } %>
+            </div>
             <div class="node-list-metric">
               <%- include('partials/progress-bar', {
                 progressValue: stats.cpu_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online
+                offline: !node.online,
+                showAbsolute: true,
+                usedValue: Math.round((stats.cpu_percent || 0) / 100 * (stats.cpu_cores || 1)),
+                totalValue: stats.cpu_cores || 1,
+                unit: 'cores',
+                timestamp: stats.tier1_last_update
               }) %>
             </div>
             <div class="node-list-metric">
@@ -158,7 +175,12 @@
                 progressValue: stats.ram_percent,
                 thresholdWarning: 85,
                 thresholdCritical: 95,
-                offline: !node.online
+                offline: !node.online,
+                showAbsolute: true,
+                usedValue: formatBytes(stats.ram_used_bytes || 0),
+                totalValue: formatBytes(stats.ram_total_bytes || 0),
+                unit: '',
+                timestamp: stats.tier1_last_update
               }) %>
             </div>
             <div class="node-list-metric">
@@ -166,8 +188,30 @@
                 progressValue: stats.disk_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online
+                offline: !node.online,
+                showAbsolute: true,
+                usedValue: formatBytes(stats.disk_used_bytes || 0),
+                totalValue: formatBytes(stats.disk_total_bytes || 0),
+                unit: '',
+                timestamp: stats.tier2_last_update
               }) %>
+            </div>
+            <div class="node-list-count">
+              <%
+                var vmCount = (stats.vms_running || 0) + (stats.cts_running || 0);
+              %>
+              <% if (vmCount > 0) { %>
+                <span class="count-badge"><%= vmCount %></span>
+              <% } else { %>
+                <span class="count-na">-</span>
+              <% } %>
+            </div>
+            <div class="node-list-count">
+              <% if (stats.containers_running && stats.containers_running > 0) { %>
+                <span class="count-badge"><%= stats.containers_running %></span>
+              <% } else { %>
+                <span class="count-na">-</span>
+              <% } %>
             </div>
             <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
             <div class="node-list-actions">
@@ -191,9 +235,12 @@
           <div class="node-list-col-icon"></div>
           <div class="node-list-col-name">Name</div>
           <div class="node-list-col-host">Host</div>
+          <div class="node-list-col-uptime">Uptime</div>
           <div class="node-list-col-metrics">CPU</div>
           <div class="node-list-col-metrics">RAM</div>
           <div class="node-list-col-metrics">Disk</div>
+          <div class="node-list-col-count">VMs</div>
+          <div class="node-list-col-count">Containers</div>
           <div class="node-list-col-type">Typ</div>
           <div class="node-list-col-actions"></div>
         </div>
@@ -217,12 +264,29 @@
               <span class="node-list-host-mobile"><%= node.host %></span>
             </div>
             <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-uptime">
+              <% if (node.online && stats.uptime_seconds) {
+                var uptimeDays = Math.floor(stats.uptime_seconds / 86400);
+                var uptimeHours = Math.floor((stats.uptime_seconds % 86400) / 3600);
+                var uptimeMins = Math.floor((stats.uptime_seconds % 3600) / 60);
+                var uptimeDisplay = uptimeDays > 0 ? (uptimeDays + 'd ' + uptimeHours + 'h') : (uptimeHours > 0 ? (uptimeHours + 'h ' + uptimeMins + 'm') : (uptimeMins + 'm'));
+              %>
+                <span class="uptime-value"><%= uptimeDisplay %></span>
+              <% } else { %>
+                <span class="uptime-na">-</span>
+              <% } %>
+            </div>
             <div class="node-list-metric">
               <%- include('partials/progress-bar', {
                 progressValue: stats.cpu_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online
+                offline: !node.online,
+                showAbsolute: true,
+                usedValue: Math.round((stats.cpu_percent || 0) / 100 * (stats.cpu_cores || 1)),
+                totalValue: stats.cpu_cores || 1,
+                unit: 'cores',
+                timestamp: stats.tier1_last_update
               }) %>
             </div>
             <div class="node-list-metric">
@@ -230,7 +294,12 @@
                 progressValue: stats.ram_percent,
                 thresholdWarning: 85,
                 thresholdCritical: 95,
-                offline: !node.online
+                offline: !node.online,
+                showAbsolute: true,
+                usedValue: formatBytes(stats.ram_used_bytes || 0),
+                totalValue: formatBytes(stats.ram_total_bytes || 0),
+                unit: '',
+                timestamp: stats.tier1_last_update
               }) %>
             </div>
             <div class="node-list-metric">
@@ -238,8 +307,30 @@
                 progressValue: stats.disk_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online
+                offline: !node.online,
+                showAbsolute: true,
+                usedValue: formatBytes(stats.disk_used_bytes || 0),
+                totalValue: formatBytes(stats.disk_total_bytes || 0),
+                unit: '',
+                timestamp: stats.tier2_last_update
               }) %>
+            </div>
+            <div class="node-list-count">
+              <%
+                var vmCount = (stats.vms_running || 0) + (stats.cts_running || 0);
+              %>
+              <% if (vmCount > 0) { %>
+                <span class="count-badge"><%= vmCount %></span>
+              <% } else { %>
+                <span class="count-na">-</span>
+              <% } %>
+            </div>
+            <div class="node-list-count">
+              <% if (stats.containers_running && stats.containers_running > 0) { %>
+                <span class="count-badge"><%= stats.containers_running %></span>
+              <% } else { %>
+                <span class="count-na">-</span>
+              <% } %>
             </div>
             <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
             <div class="node-list-actions">
@@ -260,9 +351,12 @@
           <div class="node-list-col-icon"></div>
           <div class="node-list-col-name">Name</div>
           <div class="node-list-col-host">Host</div>
+          <div class="node-list-col-uptime">Uptime</div>
           <div class="node-list-col-metrics">CPU</div>
           <div class="node-list-col-metrics">RAM</div>
           <div class="node-list-col-metrics">Disk</div>
+          <div class="node-list-col-count">VMs</div>
+          <div class="node-list-col-count">Containers</div>
           <div class="node-list-col-type">Typ</div>
           <div class="node-list-col-actions"></div>
         </div>
@@ -290,12 +384,29 @@
               <span class="node-list-host-mobile"><%= node.host %></span>
             </div>
             <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-uptime">
+              <% if (node.online && stats.uptime_seconds) {
+                var uptimeDays = Math.floor(stats.uptime_seconds / 86400);
+                var uptimeHours = Math.floor((stats.uptime_seconds % 86400) / 3600);
+                var uptimeMins = Math.floor((stats.uptime_seconds % 3600) / 60);
+                var uptimeDisplay = uptimeDays > 0 ? (uptimeDays + 'd ' + uptimeHours + 'h') : (uptimeHours > 0 ? (uptimeHours + 'h ' + uptimeMins + 'm') : (uptimeMins + 'm'));
+              %>
+                <span class="uptime-value"><%= uptimeDisplay %></span>
+              <% } else { %>
+                <span class="uptime-na">-</span>
+              <% } %>
+            </div>
             <div class="node-list-metric">
               <%- include('partials/progress-bar', {
                 progressValue: stats.cpu_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online
+                offline: !node.online,
+                showAbsolute: true,
+                usedValue: Math.round((stats.cpu_percent || 0) / 100 * (stats.cpu_cores || 1)),
+                totalValue: stats.cpu_cores || 1,
+                unit: 'cores',
+                timestamp: stats.tier1_last_update
               }) %>
             </div>
             <div class="node-list-metric">
@@ -303,7 +414,12 @@
                 progressValue: stats.ram_percent,
                 thresholdWarning: 85,
                 thresholdCritical: 95,
-                offline: !node.online
+                offline: !node.online,
+                showAbsolute: true,
+                usedValue: formatBytes(stats.ram_used_bytes || 0),
+                totalValue: formatBytes(stats.ram_total_bytes || 0),
+                unit: '',
+                timestamp: stats.tier1_last_update
               }) %>
             </div>
             <div class="node-list-metric">
@@ -311,8 +427,30 @@
                 progressValue: stats.disk_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online
+                offline: !node.online,
+                showAbsolute: true,
+                usedValue: formatBytes(stats.disk_used_bytes || 0),
+                totalValue: formatBytes(stats.disk_total_bytes || 0),
+                unit: '',
+                timestamp: stats.tier2_last_update
               }) %>
+            </div>
+            <div class="node-list-count">
+              <%
+                var vmCount = (stats.vms_running || 0) + (stats.cts_running || 0);
+              %>
+              <% if (vmCount > 0) { %>
+                <span class="count-badge"><%= vmCount %></span>
+              <% } else { %>
+                <span class="count-na">-</span>
+              <% } %>
+            </div>
+            <div class="node-list-count">
+              <% if (stats.containers_running && stats.containers_running > 0) { %>
+                <span class="count-badge"><%= stats.containers_running %></span>
+              <% } else { %>
+                <span class="count-na">-</span>
+              <% } %>
             </div>
             <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
             <div class="node-list-actions">

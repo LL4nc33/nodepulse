@@ -259,6 +259,37 @@
     },
 
     /**
+     * Timestamp-Alter formatieren
+     * @param {number} unixTimestamp - Unix timestamp in Sekunden
+     * @returns {string} "(5s)", "(2m ago)", "(3h ago)"
+     */
+    formatTimestamp: function(unixTimestamp) {
+      if (!unixTimestamp || unixTimestamp <= 0) return '';
+      var now = Math.floor(Date.now() / 1000);
+      var age = now - unixTimestamp;
+
+      if (age < 60) return '(' + age + 's)';
+      if (age < 3600) return '(' + Math.floor(age / 60) + 'm ago)';
+      return '(' + Math.floor(age / 3600) + 'h ago)';
+    },
+
+    /**
+     * Uptime formatieren
+     * @param {number} seconds - Uptime in Sekunden
+     * @returns {string} "19d 0h", "5h 30m", "45m"
+     */
+    formatUptime: function(seconds) {
+      if (!seconds || seconds < 0) return '-';
+      var days = Math.floor(seconds / 86400);
+      var hours = Math.floor((seconds % 86400) / 3600);
+      var mins = Math.floor((seconds % 3600) / 60);
+
+      if (days > 0) return days + 'd ' + hours + 'h';
+      if (hours > 0) return hours + 'h ' + mins + 'm';
+      return mins + 'm';
+    },
+
+    /**
      * Zeitdifferenz formatieren (German)
      */
     formatTimeAgo: function(timestamp) {
@@ -277,6 +308,8 @@
 
   window.NP.UI = UI;
   window.formatBytes = UI.formatBytes; // Legacy
+  window.formatTimestamp = UI.formatTimestamp; // For client-side updates
+  window.formatUptime = UI.formatUptime; // For client-side updates
 
   // =====================================================
   // Tab System - Einheitlich fuer alle Seiten

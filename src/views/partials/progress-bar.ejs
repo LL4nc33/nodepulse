@@ -5,11 +5,18 @@
 //   - thresholdWarning: Number (default: 80)
 //   - thresholdCritical: Number (default: 95)
 //   - offline: Boolean (optional, default: false)
+//   - showAbsolute: Boolean (optional, default: false) - Show absolute values
+//   - usedValue: Number|String (optional) - Used value (e.g., 10 GB)
+//   - totalValue: Number|String (optional) - Total value (e.g., 55 GB)
+//   - unit: String (optional) - Unit for display (e.g., "cores", "GB")
+//   - timestamp: Number (optional) - Unix timestamp for age display
 
 const value = typeof progressValue !== 'undefined' ? progressValue : 0;
 const warningThreshold = typeof thresholdWarning !== 'undefined' ? thresholdWarning : 80;
 const criticalThreshold = typeof thresholdCritical !== 'undefined' ? thresholdCritical : 95;
 const isOffline = typeof offline !== 'undefined' && offline;
+const displayAbsolute = typeof showAbsolute !== 'undefined' && showAbsolute;
+const hasTimestamp = typeof timestamp !== 'undefined' && timestamp;
 
 let barClass = 'ok';
 if (value >= criticalThreshold) {
@@ -17,13 +24,37 @@ if (value >= criticalThreshold) {
 } else if (value >= warningThreshold) {
   barClass = 'warning';
 }
+
+// Format timestamp age
+let timestampDisplay = '';
+if (hasTimestamp) {
+  const now = Math.floor(Date.now() / 1000);
+  const age = now - timestamp;
+  if (age < 60) {
+    timestampDisplay = '(' + age + 's)';
+  } else if (age < 3600) {
+    timestampDisplay = '(' + Math.floor(age / 60) + 'm ago)';
+  } else {
+    timestampDisplay = '(' + Math.floor(age / 3600) + 'h ago)';
+  }
+}
 %>
 
 <% if (isOffline) { %>
   <span class="mini-bar-na">-</span>
 <% } else { %>
-  <div class="mini-bar">
-    <div class="mini-bar-fill <%= barClass %>" style="width: <%= Math.min(value, 100) %>%"></div>
+  <div class="mini-bar-container">
+    <div class="mini-bar">
+      <div class="mini-bar-fill <%= barClass %>" style="width: <%= Math.min(value, 100) %>%"></div>
+    </div>
+    <span class="mini-bar-value <%= barClass %>"><%= Math.round(value) %>%</span>
+    <% if (displayAbsolute && typeof usedValue !== 'undefined' && typeof totalValue !== 'undefined') { %>
+      <span class="mini-bar-absolute">
+        (<%= usedValue %><% if (unit) { %> <%= unit %><% } %> / <%= totalValue %><% if (unit) { %> <%= unit %><% } %>)
+      </span>
+    <% } %>
+    <% if (timestampDisplay) { %>
+      <span class="mini-bar-timestamp"><%= timestampDisplay %></span>
+    <% } %>
   </div>
-  <span class="mini-bar-value"><%= Math.round(value) %>%</span>
 <% } %>
