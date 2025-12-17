@@ -2,7 +2,7 @@
 
 Ein leichtgewichtiges Homelab Dashboard und CLI-Tool zur Verwaltung von Servern, Proxmox-Hosts und Docker-Containern.
 
-![Version](https://img.shields.io/badge/version-0.4.0-green)
+![Version](https://img.shields.io/badge/version-0.4.1-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![TOON](https://img.shields.io/badge/TOON-v1.0-blue)
@@ -278,6 +278,16 @@ sudo systemctl start nodepulse
 - ✅ Settings-Cache (93% weniger DB-Queries)
 - ✅ Hardware-Discovery erweitert (Thermal, Power, SMART, Network)
 - ✅ System Health-Check & Proxmox Repository Management
+
+### ✅ v0.4.1 - Security & Stability Fixes (ABGESCHLOSSEN)
+- ✅ **9 kritische Bugs behoben** aus Code-Review Sprint 1-3
+- ✅ Command Injection Prevention (Whitelist-Ansatz)
+- ✅ XSS-Fixes in onclick Handler (JSON.stringify)
+- ✅ Path Traversal Prevention in Proxmox-API
+- ✅ ES5-Kompatibilitaet wiederhergestellt (Promise.finally entfernt)
+- ✅ SSH Connection Leaks behoben (async stop())
+- ✅ Dashboard Metrics Spacing verbessert
+- ✅ localStorage Error Handling (Graceful Fallback)
 
 ### ✅ v0.4.0 - TOON Integration & Performance (ABGESCHLOSSEN)
 - ✅ **TOON Format v1.0** (Token-Oriented Object Notation)

@@ -1,10 +1,11 @@
 # TOON Integration - Implementation Summary
 
 **Projekt:** NodePulse TOON (Token-Oriented Object Notation) Integration
-**Branch:** `feature/toon-integration`
-**Status:** ✅ **KOMPLETT IMPLEMENTIERT**
+**Branch:** `main` (merged from `feature/toon-integration`)
+**Version:** v0.4.0 (TOON) + v0.4.1 (Bug Fixes)
+**Status:** ✅ **KOMPLETT IMPLEMENTIERT & MERGED**
 **Timeline:** 3 Tage (geplant: 20-30 Tage)
-**Commits:** 3 (Phase 1+2, Phase 3, Collector Updates)
+**Commits:** 3 (Phase 1+2, Phase 3, Collector Updates) + v0.4.1 Bug Fixes
 
 ---
 
@@ -322,25 +323,25 @@ Laut Plan sollten 6 E2E Tests erstellt werden. **Status:** ÜBERSPRUNGEN
 
 ### Git Status
 
-✅ **Branch:** `feature/toon-integration` erstellt
-✅ **Commits:** 3 Commits pushed zu GitHub
+✅ **Branch:** `main` (merged from `feature/toon-integration`)
+✅ **Version:** v0.4.1
+✅ **Commits:** Alle Commits merged zu main
 ✅ **Remote:** https://github.com/LL4nc33/nodepulse.git
 
-**Commits:**
+**TOON Commits:**
 1. `b3ac2bb` - Phase 1+2: Foundation (ADR, Code Review, Metadata Hash, Circuit Breaker, Safe Storage)
 2. `2989d0b` - Phase 3: Core TOON (DB Migration, Formatter, Parser, API, Settings)
 3. `cd9dc73` - Collector Updates (Defensive Parsing, Validation)
 
-### Deployment-Schritte (OPTIONAL)
+**v0.4.1 Bug Fix Commit:**
+- Security Fixes (Command Injection, XSS, Path Traversal)
+- ES5 Compatibility (Promise.finally entfernt)
+- SSH Connection Leaks behoben
+- Dashboard Metrics Spacing verbessert
 
-**Merge zu main:**
-```bash
-git checkout main
-git merge feature/toon-integration
-git push origin main
-```
+### Deployment Status: ✅ LIVE
 
-**Oder:** Pull Request erstellen auf GitHub
+Branch wurde zu `main` gemerged. Keine weiteren Schritte erforderlich.
 
 ---
 
@@ -400,8 +401,5 @@ git push origin main
 
 ---
 
-**Status:** ✅ **TOON Integration KOMPLETT**
-**Nächster Schritt:** User testet & merged zu main (oder weitere Features)
-
-Generated with Claude Code
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+**Status:** ✅ **TOON Integration KOMPLETT & LIVE (v0.4.1)**
+**Nächster Schritt:** Weitere Features implementieren (v0.5.0 Creation & Console)

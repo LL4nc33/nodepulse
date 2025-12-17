@@ -4,6 +4,82 @@ Alle bemerkenswerten Aenderungen an diesem Projekt werden in dieser Datei dokume
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [0.4.1] - 2025-12-18 (Security & Stability Fixes)
+
+### Fixed
+
+#### Security Fixes (5 Critical)
+
+- **Command Injection Prevention** (`src/collector/index.js`)
+  - Network Target Validation mit Whitelist-Ansatz
+  - `validateNetworkTarget()` prueft IP/Hostname-Format
+  - Blocklist fuer gefaehrliche Zeichen (; && || | etc.)
+  - Verhindert Remote Code Execution via Ping/Traceroute
+
+- **XSS in onclick Handler** (`docker-tab.ejs`, `proxmox-tab.ejs`)
+  - `JSON.stringify()` statt manuellem String-Escaping
+  - Sicheres Escaping fuer alle JavaScript-Kontexte
+  - Behebt potentielle Code-Injection via Node-Namen
+
+- **Path Traversal Prevention** (`src/routes/api/proxmox.js`)
+  - Snapshot-Namen werden auf Path-Komponenten geprueft
+  - Blockiert `../` und absolute Pfade
+  - Verhindert Zugriff auf Dateien ausserhalb des erwarteten Bereichs
+
+- **XSS in Error Messages** (`src/views/settings/index.ejs`)
+  - EJS Escaping fuer Fehlermeldungen
+  - `<%= %>` statt `<%- %>` fuer User-Input
+
+- **Missing CSS Variables** (`src/public/css/modules/base.css`)
+  - Fehlende `--color-*` Variablen hinzugefuegt
+  - Verhindert CSS-Parsing-Fehler
+
+#### ES5 Compatibility Fixes (Fire HD 10 2017)
+
+- **Promise.finally() entfernt** (12 Stellen)
+  - `src/public/js/detail-page.js` (6 Stellen)
+  - `src/public/js/detail/docker.js` (2 Stellen)
+  - `src/public/js/detail/health.js` (3 Stellen)
+  - `src/public/js/detail/proxmox.js` (1 Stelle)
+  - Ersetzt durch `.then(fn, fn)` Pattern
+  - Kompatibel mit Chrome 50+ und Fire HD 10 Silk Browser
+
+#### UX Improvements
+
+- **Dashboard Metrics Spacing** (`dashboard.css`, `index.ejs`)
+  - Spaltenbreite von 80px auf 100px erhoeht
+  - Absolute Werte (used/total) aus Dashboard entfernt
+  - Timestamps in Dashboard versteckt
+  - Progress-Bar-Hoehe von 4px auf 6px erhoeht
+  - Bessere Lesbarkeit bei vielen Nodes
+
+- **localStorage Error Handling** (`src/public/js/main.js`)
+  - Try/Catch fuer alle localStorage-Operationen
+  - Graceful Fallback bei Quota-Exceeded
+  - Verhindert Script-Crashes auf Fire HD 10
+
+#### Backend Fixes
+
+- **SSH Connection Leaks** (`tiered-poller.js`, `collector/index.js`)
+  - `stop()` ist jetzt async und wartet auf laufende Operationen
+  - SSH ControlMaster-Verbindungen werden sauber geschlossen
+  - Verhindert orphaned SSH-Prozesse nach Node-Removal
+  - `stopTieredMonitoring()` und `stopAllMonitoring()` sind async
+
+### Changed
+
+- CSS-Version auf 4.9 erhoeht (Cache-Bust)
+- Dashboard zeigt nur noch Prozent-Werte (nicht mehr absolute Bytes)
+- Kompakteres Dashboard-Layout fuer bessere Uebersicht
+
+### Technical
+
+- 9 kritische Bugs aus Code-Review Sprint 1-3 behoben
+- Alle Issues aus Pre-TOON Checklist adressiert
+- ES5-Kompatibilitaet vollstaendig wiederhergestellt
+
+---
+
 ## [0.4.0] - 2025-12-17 (TOON Integration & Performance)
 
 ### Added
