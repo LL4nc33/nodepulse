@@ -409,6 +409,64 @@ a:focus {
   margin-right: 0.75rem;
 }
 
+/* Compact Page Header (Breadcrumb + H1 + Actions in one row) */
+.page-header-compact {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+.header-left {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.breadcrumb-inline {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.breadcrumb-inline a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.breadcrumb-inline a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-inline span {
+  color: var(--color-text-muted);
+}
+
+.page-header-compact h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+}
+
 .page-actions > *:last-child {
   margin-right: 0;
 }
@@ -770,6 +828,7 @@ a:focus {
   height: 12px;
   border-radius: 50%;
   vertical-align: middle;
+  margin-right: 0.75rem;
 }
 
 .status-dot.online {

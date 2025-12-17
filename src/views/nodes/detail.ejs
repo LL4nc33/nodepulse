@@ -5,16 +5,17 @@
 
   <main class="main-panel">
 
-<nav class="breadcrumb" aria-label="Breadcrumb">
-  <a href="/nodes">Nodes</a> / <span><%= node.name %></span>
-</nav>
-
-<div class="page-header">
-  <h1>
-    <span class="status-dot <%= node.online ? 'online' : 'offline' %>"
-          aria-label="Status: <%= node.online ? 'Online' : 'Offline' %>"></span>
-    <%= node.name %>
-  </h1>
+<div class="page-header-compact">
+  <div class="header-left">
+    <nav class="breadcrumb-inline" aria-label="Breadcrumb">
+      <a href="/nodes">Nodes</a> / <span><%= node.name %></span>
+    </nav>
+    <h1>
+      <span class="status-dot <%= node.online ? 'online' : 'offline' %>"
+            aria-label="Status: <%= node.online ? 'Online' : 'Offline' %>"></span>
+      <%= node.name %>
+    </h1>
+  </div>
   <div class="page-actions">
     <button class="btn btn-primary" id="btn-test" onclick="testConnection(<%= node.id %>)">
       <span class="btn-text">SSH Test</span>
