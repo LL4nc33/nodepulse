@@ -48,6 +48,30 @@
             var response;
             try {
               response = JSON.parse(xhr.responseText);
+
+              // Auto-detect TOON format and parse
+              if (response.success && response.data && window.NP && window.NP.TOON) {
+                if (response.data.format === 'toon') {
+                  // TOON Response with nodes array
+                  if (response.data.nodes) {
+                    var parsed = window.NP.TOON.parseResponse(response.data);
+                    if (parsed) {
+                      response.data = parsed; // Replace with standard array
+                    } else {
+                      console.warn('[TOON] Parse failed, keeping original');
+                    }
+                  }
+                  // TOON History Response
+                  else if (response.data.history) {
+                    var parsedHistory = window.NP.TOON.parseHistory(response.data);
+                    if (parsedHistory) {
+                      response.data = parsedHistory; // Replace with standard array
+                    } else {
+                      console.warn('[TOON] History parse failed, keeping original');
+                    }
+                  }
+                }
+              }
             } catch (e) {
               response = { success: false, error: { code: 'PARSE_ERROR', message: 'Ungueltige Server-Antwort' } };
             }

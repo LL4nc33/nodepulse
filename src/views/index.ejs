@@ -925,10 +925,33 @@ function getAlertLevel(node) {
   return 'ok';
 }
 
-// API-Aufruf für Dashboard-Refresh
+// API-Aufruf für Dashboard-Refresh (mit TOON-Support)
 function refreshDashboardData() {
+  // Check if TOON format is enabled
+  var useTOON = false;
+  try {
+    useTOON = localStorage.getItem('nodepulse-use-toon') === 'true';
+  } catch (e) {}
+
+  var apiUrl = '/api/stats';
+
+  // Add format=toon if enabled
+  if (useTOON) {
+    apiUrl += '?format=toon';
+
+    // Include metadata hash if we have cached metadata
+    if (window.NP && window.NP.SafeStorage) {
+      try {
+        var cached = window.NP.SafeStorage.getItem('toon-metadata');
+        if (cached && cached.hash) {
+          apiUrl += '&metadata_hash=' + cached.hash;
+        }
+      } catch (e) {}
+    }
+  }
+
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/api/stats', true);
+  xhr.open('GET', apiUrl, true);
   xhr.timeout = 30000;
 
   xhr.onreadystatechange = function() {
@@ -936,6 +959,7 @@ function refreshDashboardData() {
       if (xhr.status === 200) {
         var response = JSON.parse(xhr.responseText);
         if (response.success) {
+          // TOON format is auto-parsed by main.js
           updateDashboard(response.data);
         }
       }

@@ -20,7 +20,10 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
 ('chart_default_hours', '24'),
 ('alert_retention_days', '90'),
 ('toast_notifications_enabled', 'true'),
-('import_inherit_credentials', 'true');
+('import_inherit_credentials', 'true'),
+('dashboard_refresh_interval', '5'),
+-- TOON Integration (Phase 3)
+('use_toon_format', 'false');
 
 -- System Tags (auto-generated)
 INSERT OR IGNORE INTO tags (name, tag_type, color, description) VALUES
