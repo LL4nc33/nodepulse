@@ -479,8 +479,6 @@
   background: #1e1e1e;
   border-top: 2px solid var(--color-border);
   z-index: 100;
-  -webkit-transition: left 0.3s ease, height 0.3s ease, -webkit-transform 0.3s ease;
-  transition: left 0.3s ease, height 0.3s ease, transform 0.3s ease;
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
@@ -488,8 +486,13 @@
   -webkit-box-direction: normal;
   -webkit-flex-direction: column;
   flex-direction: column;
-  -webkit-transition: height 0.3s ease, -webkit-transform 0.3s ease;
-  transition: height 0.3s ease, transform 0.3s ease;
+  -webkit-transition: left 0.3s ease, height 0.3s ease, -webkit-transform 0.3s ease;
+  transition: left 0.3s ease, height 0.3s ease, transform 0.3s ease;
+}
+
+/* Terminal position when side-panel is collapsed */
+.terminal-panel.sidepanel-collapsed {
+  left: 0;
 }
 
 .terminal-panel.minimized {

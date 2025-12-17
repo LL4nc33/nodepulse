@@ -115,7 +115,20 @@ router.post('/check', asyncHandler(async (req, res) => {
     });
   } catch (err) {
     console.error('[Health] Check error:', err);
-    return apiResponse(res, 500, null, err.message);
+
+    // Provide better error messages for common SSH issues
+    let errorMessage = err.message;
+    if (err.message.includes('authentication methods failed')) {
+      errorMessage = 'SSH-Authentifizierung fehlgeschlagen. Bitte SSH-Passwort oder SSH-Key in den Node-Einstellungen konfigurieren.';
+    } else if (err.message.includes('ECONNREFUSED')) {
+      errorMessage = 'Verbindung abgelehnt. SSH-Dienst auf dem Node nicht erreichbar.';
+    } else if (err.message.includes('ETIMEDOUT') || err.message.includes('timeout')) {
+      errorMessage = 'Verbindungs-Timeout. Node ist moeglicherweise nicht erreichbar.';
+    } else if (err.message.includes('ENOTFOUND') || err.message.includes('getaddrinfo')) {
+      errorMessage = 'Host nicht gefunden. Bitte Hostname/IP in den Node-Einstellungen pruefen.';
+    }
+
+    return apiResponse(res, 500, null, errorMessage);
   }
 }));
 

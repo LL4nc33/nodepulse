@@ -845,15 +845,16 @@
 
     if (!panelToggle || !sidePanel) return;
 
-    // Terminal panel positioning helper
+    // Terminal panel positioning helper - uses CSS class for smooth animation
     function updateTerminalPosition() {
       var terminalPanel = document.querySelector('.terminal-panel');
       if (!terminalPanel) return;
 
-      if (window.innerWidth < 768) {
-        terminalPanel.style.left = '0';
+      var isCollapsed = sidePanel.classList.contains('collapsed') || window.innerWidth < 768;
+      if (isCollapsed) {
+        terminalPanel.classList.add('sidepanel-collapsed');
       } else {
-        terminalPanel.style.left = sidePanel.classList.contains('collapsed') ? '60px' : '280px';
+        terminalPanel.classList.remove('sidepanel-collapsed');
       }
     }
 
@@ -879,8 +880,8 @@
           localStorage.setItem('nodepulse-panel', 'open');
         }
 
-        // Update terminal position after toggle
-        updateTerminalPosition();
+        // Update terminal position after toggle with RAF for smooth animation
+        requestAnimationFrame(updateTerminalPosition);
       }
     });
 
