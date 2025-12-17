@@ -19,6 +19,7 @@
 
 const db = require('../db');
 const ssh = require('../ssh');
+const { getCommandsForTier } = require('../lib/command-registry');
 
 // Polling intervals (ms)
 const TIER_1_INTERVAL = 5000;   // 5 seconds
