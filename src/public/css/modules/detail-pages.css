@@ -1,0 +1,442 @@
+/* =====================================================
+   Section
+   ===================================================== */
+
+.section {
+  margin-bottom: 2rem;
+}
+
+.section-header {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header h2 {
+  font-size: 1.25rem;
+}
+
+/* =====================================================
+   Detail Grid
+   ===================================================== */
+
+.detail-grid {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
+}
+
+.detail-grid > * {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.detail-card {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 calc(50% - 1rem);
+  flex: 1 1 calc(50% - 1rem);
+  min-width: 280px;
+}
+
+/* Kompakte Cards (4 Spalten auf Desktop) */
+.detail-card.compact {
+  -webkit-flex: 1 1 calc(25% - 1rem);
+  flex: 1 1 calc(25% - 1rem);
+  min-width: 200px;
+  padding: 1rem;
+}
+
+.detail-card.compact h3 {
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+.detail-card.compact dt {
+  font-size: 0.8125rem;
+}
+
+.detail-card.compact dd {
+  font-size: 0.875rem;
+}
+
+.detail-card.full-width {
+  -webkit-flex-basis: 100%;
+  flex-basis: 100%;
+  margin-top: 0.5rem;
+}
+
+.detail-card h3 {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detail-card dl {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+.detail-card dt {
+  -webkit-flex-basis: 40%;
+  flex-basis: 40%;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  padding: 0.375rem 0;
+}
+
+.detail-card dd {
+  -webkit-flex-basis: 60%;
+  flex-basis: 60%;
+  padding: 0.375rem 0;
+  word-break: break-word;
+}
+
+.text-error {
+  color: var(--color-error-text);
+}
+
+/* =====================================================
+   Hardware Display
+   ===================================================== */
+
+.disk-list,
+.network-list,
+.gpu-list {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+}
+
+.disk-list > *,
+.network-list > *,
+.gpu-list > * {
+  margin-bottom: 0.75rem;
+}
+
+.disk-list > *:last-child,
+.network-list > *:last-child,
+.gpu-list > *:last-child {
+  margin-bottom: 0;
+}
+
+.disk-item,
+.network-item {
+  background-color: var(--color-bg-input);
+  padding: 0.75rem;
+  border-radius: 6px;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  margin-left: -0.25rem;
+  margin-right: -0.25rem;
+}
+
+.disk-item > *,
+.network-item > * {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.disk-item strong,
+.network-item strong {
+  color: var(--color-text);
+  min-width: 60px;
+}
+
+.disk-size,
+.disk-type {
+  background-color: var(--color-bg-elevated);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.disk-type {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.disk-item small,
+.network-item small {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  -webkit-flex-basis: 100%;
+  flex-basis: 100%;
+}
+
+.net-state {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.net-state.up {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.net-state.down {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
+.ip-address {
+  background-color: var(--color-bg-elevated);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--color-text);
+  font-family: monospace;
+}
+
+.gpu-list {
+  list-style: none;
+  padding: 0;
+}
+
+.gpu-list li {
+  background-color: var(--color-bg-input);
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+/* Thermal Sensors */
+.thermal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.thermal-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--color-bg-input);
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.thermal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.thermal-info strong {
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.thermal-info small {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.thermal-temp {
+  font-size: 1.125rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.thermal-temp.warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.thermal-temp.critical {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
+/* Kompakte Thermal-Anzeige */
+.thermal-list-compact {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.thermal-item-compact {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 0.25rem 0;
+}
+
+.thermal-label {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thermal-item-compact .thermal-temp {
+  font-size: 0.875rem;
+  padding: 0.125rem 0.5rem;
+  font-weight: 600;
+}
+
+/* Kompakte Progress-Bars in kompakten Cards */
+.detail-card.compact .hardware-progress {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+}
+
+.detail-card.compact .hardware-progress-header {
+  font-size: 0.8125rem;
+}
+
+.detail-card.compact .hardware-progress-value {
+  font-size: 0.875rem;
+}
+
+.detail-card.compact .hardware-progress-bar {
+  height: 8px;
+  margin-top: 0.25rem;
+}
+
+.detail-card.compact .hardware-progress-label {
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+}
+
+/* Kompakte Disk-Items in kompakten Cards */
+.detail-card.compact .disk-item,
+.detail-card.compact .network-item {
+  padding: 0.5rem;
+}
+
+.detail-card.compact .disk-item > *,
+.detail-card.compact .network-item > * {
+  margin-bottom: 0.25rem;
+}
+
+.detail-card.compact .disk-item strong,
+.detail-card.compact .network-item strong {
+  font-size: 0.8125rem;
+}
+
+.detail-card.compact .disk-size,
+.detail-card.compact .disk-type {
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+}
+
+/* =====================================================
+   PHASE 2: HARDWARE PROGRESS BARS
+   ===================================================== */
+
+.hardware-progress {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--color-bg-elevated);
+  border-radius: 8px;
+}
+
+.hardware-progress-header {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.hardware-progress-value {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.hardware-progress-value.warning {
+  color: var(--color-warning);
+}
+
+.hardware-progress-value.critical {
+  color: var(--color-error);
+}
+
+.hardware-progress-bar {
+  height: 12px;
+  background: var(--color-bg-card);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.hardware-progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  -webkit-transition: width 0.5s ease-out;
+  transition: width 0.5s ease-out;
+}
+
+.hardware-progress-fill.ok {
+  background: var(--color-success);
+}
+
+.hardware-progress-fill.warning {
+  background: var(--color-warning);
+}
+
+.hardware-progress-fill.critical {
+  background: var(--color-error);
+}
+
+.hardware-progress-label {
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}

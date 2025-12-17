@@ -1,0 +1,442 @@
+/* =====================================================
+   Tabs
+   ===================================================== */
+
+.tabs {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 60px;
+  background: var(--color-bg);
+  z-index: 10;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  /* Hide scrollbar but keep scroll functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.tabs::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
+}
+
+.tab-btn {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  -webkit-transition: all 0.2s ease;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  border-radius: 6px 6px 0 0;
+}
+
+.tab-btn:hover {
+  color: var(--color-text);
+  background: var(--color-bg-elevated);
+}
+
+.tab-btn.active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  background: var(--color-bg-elevated);
+}
+
+.tab-btn:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* Tab Icons */
+.tab-icon {
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  opacity: 0.7;
+  -webkit-transition: opacity 0.2s;
+  transition: opacity 0.2s;
+}
+
+.tab-btn:hover .tab-icon,
+.tab-btn.active .tab-icon {
+  opacity: 1;
+}
+
+.tab-label {
+  font-weight: 500;
+}
+
+/* Tab Badges (for counts) */
+.tab-badge {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Mobile: Icons ausblenden */
+@media (max-width: 640px) {
+  .tab-icon {
+    display: none;
+  }
+
+  .tab-btn {
+    padding: 0.75rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* =====================================================
+   Unified Card Component
+   ===================================================== */
+
+.np-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.np-card-header {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.np-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-heading);
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.np-card-title svg {
+  width: 20px;
+  height: 20px;
+  color: var(--color-accent);
+}
+
+.np-card-actions {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.np-card-body {
+  padding: 1.25rem;
+}
+
+.np-card-body:empty::before {
+  content: 'Keine Daten verfuegbar';
+  display: block;
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-muted);
+}
+
+.np-card-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+/* =====================================================
+   Alerts
+   ===================================================== */
+
+.alert {
+  padding: 1rem 1.25rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  font-size: 0.9375rem;
+}
+
+.alert-error {
+  background-color: var(--color-error-bg);
+  border: 1px solid var(--color-error);
+  color: var(--color-error-text);
+}
+
+.alert-success {
+  background-color: var(--color-success-bg);
+  border: 1px solid var(--color-success);
+  color: var(--color-success);
+}
+
+.alert-info {
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-light);
+  color: var(--color-text);
+}
+
+/* =====================================================
+   Toast Notification (Simple top-right notifications)
+   ===================================================== */
+
+.np-toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 400px;
+  pointer-events: none;
+}
+
+.np-toast {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  box-shadow: var(--shadow-md);
+  pointer-events: auto;
+  -webkit-animation: np-toast-in 0.3s ease-out;
+  animation: np-toast-in 0.3s ease-out;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.np-toast.np-toast-out {
+  -webkit-animation: np-toast-out 0.2s ease-in forwards;
+  animation: np-toast-out 0.2s ease-in forwards;
+}
+
+@-webkit-keyframes np-toast-in {
+  from {
+    opacity: 0;
+    -webkit-transform: translateX(100%);
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes np-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@-webkit-keyframes np-toast-out {
+  from {
+    opacity: 1;
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    -webkit-transform: translateX(100%);
+    transform: translateX(100%);
+  }
+}
+
+@keyframes np-toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.np-toast-success {
+  border-left: 3px solid var(--color-success);
+}
+
+.np-toast-error {
+  border-left: 3px solid var(--color-error);
+}
+
+.np-toast-warning {
+  border-left: 3px solid var(--color-warning);
+}
+
+.np-toast-info {
+  border-left: 3px solid var(--color-accent);
+}
+
+.np-toast-icon {
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.np-toast-content {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+  min-width: 0;
+}
+
+.np-toast-message {
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+/* =====================================================
+   Unified Loading Overlay (NP.UI.showLoading)
+   Used by main.js for consistent loading states
+   ===================================================== */
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 10, 10, 0.85);
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  z-index: 100;
+  border-radius: inherit;
+}
+
+.light-mode .loading-overlay {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.loading-overlay .spinner {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+  margin-bottom: 0.75rem;
+}
+
+.loading-overlay-message {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+/* Ensure parent has position for overlay */
+.has-loading-overlay {
+  position: relative;
+  min-height: 100px;
+}
+
+/* =====================================================
+   Unified Badge Component
+   ===================================================== */
+
+.np-badge {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.np-badge-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.np-badge-error {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
+.np-badge-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.np-badge-info {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+}
+
+.np-badge-neutral {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+}

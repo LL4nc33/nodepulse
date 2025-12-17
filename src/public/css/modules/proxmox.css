@@ -1,0 +1,447 @@
+   Proxmox Management
+   ===================================================== */
+
+.proxmox-header {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
+}
+
+.proxmox-header > * {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.proxmox-header h2 {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.proxmox-actions {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin-left: -0.375rem;
+  margin-right: -0.375rem;
+}
+
+.proxmox-actions > * {
+  margin-left: 0.375rem;
+  margin-right: 0.375rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Proxmox Summary Cards */
+.proxmox-summary {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  margin-bottom: 1.5rem;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
+}
+
+.proxmox-summary > * {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Collapsible Sections (Overview, Proxmox, Docker, etc.) */
+.overview-section,
+.proxmox-section,
+.docker-section,
+.collapsible-section {
+  margin-bottom: 1.5rem;
+  background: var(--color-bg-surface);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.overview-section.collapsible .section-header,
+.proxmox-section.collapsible .section-header,
+.docker-section.collapsible .section-header,
+.collapsible-section .section-header {
+  cursor: pointer;
+  padding: 0.875rem 1rem;
+  margin: 0;
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border);
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+  -webkit-transition: background 0.2s ease;
+  transition: background 0.2s ease;
+  font-size: 1rem;
+  color: var(--color-text-heading);
+  border-radius: 0;
+  min-height: 44px;
+}
+
+.overview-section.collapsible .section-header:hover,
+.proxmox-section.collapsible .section-header:hover,
+.docker-section.collapsible .section-header:hover,
+.collapsible-section .section-header:hover {
+  background: var(--color-bg-input);
+}
+
+.overview-section.collapsible.collapsed .section-header,
+.proxmox-section.collapsible.collapsed .section-header,
+.docker-section.collapsible.collapsed .section-header,
+.collapsible-section.collapsed .section-header {
+  border-bottom: none;
+}
+
+.overview-section .section-toggle,
+.proxmox-section .section-toggle,
+.docker-section .section-toggle,
+.collapsible-section .section-toggle {
+  width: 1rem;
+  height: 1rem;
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-transition: transform 0.2s ease;
+  transition: transform 0.2s ease;
+}
+
+.overview-section .section-toggle svg,
+.proxmox-section .section-toggle svg,
+.docker-section .section-toggle svg,
+.collapsible-section .section-toggle svg {
+  width: 12px;
+  height: 12px;
+  stroke: var(--color-text-muted);
+  stroke-width: 2;
+  fill: none;
+}
+
+.overview-section.collapsed .section-toggle,
+.proxmox-section.collapsed .section-toggle,
+.docker-section.collapsed .section-toggle,
+.collapsible-section.collapsed .section-toggle {
+  -webkit-transform: rotate(-90deg);
+  transform: rotate(-90deg);
+}
+
+.overview-section .section-count,
+.proxmox-section .section-count,
+.docker-section .section-count,
+.collapsible-section .section-count {
+  color: var(--color-text-muted);
+  font-weight: normal;
+  font-size: 0.875rem;
+  margin-left: auto;
+}
+
+.overview-section .section-content,
+.proxmox-section .section-content,
+.docker-section .section-content,
+.collapsible-section .section-content {
+  padding: 1rem;
+}
+
+.overview-section.collapsed .section-content,
+.proxmox-section.collapsed .section-content,
+.docker-section.collapsed .section-content,
+.collapsible-section.collapsed .section-content {
+  display: none;
+}
+
+.overview-section h3,
+.proxmox-section h3,
+.docker-section h3,
+.collapsible-section h3 {
+  margin-bottom: 1rem;
+  color: var(--color-text);
+  font-size: 1rem;
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: 0.5rem;
+}
+
+/* Proxmox Tables */
+.proxmox-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--color-bg-elevated);
+  border-radius: 8px;
+}
+
+.proxmox-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.proxmox-table th,
+.proxmox-table td {
+  padding: 0.875rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border-light);
+  vertical-align: middle;
+}
+
+.proxmox-table th {
+  background: var(--color-bg-surface);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.proxmox-table tr:last-child td {
+  border-bottom: none;
+}
+
+.proxmox-table tr:hover {
+  background: var(--color-accent-bg);
+}
+
+/* VM/CT Row States - Status shown via badge, no border needed */
+.vm-row,
+.ct-row,
+.storage-row,
+.snapshot-row {
+  /* Consistent row styling without left border */
+}
+
+/* State Badge for Proxmox */
+.state-badge.stopped {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  font-weight: 600;
+}
+
+.state-badge.active {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+}
+
+/* Template Badge */
+.template-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: var(--color-warning);
+  color: var(--color-text-heading);
+  border-radius: 3px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Type Badge */
+.type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.type-badge.vm {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.type-badge.ct {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+/* VM/CT Actions - Compact inline layout */
+.vm-actions,
+.ct-actions,
+.snap-actions {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: nowrap;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+}
+
+.vm-actions > *,
+.ct-actions > *,
+.snap-actions > * {
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+/* Compact buttons inside VM/CT actions */
+.vm-actions .btn,
+.ct-actions .btn {
+  min-height: 32px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.vm-actions .btn-icon,
+.ct-actions .btn-icon {
+  width: 32px;
+  height: 32px;
+}
+
+/* Shutdown Icon */
+.icon-shutdown {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-warning);
+  border-radius: 50%;
+  position: relative;
+}
+
+.icon-shutdown::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+  transform: translateX(-50%);
+  width: 2px;
+  height: 8px;
+  background: var(--color-warning);
+}
+
+/* Storage Bar */
+.storage-bar {
+  width: 100%;
+  height: 24px;
+  background: var(--color-bg-surface);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  min-width: 100px;
+}
+
+.storage-bar-fill {
+  height: 100%;
+  background: var(--color-accent-hover);
+  border-radius: 4px;
+  -webkit-transition: width 0.3s ease;
+  transition: width 0.3s ease;
+}
+
+.storage-bar-fill.warning {
+  background: var(--color-warning);
+}
+
+.storage-bar-fill.critical {
+  background: var(--color-error);
+}
+
+.storage-bar-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-heading);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.9), 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Snapshot Table Styles */
+.snap-name {
+  font-family: monospace;
+  color: var(--color-accent-hover);
+}
+
+.snap-desc {
+  color: var(--color-text-muted);
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive Proxmox */
+@media (max-width: 1024px) {
+  .proxmox-table td,
+  .proxmox-table th {
+    padding: 0.75rem;
+  }
+
+  .vm-name,
+  .ct-name {
+    max-width: 150px;
+  }
+
+  .storage-bar {
+    min-width: 80px;
+  }
+}
+
+@media (max-width: 768px) {
+  .proxmox-header {
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-align: start;
+    -webkit-align-items: flex-start;
+    align-items: flex-start;
+  }
+
+  .proxmox-summary .summary-card {
+    min-width: 80px;
+    padding: 0.75rem 1rem;
+  }
+
+  .proxmox-table {
+    font-size: 0.875rem;
+  }
+
+  .proxmox-table td,
+  .proxmox-table th {
+    padding: 0.625rem 0.5rem;
+  }
+
+  .vm-name,
+  .ct-name {
+    max-width: 100px;
+  }
+
+  .snap-desc {
+    max-width: 120px;
+  }
+
+  .storage-bar {
+    min-width: 60px;
+  }
+}
+
+/* =====================================================

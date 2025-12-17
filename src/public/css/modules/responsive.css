@@ -1,0 +1,325 @@
+/* =====================================================
+   Responsive - Tablet (800px)
+   ===================================================== */
+
+@media (max-width: 1024px) {
+  .node-card {
+    -webkit-flex: 1 1 calc(50% - 0.5rem);
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+
+  .settings-section {
+    -webkit-flex: 1 1 calc(50% - 0.5rem);
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+}
+
+/* =====================================================
+   Responsive - Mobile (768px)
+   ===================================================== */
+
+@media (max-width: 768px) {
+  .header-inner {
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+  }
+
+  .header-inner > * {
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .nav {
+    width: 100%;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+  }
+
+  .nav-link {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+  }
+
+  .node-card {
+    -webkit-flex-basis: 100%;
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+
+  .detail-card {
+    -webkit-flex-basis: 100%;
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .form-row {
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+  }
+
+  .settings-section {
+    -webkit-flex-basis: 100%;
+    flex-basis: 100%;
+  }
+
+  .table {
+    font-size: 0.875rem;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .page-header {
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-align: start;
+    -webkit-align-items: flex-start;
+    align-items: flex-start;
+  }
+
+  .page-actions {
+    width: 100%;
+  }
+
+  .page-actions .btn {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1;
+    flex: 1;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-btn {
+    -webkit-box-flex: 1;
+    -webkit-flex: 1 1 auto;
+    flex: 1 1 auto;
+    white-space: nowrap;
+    min-width: 100px;
+  }
+}
+
+/* =====================================================
+   MOBILE HIDE COLUMNS
+   ===================================================== */
+
+.node-list-host-mobile {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .node-list-host-mobile {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+  }
+
+  .node-list-host,
+  .node-list-type,
+  .node-list-col-host,
+  .node-list-col-type,
+  .node-list-col-metrics,
+  .node-list-metric {
+    display: none;
+  }
+
+  .node-list-icon,
+  .node-list-col-icon {
+    width: 28px;
+  }
+}
+
+/* =====================================================
+   TABLET OPTIMIZATIONS (Fire HD 10 2017)
+   ===================================================== */
+
+/* Tablet landscape (1280x800) */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+
+  .header {
+    padding: 0.75rem 1.5rem;
+  }
+
+  .nav-link {
+    padding: 0.875rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+
+  /* Stats cards in dashboard */
+  .stat-card,
+  .summary-card {
+    padding: 1.25rem;
+  }
+
+  /* Tables */
+  .table th,
+  .table td {
+    padding: 1rem 0.875rem;
+  }
+
+  /* Forms */
+  input[type="text"],
+  input[type="number"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+/* Tablet portrait (800x1280) */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  .header-inner {
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+  }
+
+  .header-inner > * {
+    margin-bottom: 0.75rem;
+  }
+
+  .header-inner > *:last-child {
+    margin-bottom: 0;
+  }
+
+  .nav {
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+  }
+
+  .nav > * {
+    margin-left: 0.25rem;
+    margin-right: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .nav-link {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .page-header {
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-align: start;
+    -webkit-align-items: flex-start;
+    align-items: flex-start;
+  }
+
+  .page-header > * {
+    margin-bottom: 1rem;
+  }
+
+  .page-header > *:last-child {
+    margin-bottom: 0;
+  }
+
+  .page-header .btn {
+    width: 100%;
+  }
+}
+
+/* Touch-friendly tap highlights */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger hit areas for touch */
+  .btn {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  .btn-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .nav-link {
+    min-height: 48px;
+  }
+
+  /* Better spacing for touch targets */
+  .table-responsive th,
+  .table-responsive td {
+    padding: 1rem 0.75rem;
+  }
+
+  /* Checkbox and radio touch area */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Select dropdown */
+  select {
+    min-height: 48px;
+    background-size: 20px;
+  }
+
+  /* Remove hover states that cause sticky effects on touch */
+  .btn:hover {
+    -webkit-transform: none;
+    transform: none;
+  }
+
+  .card:hover {
+    -webkit-transform: none;
+    transform: none;
+  }
+
+  /* Better active states for touch feedback */
+  .btn:active {
+    -webkit-transform: scale(0.98);
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  .card:active {
+    -webkit-transform: scale(0.99);
+    transform: scale(0.99);
+  }
+
+  .nav-link:active {
+    background-color: var(--color-accent-bg-hover);
+  }
+
+  /* Prevent text selection on UI elements */
+  .btn,
+  .nav-link,
+  .tab-btn,
+  .dropdown-item {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}

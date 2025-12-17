@@ -67,7 +67,18 @@ window.addEventListener('hashchange', function() {
   }
 });
 
+
+/* Built from modular JavaScript v0.4.0
+   Generated: 2025-12-17T03:04:17.756Z
+*/
+
+
+// ============================================================
+// FROM: docker.js (482 lines)
+// ============================================================
+
 // =====================================================
+
 // Docker Container Filter & Search
 // =====================================================
 
@@ -548,6 +559,13 @@ function executeDockerDelete() {
 }
 
 // =====================================================
+
+// ============================================================
+// FROM: proxmox.js (325 lines)
+// ============================================================
+
+// =====================================================
+
 // Proxmox Config/Clone/Template Functions
 // =====================================================
 
@@ -871,6 +889,13 @@ function proxmoxAction(nodeId, vmType, vmid, action) {
 }
 
 // =====================================================
+
+// ============================================================
+// FROM: modals.js (680 lines)
+// ============================================================
+
+// =====================================================
+
 // VM/CT Creation Modal Functions
 // =====================================================
 
@@ -1549,6 +1574,13 @@ function deleteSnapshot(nodeId, vmType, vmid, snapName) {
 }
 
 // =====================================================
+
+// ============================================================
+// FROM: terminal.js (214 lines)
+// ============================================================
+
+// =====================================================
+
 // Terminal Functions
 // =====================================================
 
@@ -1761,6 +1793,13 @@ if (terminalTabBtn && !terminalTabBtn.hasAttribute('data-history-listener')) {
 }
 
 // =====================================================
+
+// ============================================================
+// FROM: services.js (183 lines)
+// ============================================================
+
+// =====================================================
+
 // Services Tab Functions
 // =====================================================
 
@@ -1942,282 +1981,13 @@ if (servicesTabBtn && !servicesTabBtn.hasAttribute('data-services-listener')) {
 }
 
 // =====================================================
-// System Info Tab - Comprehensive System Information
-// =====================================================
 
-var systemInfoData = null;
-var activeSystemInfoXHR = null;
-
-function loadSystemInfo(nodeId) {
-  var contentEl = document.getElementById('system-info-content');
-  var btn = document.getElementById('btn-refresh-sysinfo');
-
-  if (!contentEl) return;
-
-  // Cancel any pending request
-  if (activeSystemInfoXHR) {
-    activeSystemInfoXHR.abort();
-    activeSystemInfoXHR = null;
-  }
-
-  // Show loading
-  contentEl.innerHTML = '<div class="loading-placeholder"><span class="spinner"></span><span>System-Informationen werden geladen... (kann bis zu 2 Min dauern)</span></div>';
-
-  if (btn) {
-    btn.classList.add('loading');
-    btn.disabled = true;
-  }
-
-  var xhr = new XMLHttpRequest();
-  activeSystemInfoXHR = xhr;
-  xhr.open('GET', '/api/nodes/' + nodeId + '/system-info', true);
-  xhr.timeout = 180000; // 3 minutes timeout
-
-  function resetState() {
-    activeSystemInfoXHR = null;
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-  }
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      resetState();
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        systemInfoData = response.data;
-        renderSystemInfo();
-      } else {
-        var errMsg = response.error ? response.error.message : 'Fehler beim Laden';
-        contentEl.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div><p>' + escapeHtml(errMsg) + '</p><button class="btn btn-secondary" onclick="loadSystemInfo(' + nodeId + ')">Erneut versuchen</button></div>';
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    resetState();
-    contentEl.innerHTML = '<div class="empty-state"><p>Netzwerkfehler</p></div>';
-  };
-
-  xhr.ontimeout = function() {
-    resetState();
-    contentEl.innerHTML = '<div class="empty-state"><p>Timeout - Server antwortet nicht</p></div>';
-  };
-
-  xhr.send();
-}
-
-function renderSystemInfo() {
-  var contentEl = document.getElementById('system-info-content');
-  if (!contentEl || !systemInfoData) return;
-
-  var d = systemInfoData;
-  var html = '';
-
-  // Basic Info Card
-  html += '<div class="sysinfo-grid">';
-
-  // === BASIC INFO ===
-  if (d.basic) {
-    html += '<div class="sysinfo-card">';
-    html += '<div class="sysinfo-card-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><span>System</span></div>';
-    html += '<div class="sysinfo-card-body">';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Hostname</span><span class="sysinfo-value">' + escapeHtml(d.basic.hostname || '-') + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Kernel</span><span class="sysinfo-value sysinfo-mono">' + escapeHtml(d.basic.kernel || '-') + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Uptime</span><span class="sysinfo-value">' + formatUptime(d.basic.uptime_seconds) + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Timezone</span><span class="sysinfo-value">' + escapeHtml(d.basic.timezone || '-') + '</span></div>';
-    html += '</div></div>';
-  }
-
-  // === USERS ===
-  if (d.users) {
-    html += '<div class="sysinfo-card">';
-    html += '<div class="sysinfo-card-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Users</span></div>';
-    html += '<div class="sysinfo-card-body">';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Eingeloggt</span><span class="sysinfo-value sysinfo-badge">' + (d.users.logged_in ? d.users.logged_in.length : 0) + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">User Accounts</span><span class="sysinfo-value">' + (d.users.accounts ? d.users.accounts.length : 0) + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Failed Logins (24h)</span><span class="sysinfo-value ' + (d.users.failed_logins_24h > 10 ? 'sysinfo-warn' : '') + '">' + (d.users.failed_logins_24h || 0) + '</span></div>';
-    html += '</div></div>';
-  }
-
-  // === PROCESSES ===
-  if (d.processes) {
-    html += '<div class="sysinfo-card">';
-    html += '<div class="sysinfo-card-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/></svg><span>Prozesse</span></div>';
-    html += '<div class="sysinfo-card-body">';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Total</span><span class="sysinfo-value">' + (d.processes.total || 0) + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Running</span><span class="sysinfo-value sysinfo-badge sysinfo-badge-success">' + (d.processes.running || 0) + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Load (1/5/15m)</span><span class="sysinfo-value sysinfo-mono">' + (d.processes.load_1m || 0) + ' / ' + (d.processes.load_5m || 0) + ' / ' + (d.processes.load_15m || 0) + '</span></div>';
-    html += '</div></div>';
-  }
-
-  // === NETWORK ===
-  if (d.network) {
-    html += '<div class="sysinfo-card">';
-    html += '<div class="sysinfo-card-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>Netzwerk</span></div>';
-    html += '<div class="sysinfo-card-body">';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Offene Ports</span><span class="sysinfo-value sysinfo-badge">' + (d.network.listening_ports ? d.network.listening_ports.length : 0) + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Verbindungen</span><span class="sysinfo-value">' + (d.network.connections ? d.network.connections.established : 0) + ' established</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Gateway</span><span class="sysinfo-value sysinfo-mono">' + escapeHtml(d.network.default_gateway || '-') + '</span></div>';
-    html += '</div></div>';
-  }
-
-  // === STORAGE ===
-  if (d.storage) {
-    html += '<div class="sysinfo-card">';
-    html += '<div class="sysinfo-card-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg><span>Storage</span></div>';
-    html += '<div class="sysinfo-card-body">';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Filesystems</span><span class="sysinfo-value">' + (d.storage.filesystems ? d.storage.filesystems.length : 0) + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Block Devices</span><span class="sysinfo-value">' + (d.storage.block_devices ? d.storage.block_devices.length : 0) + '</span></div>';
-    if (d.storage.raid_status) {
-      html += '<div class="sysinfo-row"><span class="sysinfo-label">RAID</span><span class="sysinfo-value sysinfo-badge sysinfo-badge-info">Aktiv</span></div>';
-    }
-    if (d.storage.zfs_status) {
-      html += '<div class="sysinfo-row"><span class="sysinfo-label">ZFS</span><span class="sysinfo-value sysinfo-badge sysinfo-badge-info">Aktiv</span></div>';
-    }
-    html += '</div></div>';
-  }
-
-  // === PACKAGES ===
-  if (d.packages) {
-    html += '<div class="sysinfo-card">';
-    html += '<div class="sysinfo-card-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4l-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27,6.96 12,12.01 20.73,6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span>Packages</span></div>';
-    html += '<div class="sysinfo-card-body">';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Manager</span><span class="sysinfo-value sysinfo-badge">' + escapeHtml(d.packages.manager || 'unknown') + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Installiert</span><span class="sysinfo-value">' + (d.packages.installed_count || 0) + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Updates verfuegbar</span><span class="sysinfo-value ' + (d.packages.updates_available > 0 ? 'sysinfo-warn' : '') + '">' + (d.packages.updates_available || 0) + '</span></div>';
-    html += '</div></div>';
-  }
-
-  // === SECURITY ===
-  if (d.security) {
-    html += '<div class="sysinfo-card">';
-    html += '<div class="sysinfo-card-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Security</span></div>';
-    html += '<div class="sysinfo-card-body">';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Firewall</span><span class="sysinfo-value">' + escapeHtml((d.security.firewall_status || 'unknown').substring(0, 30)) + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">SSH Port</span><span class="sysinfo-value sysinfo-mono">' + escapeHtml(d.security.ssh_port || '22') + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Root Login</span><span class="sysinfo-value ' + (d.security.ssh_root_login === 'yes' ? 'sysinfo-warn' : '') + '">' + escapeHtml(d.security.ssh_root_login || 'unknown') + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Password Auth</span><span class="sysinfo-value">' + escapeHtml(d.security.ssh_password_auth || 'unknown') + '</span></div>';
-    html += '</div></div>';
-  }
-
-  // === SERVICES ===
-  if (d.services) {
-    html += '<div class="sysinfo-card">';
-    html += '<div class="sysinfo-card-header"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Services</span></div>';
-    html += '<div class="sysinfo-card-body">';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Running</span><span class="sysinfo-value sysinfo-badge sysinfo-badge-success">' + (d.services.running || 0) + '</span></div>';
-    html += '<div class="sysinfo-row"><span class="sysinfo-label">Failed</span><span class="sysinfo-value ' + (d.services.failed > 0 ? 'sysinfo-badge sysinfo-badge-error' : '') + '">' + (d.services.failed || 0) + '</span></div>';
-    if (d.services.failed_list && d.services.failed_list.length > 0) {
-      html += '<div class="sysinfo-row sysinfo-row-full"><span class="sysinfo-label">Failed Services</span><span class="sysinfo-value sysinfo-mono sysinfo-small">' + d.services.failed_list.slice(0, 5).map(escapeHtml).join(', ') + '</span></div>';
-    }
-    html += '</div></div>';
-  }
-
-  html += '</div>'; // close sysinfo-grid
-
-  // === DETAILED SECTIONS ===
-
-  // Top Processes
-  if (d.processes && d.processes.top_cpu && d.processes.top_cpu.length > 0) {
-    html += '<div class="sysinfo-section">';
-    html += '<div class="sysinfo-section-header" onclick="toggleSysinfoSection(this)"><span>Top Prozesse (CPU)</span><span class="sysinfo-toggle">+</span></div>';
-    html += '<div class="sysinfo-section-body" style="display:none;">';
-    html += '<table class="sysinfo-table"><thead><tr><th>User</th><th>PID</th><th>CPU%</th><th>MEM%</th><th>Command</th></tr></thead><tbody>';
-    for (var i = 0; i < Math.min(d.processes.top_cpu.length, 10); i++) {
-      var p = d.processes.top_cpu[i];
-      html += '<tr><td>' + escapeHtml(p.user || '') + '</td><td>' + (p.pid || '') + '</td><td class="' + (p.cpu > 50 ? 'sysinfo-warn' : '') + '">' + (p.cpu || 0) + '%</td><td>' + (p.mem || 0) + '%</td><td class="sysinfo-mono">' + escapeHtml(p.command || '') + '</td></tr>';
-    }
-    html += '</tbody></table></div></div>';
-  }
-
-  // Listening Ports
-  if (d.network && d.network.listening_ports && d.network.listening_ports.length > 0) {
-    html += '<div class="sysinfo-section">';
-    html += '<div class="sysinfo-section-header" onclick="toggleSysinfoSection(this)"><span>Offene Ports</span><span class="sysinfo-toggle">+</span></div>';
-    html += '<div class="sysinfo-section-body" style="display:none;">';
-    html += '<table class="sysinfo-table"><thead><tr><th>Proto</th><th>Port</th><th>Prozess</th></tr></thead><tbody>';
-    for (var i = 0; i < Math.min(d.network.listening_ports.length, 20); i++) {
-      var port = d.network.listening_ports[i];
-      html += '<tr><td>' + escapeHtml(port.proto || '') + '</td><td class="sysinfo-mono">' + escapeHtml(port.port || '') + '</td><td>' + escapeHtml(port.process || '') + '</td></tr>';
-    }
-    html += '</tbody></table></div></div>';
-  }
-
-  // Filesystems
-  if (d.storage && d.storage.filesystems && d.storage.filesystems.length > 0) {
-    html += '<div class="sysinfo-section">';
-    html += '<div class="sysinfo-section-header" onclick="toggleSysinfoSection(this)"><span>Filesystems</span><span class="sysinfo-toggle">+</span></div>';
-    html += '<div class="sysinfo-section-body" style="display:none;">';
-    html += '<table class="sysinfo-table"><thead><tr><th>Mount</th><th>Type</th><th>Size</th><th>Used</th><th>Avail</th><th>Use%</th></tr></thead><tbody>';
-    for (var i = 0; i < d.storage.filesystems.length; i++) {
-      var fs = d.storage.filesystems[i];
-      var useClass = '';
-      var usePct = parseInt(fs.use_percent, 10);
-      if (usePct >= 90) useClass = 'sysinfo-error';
-      else if (usePct >= 80) useClass = 'sysinfo-warn';
-      html += '<tr><td class="sysinfo-mono">' + escapeHtml(fs.mount || '') + '</td><td>' + escapeHtml(fs.type || '') + '</td><td>' + escapeHtml(fs.size || '') + '</td><td>' + escapeHtml(fs.used || '') + '</td><td>' + escapeHtml(fs.avail || '') + '</td><td class="' + useClass + '">' + escapeHtml(fs.use_percent || '') + '</td></tr>';
-    }
-    html += '</tbody></table></div></div>';
-  }
-
-  // Recent Logs
-  if (d.logs && d.logs.syslog && d.logs.syslog.length > 0) {
-    html += '<div class="sysinfo-section">';
-    html += '<div class="sysinfo-section-header" onclick="toggleSysinfoSection(this)"><span>Letzte Log-Eintraege</span><span class="sysinfo-toggle">+</span></div>';
-    html += '<div class="sysinfo-section-body" style="display:none;">';
-    html += '<div class="sysinfo-logs">';
-    for (var i = 0; i < Math.min(d.logs.syslog.length, 15); i++) {
-      html += '<div class="sysinfo-log-line">' + escapeHtml(d.logs.syslog[i] || '') + '</div>';
-    }
-    html += '</div></div></div>';
-  }
-
-  contentEl.innerHTML = html;
-}
-
-function toggleSysinfoSection(headerEl) {
-  var body = headerEl.nextElementSibling;
-  var toggle = headerEl.querySelector('.sysinfo-toggle');
-  if (body.style.display === 'none') {
-    body.style.display = 'block';
-    toggle.textContent = '-';
-  } else {
-    body.style.display = 'none';
-    toggle.textContent = '+';
-  }
-}
-
-function formatUptime(seconds) {
-  if (!seconds) return '-';
-  var days = Math.floor(seconds / 86400);
-  var hours = Math.floor((seconds % 86400) / 3600);
-  var mins = Math.floor((seconds % 3600) / 60);
-  if (days > 0) return days + 'd ' + hours + 'h ' + mins + 'm';
-  if (hours > 0) return hours + 'h ' + mins + 'm';
-  return mins + 'm';
-}
-
-// Load system info when system tab is opened
-var systemTabBtn = document.querySelector('[data-tab="system"]');
-if (systemTabBtn && !systemTabBtn.hasAttribute('data-sysinfo-listener')) {
-  systemTabBtn.addEventListener('click', function() {
-    if (!systemInfoData) {
-      loadSystemInfo(nodeId);
-    }
-  });
-  systemTabBtn.setAttribute('data-sysinfo-listener', 'true');
-}
+// ============================================================
+// FROM: network.js (637 lines)
+// ============================================================
 
 // =====================================================
+
 // Network Diagnostics Functions
 // =====================================================
 var networkData = null;
@@ -2852,3 +2622,4 @@ document.addEventListener('keydown', function(e) {
     toggleTerminalPanel();
   }
 });
+
