@@ -81,7 +81,7 @@
       <% } else { %>
         <div class="detail-grid">
           <!-- CPU -->
-          <div class="detail-card">
+          <div class="detail-card compact">
             <h3>CPU</h3>
             <dl>
               <dt>Modell</dt>
@@ -96,7 +96,7 @@
           </div>
 
           <!-- RAM -->
-          <div class="detail-card">
+          <div class="detail-card compact">
             <h3>Arbeitsspeicher</h3>
             <% if (typeof currentStats !== 'undefined' && currentStats && currentStats.ram_percent) { %>
               <div class="hardware-progress">
@@ -121,7 +121,7 @@
           </div>
 
           <!-- Disk -->
-          <div class="detail-card">
+          <div class="detail-card compact">
             <h3>Festplatten</h3>
             <% if (typeof currentStats !== 'undefined' && currentStats && currentStats.disk_percent) { %>
               <div class="hardware-progress">
@@ -159,7 +159,7 @@
           </div>
 
           <!-- System -->
-          <div class="detail-card">
+          <div class="detail-card compact">
             <h3>System</h3>
             <dl>
               <dt>Hersteller</dt>
@@ -216,7 +216,7 @@
       <% } else { %>
         <div class="detail-grid">
           <!-- System Info -->
-          <div class="detail-card">
+          <div class="detail-card compact">
             <h3>Betriebssystem</h3>
             <dl>
               <dt>Hostname</dt>
@@ -232,7 +232,7 @@
 
           <!-- Proxmox -->
           <% if (discovery.is_proxmox_host) { %>
-            <div class="detail-card">
+            <div class="detail-card compact">
               <h3>Proxmox</h3>
               <dl>
                 <dt>Version</dt>
@@ -248,7 +248,7 @@
           <% } %>
 
           <!-- Container Runtimes -->
-          <div class="detail-card">
+          <div class="detail-card compact">
             <h3>Container & Virtualisierung</h3>
             <dl>
               <% if (discovery.is_proxmox_host) { %>
@@ -270,7 +270,7 @@
 
           <!-- Systemd -->
           <% if (discovery.has_systemd) { %>
-            <div class="detail-card">
+            <div class="detail-card compact">
               <h3>System</h3>
               <dl>
                 <dt>Systemd</dt>
