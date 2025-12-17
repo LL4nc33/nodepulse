@@ -3,6 +3,9 @@ const router = express.Router();
 const db = require('../db');
 const collector = require('../collector');
 const { formatBytes } = require('../lib/utils');
+const { validateRequired, validatePort } = require('../lib/validators');
+const { getThresholds, VALID_SETTINGS_KEYS } = require('../lib/thresholds');
+const { parseIntParam, parseMonitoringInterval } = require('../lib/params');
 const sidebarMiddleware = require('../middleware/sidebar');
 
 // =====================================================
@@ -61,17 +64,8 @@ router.get('/', asyncHandler(async (req, res) => {
     nodesWithStats = nodesWithStats.filter(n => filteredNodeIds.includes(n.id));
   }
 
-  // Alert thresholds
-  const thresholds = {
-    cpu_warning: parseInt(settings.alert_cpu_warning, 10) || 80,
-    cpu_critical: parseInt(settings.alert_cpu_critical, 10) || 95,
-    ram_warning: parseInt(settings.alert_ram_warning, 10) || 85,
-    ram_critical: parseInt(settings.alert_ram_critical, 10) || 95,
-    disk_warning: parseInt(settings.alert_disk_warning, 10) || 80,
-    disk_critical: parseInt(settings.alert_disk_critical, 10) || 95,
-    temp_warning: parseInt(settings.alert_temp_warning, 10) || 70,
-    temp_critical: parseInt(settings.alert_temp_critical, 10) || 85,
-  };
+  // Alert thresholds (aus zentralem Modul)
+  const thresholds = getThresholds(settings);
 
   res.render('index', {
     title: tagFilter ? `Dashboard - ${tagFilter}` : 'Dashboard',
@@ -82,7 +76,7 @@ router.get('/', asyncHandler(async (req, res) => {
     tags,
     tagFilter,
     thresholds,
-    dashboardRefreshInterval: parseInt(settings.dashboard_refresh_interval, 10) || 5,
+    dashboardRefreshInterval: parseIntParam(settings.dashboard_refresh_interval, 5),
     stats: {
       total: nodes.length,
       online: onlineCount,
@@ -126,24 +120,19 @@ router.post('/nodes/add', asyncHandler(async (req, res) => {
     });
   };
 
-  // Validation
-  if (!name || !name.trim()) {
-    return renderWithError('Name ist erforderlich.');
-  }
+  // Validation (zentrale Validators)
+  const nameCheck = validateRequired(name, 'Name');
+  if (!nameCheck.valid) return renderWithError(nameCheck.error + '.');
 
-  if (!host || !host.trim()) {
-    return renderWithError('Host ist erforderlich.');
-  }
+  const hostCheck = validateRequired(host, 'Host');
+  if (!hostCheck.valid) return renderWithError(hostCheck.error + '.');
 
-  if (!ssh_user || !ssh_user.trim()) {
-    return renderWithError('SSH User ist erforderlich.');
-  }
+  const userCheck = validateRequired(ssh_user, 'SSH User');
+  if (!userCheck.valid) return renderWithError(userCheck.error + '.');
 
-  // Validate port range
-  const port = parseInt(ssh_port, 10) || 22;
-  if (port < 1 || port > 65535) {
-    return renderWithError('SSH Port muss zwischen 1 und 65535 liegen.');
-  }
+  const portCheck = validatePort(ssh_port, 22);
+  if (!portCheck.valid) return renderWithError('SSH ' + portCheck.error + '.');
+  const port = portCheck.value;
 
   // Check if name already exists
   const existing = db.nodes.getByName(name.trim());
@@ -154,7 +143,7 @@ router.post('/nodes/add', asyncHandler(async (req, res) => {
   try {
     // Settings für Defaults laden (gecacht, effizient)
     const settings = db.settings.getAll();
-    const defaultMonitoringInterval = parseInt(settings.monitoring_default_interval, 10) || 30;
+    const defaultMonitoringInterval = parseMonitoringInterval(settings.monitoring_default_interval, 30);
 
     const id = db.nodes.create({
       name: name.trim(),
@@ -257,27 +246,22 @@ router.post('/nodes/:id/edit', asyncHandler(async (req, res) => {
     });
   };
 
-  // Validation
-  if (!name || !name.trim()) {
-    return renderWithError('Name ist erforderlich.');
-  }
+  // Validation (zentrale Validators)
+  const nameCheck = validateRequired(name, 'Name');
+  if (!nameCheck.valid) return renderWithError(nameCheck.error + '.');
 
-  if (!host || !host.trim()) {
-    return renderWithError('Host ist erforderlich.');
-  }
+  const hostCheck = validateRequired(host, 'Host');
+  if (!hostCheck.valid) return renderWithError(hostCheck.error + '.');
 
-  if (!ssh_user || !ssh_user.trim()) {
-    return renderWithError('SSH User ist erforderlich.');
-  }
+  const userCheck = validateRequired(ssh_user, 'SSH User');
+  if (!userCheck.valid) return renderWithError(userCheck.error + '.');
 
-  // Validate port range
-  const port = parseInt(ssh_port, 10) || 22;
-  if (port < 1 || port > 65535) {
-    return renderWithError('SSH Port muss zwischen 1 und 65535 liegen.');
-  }
+  const portCheck = validatePort(ssh_port, 22);
+  if (!portCheck.valid) return renderWithError('SSH ' + portCheck.error + '.');
+  const port = portCheck.value;
 
   // Validate monitoring interval
-  const interval = parseInt(monitoring_interval, 10) || 30;
+  const interval = parseMonitoringInterval(monitoring_interval, 30);
   if (interval < 5 || interval > 3600) {
     return renderWithError('Monitoring Interval muss zwischen 5 und 3600 Sekunden liegen.');
   }
@@ -351,17 +335,8 @@ router.get('/monitoring/:id', asyncHandler(async (req, res) => {
   const history = db.stats.getHistory(nodeId, 24);
   const settings = db.settings.getAll();
 
-  // Get alert thresholds
-  const thresholds = {
-    cpu_warning: parseInt(settings.alert_cpu_warning, 10) || 80,
-    cpu_critical: parseInt(settings.alert_cpu_critical, 10) || 95,
-    ram_warning: parseInt(settings.alert_ram_warning, 10) || 85,
-    ram_critical: parseInt(settings.alert_ram_critical, 10) || 95,
-    disk_warning: parseInt(settings.alert_disk_warning, 10) || 80,
-    disk_critical: parseInt(settings.alert_disk_critical, 10) || 95,
-    temp_warning: parseInt(settings.alert_temp_warning, 10) || 70,
-    temp_critical: parseInt(settings.alert_temp_critical, 10) || 85,
-  };
+  // Get alert thresholds (aus zentralem Modul)
+  const thresholds = getThresholds(settings);
 
   res.render('monitoring/node', {
     title: `Monitoring - ${node.name}`,
@@ -370,7 +345,7 @@ router.get('/monitoring/:id', asyncHandler(async (req, res) => {
     stats: currentStats,
     history,
     thresholds,
-    chartDefaultHours: parseInt(settings.chart_default_hours, 10) || 24,
+    chartDefaultHours: parseIntParam(settings.chart_default_hours, 24),
     formatBytes,
   });
 }));

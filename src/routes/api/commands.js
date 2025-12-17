@@ -6,6 +6,8 @@ const router = express.Router();
 const db = require('../../db');
 const ssh = require('../../ssh');
 const { asyncHandler, apiResponse } = require('./helpers');
+const { validateCommand } = require('../../lib/validators');
+const { parseLimitParam, parseIntParam } = require('../../lib/params');
 
 // Blocked commands that could be dangerous
 const BLOCKED_COMMANDS = [
@@ -92,7 +94,7 @@ router.get('/templates/for/:nodeType', asyncHandler(async (req, res) => {
 
 // Get command history
 router.get('/history', asyncHandler(async (req, res) => {
-  let limit = parseInt(req.query.limit, 10) || 50;
+  let limit = parseLimitParam(req.query.limit, 50);
   if (limit < 1 || limit > 500) limit = 50;
   const history = db.commands.getHistory(limit);
   apiResponse(res, 200, history);
@@ -110,7 +112,7 @@ router.get('/history/node/:id', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  let limit = parseInt(req.query.limit, 10) || 20;
+  let limit = parseLimitParam(req.query.limit, 20);
   if (limit < 1 || limit > 100) limit = 20;
 
   const history = db.commands.getHistoryForNode(nodeId, limit);
@@ -127,11 +129,11 @@ router.post('/execute/:nodeId', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
   }
 
-  if (!command || typeof command !== 'string' || command.trim().length === 0) {
-    return apiResponse(res, 400, null, { code: 'INVALID_COMMAND', message: 'Command ist erforderlich' });
+  const cmdCheck = validateCommand(command);
+  if (!cmdCheck.valid) {
+    return apiResponse(res, 400, null, { code: 'INVALID_COMMAND', message: cmdCheck.error });
   }
-
-  command = command.trim();
+  command = cmdCheck.value;
 
   // Validate command length
   if (command.length > 2000) {

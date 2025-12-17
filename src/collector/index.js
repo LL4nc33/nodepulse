@@ -3,6 +3,7 @@ const path = require('path');
 const db = require('../db');
 const ssh = require('../ssh');
 const alertsService = require('../services/alerts');
+const { getThresholds } = require('../lib/thresholds');
 
 // Load scripts
 const scriptsDir = path.join(__dirname, '../../scripts');
@@ -184,18 +185,9 @@ async function runStats(node, saveHistory = true) {
     });
   }
 
-  // Check alerts if thresholds are configured
+  // Check alerts if thresholds are configured (zentrale Threshold-Funktion)
   try {
-    const thresholds = {
-      cpu_warning: parseFloat(settings.alert_cpu_warning || '80'),
-      cpu_critical: parseFloat(settings.alert_cpu_critical || '95'),
-      ram_warning: parseFloat(settings.alert_ram_warning || '85'),
-      ram_critical: parseFloat(settings.alert_ram_critical || '95'),
-      disk_warning: parseFloat(settings.alert_disk_warning || '80'),
-      disk_critical: parseFloat(settings.alert_disk_critical || '95'),
-      temp_warning: parseFloat(settings.alert_temp_warning || '70'),
-      temp_critical: parseFloat(settings.alert_temp_critical || '85')
-    };
+    const thresholds = getThresholds(settings);
 
     alertsService.checkAlerts(node.id, data, thresholds);
     // Also resolve any offline alert since we successfully collected stats

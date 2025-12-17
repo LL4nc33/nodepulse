@@ -7,6 +7,8 @@ const router = express.Router({ mergeParams: true });
 const db = require('../../db');
 const collector = require('../../collector');
 const { asyncHandler, apiResponse } = require('./helpers');
+const { validateResizeParams } = require('../../lib/validators');
+const { parseVMParams, parseCTParams, parseIntParam } = require('../../lib/params');
 
 // Validation helper for VM/CT names
 function isValidVmName(name) {
@@ -1121,21 +1123,22 @@ router.post('/vms/create', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
   }
 
-  // Extract and validate parameters
-  var vmid = parseInt(req.body.vmid, 10);
+  // Extract and validate parameters (zentrale Parser)
+  var vmid = parseIntParam(req.body.vmid, 0);
   var name = req.body.name;
   var iso = req.body.iso;
   var storage = req.body.storage;
-  var cores = parseInt(req.body.cores, 10) || 2;
-  var sockets = parseInt(req.body.sockets, 10) || 1;
-  var memory = parseInt(req.body.memory, 10) || 2048;
-  var diskSize = parseInt(req.body.disk_size, 10) || 32;
-  var ostype = req.body.ostype || 'l26';
-  var bios = req.body.bios || 'seabios';
-  var netBridge = req.body.net_bridge || 'vmbr0';
-  var netModel = req.body.net_model || 'virtio';
-  var startOnBoot = req.body.start_on_boot === true || req.body.start_on_boot === 'true';
-  var description = req.body.description || '';
+  var vmParams = parseVMParams(req.body);
+  var cores = vmParams.cores;
+  var sockets = vmParams.sockets;
+  var memory = vmParams.memory;
+  var diskSize = vmParams.diskSize;
+  var ostype = vmParams.ostype;
+  var bios = vmParams.bios;
+  var netBridge = vmParams.netBridge;
+  var netModel = vmParams.netModel;
+  var startOnBoot = vmParams.startOnBoot;
+  var description = vmParams.description;
 
   // === VALIDATION ===
 
@@ -1283,24 +1286,25 @@ router.post('/cts/create', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
   }
 
-  // Extract and validate parameters
-  var ctid = parseInt(req.body.ctid, 10);
+  // Extract and validate parameters (zentrale Parser)
+  var ctid = parseIntParam(req.body.ctid, 0);
   var hostname = req.body.hostname;
   var template = req.body.template;
   var storage = req.body.storage;
   var password = req.body.password;
   var sshPublicKeys = req.body.ssh_public_keys || '';
-  var cores = parseInt(req.body.cores, 10) || 2;
-  var memory = parseInt(req.body.memory, 10) || 1024;
-  var diskSize = parseInt(req.body.disk_size, 10) || 8;
-  var swap = parseInt(req.body.swap, 10) || 512;
-  var netBridge = req.body.net_bridge || 'vmbr0';
-  var ipConfig = req.body.ip_config || 'dhcp';
-  var gateway = req.body.gateway || '';
-  var unprivileged = req.body.unprivileged !== false && req.body.unprivileged !== 'false';
-  var nesting = req.body.nesting === true || req.body.nesting === 'true';
-  var startOnBoot = req.body.start_on_boot === true || req.body.start_on_boot === 'true';
-  var description = req.body.description || '';
+  var ctParams = parseCTParams(req.body);
+  var cores = ctParams.cores;
+  var memory = ctParams.memory;
+  var diskSize = ctParams.diskSize;
+  var swap = ctParams.swap;
+  var netBridge = ctParams.netBridge;
+  var ipConfig = ctParams.ipConfig;
+  var gateway = ctParams.gateway;
+  var unprivileged = ctParams.unprivileged;
+  var nesting = ctParams.nesting;
+  var startOnBoot = ctParams.startOnBoot;
+  var description = ctParams.description;
 
   // === VALIDATION ===
 

@@ -7,6 +7,8 @@ const db = require('../../db');
 const ssh = require('../../ssh');
 const collector = require('../../collector');
 const { asyncHandler, apiResponse, validateNodeInput } = require('./helpers');
+const { validatePort } = require('../../lib/validators');
+const { parseIntParam, parseHoursParam, parseLimitParam, parseMaxHopsParam } = require('../../lib/params');
 
 // =====================================================
 // Basic CRUD Operations
@@ -72,7 +74,7 @@ router.post('/', asyncHandler(async (req, res) => {
     const id = db.nodes.create({
       name: name.trim(),
       host: host.trim(),
-      ssh_port: parseInt(ssh_port, 10) || 22,
+      ssh_port: validatePort(ssh_port, 22).value,
       ssh_user: ssh_user.trim(),
       ssh_key_path: ssh_key_path ? ssh_key_path.trim() : null,
       notes: notes ? notes.trim() : null,
@@ -98,12 +100,12 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const updateData = {
     name: name !== undefined ? name : node.name,
     host: host !== undefined ? host : node.host,
-    ssh_port: ssh_port !== undefined ? parseInt(ssh_port, 10) : node.ssh_port,
+    ssh_port: ssh_port !== undefined ? validatePort(ssh_port, node.ssh_port).value : node.ssh_port,
     ssh_user: ssh_user !== undefined ? ssh_user : node.ssh_user,
     ssh_key_path: ssh_key_path !== undefined ? ssh_key_path : node.ssh_key_path,
     notes: notes !== undefined ? notes : node.notes,
     monitoring_enabled: monitoring_enabled !== undefined ? (monitoring_enabled ? 1 : 0) : node.monitoring_enabled,
-    monitoring_interval: monitoring_interval !== undefined ? parseInt(monitoring_interval, 10) : node.monitoring_interval,
+    monitoring_interval: monitoring_interval !== undefined ? parseIntParam(monitoring_interval, node.monitoring_interval) : node.monitoring_interval,
   };
 
   // Validation
@@ -350,7 +352,7 @@ router.post('/:id/create-child', asyncHandler(async (req, res) => {
     const id = db.nodes.create({
       name: name.trim(),
       host: host.trim(),
-      ssh_port: parseInt(ssh_port, 10) || 22,
+      ssh_port: validatePort(ssh_port, 22).value,
       ssh_user: ssh_user.trim(),
       ssh_password: ssh_password || null,
       ssh_key_path: ssh_key_path ? ssh_key_path.trim() : null,
@@ -575,7 +577,7 @@ router.post('/:id/network/traceroute', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_TARGET', message: 'target darf maximal 255 Zeichen lang sein' });
   }
 
-  const maxHops = parseInt(req.body.maxHops, 10) || 20;
+  const maxHops = parseMaxHopsParam(req.body.maxHops);
   if (maxHops < 1 || maxHops > 64) {
     return apiResponse(res, 400, null, { code: 'INVALID_MAXHOPS', message: 'maxHops muss zwischen 1 und 64 liegen' });
   }
@@ -635,7 +637,7 @@ router.get('/:id/stats/history', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  const hours = parseInt(req.query.hours, 10) || 24;
+  const hours = parseHoursParam(req.query.hours);
   const history = db.stats.getHistory(nodeId, hours);
   apiResponse(res, 200, history);
 }));
@@ -678,7 +680,7 @@ router.get('/:id/commands/history', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  var limit = parseInt(req.query.limit, 10) || 20;
+  var limit = parseLimitParam(req.query.limit, 20);
   if (limit < 1 || limit > 100) limit = 20;
 
   var history = db.commands.getHistoryForNode(nodeId, limit);
