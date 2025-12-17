@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-17T04:17:14.372Z
+   Generated: 2025-12-17T04:38:15.504Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -715,7 +715,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: layout.css (977 lines)
+   FROM: layout.css (1171 lines)
    ============================================================ */
 
 /* =====================================================
@@ -1695,9 +1695,203 @@ a:focus {
   }
 }
 
+/* =====================================================
+   Tags
+   ===================================================== */
+
+.tags {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin-left: -0.25rem;
+  margin-right: -0.25rem;
+}
+
+.tags > * {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.375rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-heading);
+}
+
+/* Side Panel Tags - Clickable */
+.side-panel-tags {
+  padding: 0.5rem 0.75rem;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.tag-link {
+  background-color: var(--tag-color, var(--color-border))20;
+  border: 1px solid var(--tag-color, var(--color-border));
+  color: var(--color-text);
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-transition: all 0.2s ease;
+  transition: all 0.2s ease;
+}
+
+.tag-link:hover {
+  background-color: var(--tag-color, var(--color-border))40;
+  -webkit-transform: translateY(-1px);
+  transform: translateY(-1px);
+}
+
+.tag-link.active {
+  background-color: var(--tag-color, var(--color-accent));
+  color: white;
+  border-color: var(--tag-color, var(--color-accent));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tag-clear {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-transition: all 0.2s ease;
+  transition: all 0.2s ease;
+}
+
+.tag-clear:hover {
+  background-color: var(--color-error-bg);
+  border-color: var(--color-error);
+  color: var(--color-error-text);
+}
+
+/* =====================================================
+   Node Tree (Hierarchical List)
+   ===================================================== */
+
+.node-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.node-tree-item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.node-tree-item:last-child {
+  border-bottom: none;
+}
+
+.node-tree-row {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  min-height: 48px;
+  cursor: pointer;
+  -webkit-transition: background-color 0.15s;
+  transition: background-color 0.15s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.node-tree-row:hover {
+  background-color: var(--color-accent-bg);
+  text-decoration: none;
+}
+
+.node-tree-row.active {
+  background-color: var(--color-accent-bg);
+  border-left: 3px solid var(--color-accent);
+  padding-left: calc(1rem - 3px);
+}
+
+/* Hierarchy Indentation */
+.node-tree-row[data-level="1"] { padding-left: 2rem; }
+.node-tree-row[data-level="2"] { padding-left: 3rem; }
+.node-tree-row[data-level="3"] { padding-left: 4rem; }
+
+/* Tree Connector Lines */
+.node-tree-row[data-level="1"]::before,
+.node-tree-row[data-level="2"]::before,
+.node-tree-row[data-level="3"]::before {
+  content: "├─";
+  color: var(--color-border-light);
+  font-family: monospace;
+  margin-right: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.node-tree-item:last-child > .node-tree-row[data-level="1"]::before,
+.node-tree-item:last-child > .node-tree-row[data-level="2"]::before,
+.node-tree-item:last-child > .node-tree-row[data-level="3"]::before {
+  content: "└─";
+}
+
+/* Node Tree Status Dot */
+.node-tree-status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 0.75rem;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.node-tree-status.online { background-color: var(--color-online); }
+.node-tree-status.offline { background-color: var(--color-offline); }
+
+/* Node Tree Name */
+.node-tree-name {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Node Tree Meta (Type, Child Count) */
+.node-tree-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-left: 0.5rem;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.node-tree-children-count {
+  background: var(--color-bg-elevated);
+  padding: 0.125rem 0.375rem;
+  border-radius: 10px;
+  font-size: 0.6875rem;
+}
+
 
 /* ============================================================
-   FROM: components.css (486 lines)
+   FROM: components.css (779 lines)
    ============================================================ */
 
 /* =====================================================
@@ -2184,6 +2378,299 @@ a:focus {
 
 .button-stack .btn {
   width: 100%;
+}
+
+/* =====================================================
+   SETTINGS PAGE STYLES
+   ===================================================== */
+
+.settings-form {
+  max-width: 900px;
+}
+
+.settings-grid {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+  margin-left: -0.75rem;
+  margin-right: -0.75rem;
+}
+
+.settings-grid > * {
+  margin-left: 0.75rem;
+  margin-right: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.settings-section {
+  background: var(--color-bg-surface);
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-width: 280px;
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+}
+
+.settings-section h3 {
+  margin: 0 0 1rem 0;
+  color: var(--color-accent-hover);
+  font-size: 1rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: 0.5rem;
+}
+
+.settings-section .form-group {
+  margin-bottom: 1rem;
+}
+
+.settings-section .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section .form-group label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.375rem;
+}
+
+.settings-section .form-group input[type="number"] {
+  width: 100%;
+  max-width: 150px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 1rem;
+  padding: 0.625rem 0.875rem;
+  min-height: 44px;
+}
+
+.settings-section .form-group input[type="number"]:focus {
+  outline: none;
+  border-color: var(--color-accent-hover);
+  box-shadow: 0 0 0 2px var(--color-accent-bg);
+}
+
+.settings-section .form-group small {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.form-row {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
+}
+
+.form-row > * {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.form-row .form-group {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+}
+
+.checkbox-label {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.checkbox-label > * {
+  margin-right: 0.75rem;
+}
+
+.checkbox-label > *:last-child {
+  margin-right: 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  accent-color: var(--color-accent-hover);
+}
+
+.checkbox-label span {
+  font-size: 0.9375rem;
+  color: var(--color-text);
+}
+
+.form-actions {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.form-actions > * {
+  margin-right: 1rem;
+}
+
+.form-actions > *:last-child {
+  margin-right: 0;
+}
+
+/* Settings Responsive */
+@media (max-width: 768px) {
+  .settings-section {
+    min-width: 100%;
+  }
+
+  .form-row {
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+  }
+
+  .settings-section .form-group input[type="number"] {
+    max-width: 100%;
+  }
+}
+
+/* =====================================================
+   SETTINGS TABS
+   ===================================================== */
+
+.settings-tabs {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 0;
+}
+
+.settings-tab {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  -webkit-transition: all 0.2s ease;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.settings-tab:hover {
+  color: var(--color-text);
+  background: var(--color-bg-hover);
+}
+
+.settings-tab.active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.settings-tab-content {
+  min-height: 200px;
+}
+
+.settings-tab-pane {
+  display: none;
+}
+
+.settings-tab-pane.active {
+  display: block;
+}
+
+/* Settings Threshold Layout */
+.settings-threshold-row {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  gap: 2rem;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+.settings-threshold-group {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 200px;
+  flex: 1 1 200px;
+  min-width: 200px;
+}
+
+.settings-threshold-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.settings-range-wrapper {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.settings-range-wrapper .settings-range-input {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+  min-width: 100px;
+}
+
+.settings-range-number {
+  width: 60px;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg-card);
+  color: var(--color-text);
+}
+
+.settings-range-number:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.settings-range-unit {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  min-width: 24px;
+}
+
+/* Critical range slider thumb */
+.settings-range-input.critical::-webkit-slider-thumb {
+  background: var(--color-error);
+}
+
+.settings-range-input.critical::-moz-range-thumb {
+  background: var(--color-error);
 }
 
 
