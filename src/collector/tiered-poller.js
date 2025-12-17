@@ -40,6 +40,12 @@ class TieredPoller {
     this.tier2Timer = null;
     this.tier3Timer = null;
     this.isRunning = false;
+    // Race condition protection: Track active tier runs
+    this.tierRunning = {
+      tier1: false,
+      tier2: false,
+      tier3: false,
+    };
     this.lastErrors = {
       tier1: null,
       tier2: null,
@@ -149,6 +155,12 @@ class TieredPoller {
    * Uses Change Detection to skip unnecessary polls
    */
   async runTier1() {
+    // Race condition protection: Skip if already running
+    if (this.tierRunning.tier1) {
+      return;
+    }
+    this.tierRunning.tier1 = true;
+
     try {
       const node = db.nodes.getByIdWithCredentials(this.nodeId);
       if (!node) {
@@ -207,6 +219,8 @@ class TieredPoller {
       console.error(`[TieredPoller:Tier1] Error for node ${this.nodeId}:`, err.message);
       this.lastErrors.tier1 = err.message;
       db.nodes.setOnline(this.nodeId, false, err.message);
+    } finally {
+      this.tierRunning.tier1 = false;
     }
   }
 
@@ -215,6 +229,12 @@ class TieredPoller {
    * Medium-speed commands: lsblk, df, sensors
    */
   async runTier2() {
+    // Race condition protection: Skip if already running
+    if (this.tierRunning.tier2) {
+      return;
+    }
+    this.tierRunning.tier2 = true;
+
     try {
       const node = db.nodes.getByIdWithCredentials(this.nodeId);
       if (!node || !node.monitoring_enabled) {
@@ -258,6 +278,8 @@ class TieredPoller {
     } catch (err) {
       console.error(`[TieredPoller:Tier2] Error for node ${this.nodeId}:`, err.message);
       this.lastErrors.tier2 = err.message;
+    } finally {
+      this.tierRunning.tier2 = false;
     }
   }
 
@@ -266,6 +288,12 @@ class TieredPoller {
    * Slow commands: inxi, lspci, fastfetch
    */
   async runTier3() {
+    // Race condition protection: Skip if already running
+    if (this.tierRunning.tier3) {
+      return;
+    }
+    this.tierRunning.tier3 = true;
+
     try {
       const node = db.nodes.getByIdWithCredentials(this.nodeId);
       if (!node || !node.monitoring_enabled) {
@@ -307,6 +335,8 @@ class TieredPoller {
     } catch (err) {
       console.error(`[TieredPoller:Tier3] Error for node ${this.nodeId}:`, err.message);
       this.lastErrors.tier3 = err.message;
+    } finally {
+      this.tierRunning.tier3 = false;
     }
   }
 
@@ -498,6 +528,7 @@ class TieredPoller {
     return {
       nodeId: this.nodeId,
       isRunning: this.isRunning,
+      tierRunning: this.tierRunning,
       lastErrors: this.lastErrors,
       capabilities: this.capabilities,
     };

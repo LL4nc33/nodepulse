@@ -29,7 +29,7 @@ const HASH_CACHE_TTL = 300000; // 5 min
  * @returns {string|null} - 8-char hex hash or null if node not found
  */
 function calculateMetadataHash(nodeId) {
-  const hardware = db.hardware.getByNodeId(nodeId);
+  const hardware = db.hardware.getForNode(nodeId);
 
   // Fallback: Use node data if no hardware discovered yet
   if (!hardware) {
@@ -285,7 +285,7 @@ router.get('/node/:id', asyncHandler(async (req, res) => {
     try {
       // Merge node + stats for formatter
       const nodeWithStats = { ...node, ...stats };
-      const hardware = db.hardware.getByNodeId(nodeId);
+      const hardware = db.hardware.getForNode(nodeId);
       if (hardware) {
         nodeWithStats.cpu_cores = hardware.cpu_cores;
         nodeWithStats.ram_total_bytes = hardware.ram_total_bytes;

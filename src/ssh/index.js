@@ -34,6 +34,8 @@ async function testConnection(node) {
         commandTimeout = null;
       }
       try {
+        // Remove all event listeners to prevent memory leaks
+        conn.removeAllListeners();
         conn.end();
       } catch (e) {
         // Ignore cleanup errors
@@ -161,6 +163,8 @@ async function execute(node, command, timeout = COMMAND_TIMEOUT) {
         commandTimeout = null;
       }
       try {
+        // Remove all event listeners to prevent memory leaks
+        conn.removeAllListeners();
         conn.end();
       } catch (e) {
         // Ignore cleanup errors

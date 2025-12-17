@@ -63,11 +63,11 @@
 <!-- Node ID für JavaScript (muss VOR detail-page.js geladen werden) -->
 <script>
   var nodeId = <%= node.id %>;
-  var nodeName = '<%= node.name.replace(/'/g, "\\'") %>';
+  var nodeName = <%- JSON.stringify(node.name) %>;
   var nodeData = {
-    name: '<%= node.name.replace(/'/g, "\\'") %>',
+    name: <%- JSON.stringify(node.name) %>,
     id: <%= node.id %>,
-    sshUser: '<%= node.ssh_user.replace(/'/g, "\\'") %>'
+    sshUser: <%- JSON.stringify(node.ssh_user || 'root') %>
   };
 </script>
 

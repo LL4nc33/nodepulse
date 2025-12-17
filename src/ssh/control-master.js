@@ -135,27 +135,30 @@ function executeProcess(proc, timeout, silent, resolve, reject) {
   let stderr = '';
   let exitCode = 0;
   let timedOut = false;
+  let resolved = false;
 
-  const timeoutHandle = setTimeout(() => {
-    timedOut = true;
-    proc.kill('SIGTERM');
-    setTimeout(() => {
-      if (!proc.killed) {
-        proc.kill('SIGKILL');
-      }
-    }, 5000);
-  }, timeout);
-
-  proc.stdout.on('data', (data) => {
+  // Named handlers for proper cleanup
+  const onStdoutData = (data) => {
     stdout += data.toString();
-  });
+  };
 
-  proc.stderr.on('data', (data) => {
+  const onStderrData = (data) => {
     stderr += data.toString();
-  });
+  };
 
-  proc.on('close', (code) => {
+  const cleanup = () => {
     clearTimeout(timeoutHandle);
+    // Remove event listeners to prevent memory leaks
+    proc.stdout.removeListener('data', onStdoutData);
+    proc.stderr.removeListener('data', onStderrData);
+    proc.removeListener('close', onClose);
+    proc.removeListener('error', onError);
+  };
+
+  const onClose = (code) => {
+    if (resolved) return;
+    resolved = true;
+    cleanup();
     exitCode = code;
 
     if (timedOut) {
@@ -169,12 +172,29 @@ function executeProcess(proc, timeout, silent, resolve, reject) {
         exitCode,
       });
     }
-  });
+  };
 
-  proc.on('error', (err) => {
-    clearTimeout(timeoutHandle);
+  const onError = (err) => {
+    if (resolved) return;
+    resolved = true;
+    cleanup();
     reject(new Error(`SSH process error: ${err.message}`));
-  });
+  };
+
+  const timeoutHandle = setTimeout(() => {
+    timedOut = true;
+    proc.kill('SIGTERM');
+    setTimeout(() => {
+      if (!proc.killed) {
+        proc.kill('SIGKILL');
+      }
+    }, 5000);
+  }, timeout);
+
+  proc.stdout.on('data', onStdoutData);
+  proc.stderr.on('data', onStderrData);
+  proc.on('close', onClose);
+  proc.on('error', onError);
 }
 
 /**

@@ -58,7 +58,7 @@ function aggregateChildStats(parentId) {
   // Iteriere über alle Children
   children.forEach(child => {
     const stats = db.stats.getCurrent(child.id) || {};
-    const hardware = db.hardware.getByNodeId(child.id) || {};
+    const hardware = db.hardware.getForNode(child.id) || {};
 
     // Online-Status
     if (child.online) {
@@ -162,7 +162,7 @@ function getHierarchicalStats() {
  */
 function buildNodeWithStats(node) {
   const stats = db.stats.getCurrent(node.id) || {};
-  const hardware = db.hardware.getByNodeId(node.id) || {};
+  const hardware = db.hardware.getForNode(node.id) || {};
 
   // Build node object
   const nodeWithStats = {
