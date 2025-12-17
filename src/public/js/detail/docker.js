@@ -159,6 +159,9 @@ function runDiscovery(nodeId) {
       msg += '. Seite wird neu geladen...';
       NP.UI.showAlert(resultEl, 'success', msg);
       NP.UI.toast(msg, 'success');
+      // ES5: cleanup moved here (instead of .finally)
+      NP.UI.setButtonLoading(btnEl, false);
+      NP.UI.setButtonsLoading('.btn-discover-secondary', false);
       setTimeout(function() {
         window.location.reload();
       }, 1500);
@@ -167,8 +170,7 @@ function runDiscovery(nodeId) {
       var errMsg = error.message || 'Discovery fehlgeschlagen';
       NP.UI.showAlert(resultEl, 'error', 'Fehler: ' + errMsg);
       NP.UI.toast(errMsg, 'error');
-    })
-    .finally(function() {
+      // ES5: cleanup moved here (instead of .finally)
       NP.UI.setButtonLoading(btnEl, false);
       NP.UI.setButtonsLoading('.btn-discover-secondary', false);
     });
@@ -186,6 +188,8 @@ function refreshDocker(nodeId) {
     .then(function(data) {
       NP.UI.showAlert(resultEl, 'success', 'Docker-Daten aktualisiert. Seite wird neu geladen...');
       NP.UI.toast('Docker-Daten aktualisiert', 'success');
+      // ES5: cleanup moved here (instead of .finally)
+      NP.UI.setButtonLoading(btnEl, false);
       setTimeout(function() {
         window.location.reload();
       }, 1000);
@@ -193,8 +197,7 @@ function refreshDocker(nodeId) {
     .catch(function(error) {
       NP.UI.showAlert(resultEl, 'error', 'Fehler: ' + (error.message || 'Unbekannter Fehler'));
       NP.UI.toast(error.message || 'Docker-Fehler', 'error');
-    })
-    .finally(function() {
+      // ES5: cleanup moved here (instead of .finally)
       NP.UI.setButtonLoading(btnEl, false);
     });
 }

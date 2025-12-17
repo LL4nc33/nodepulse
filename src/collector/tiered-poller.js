@@ -84,9 +84,10 @@ class TieredPoller {
   }
 
   /**
-   * Stop all polling tiers
+   * Stop all polling tiers and cleanup SSH connections
+   * @returns {Promise<void>}
    */
-  stop() {
+  async stop() {
     if (!this.isRunning) {
       return;
     }
@@ -94,6 +95,7 @@ class TieredPoller {
     console.log(`[TieredPoller] Stopping for node ${this.nodeId}`);
     this.isRunning = false;
 
+    // Clear all timers first
     if (this.tier1Timer) {
       clearInterval(this.tier1Timer);
       this.tier1Timer = null;
@@ -105,6 +107,27 @@ class TieredPoller {
     if (this.tier3Timer) {
       clearInterval(this.tier3Timer);
       this.tier3Timer = null;
+    }
+
+    // Wait for any running tiers to complete (max 10s)
+    const maxWait = 10000;
+    const startTime = Date.now();
+    while (
+      (this.tierRunning.tier1 || this.tierRunning.tier2 || this.tierRunning.tier3) &&
+      (Date.now() - startTime < maxWait)
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // Cleanup SSH ControlMaster connection
+    try {
+      const node = db.nodes.getByIdWithCredentials(this.nodeId);
+      if (node) {
+        await ssh.controlMaster.closeConnection(node);
+        console.log(`[TieredPoller] SSH connection closed for node ${this.nodeId}`);
+      }
+    } catch (err) {
+      console.error(`[TieredPoller] Error closing SSH for node ${this.nodeId}:`, err.message);
     }
   }
 

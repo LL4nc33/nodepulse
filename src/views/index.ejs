@@ -197,12 +197,7 @@
                 progressValue: stats.cpu_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online,
-                showAbsolute: true,
-                usedValue: Math.round((stats.cpu_percent || 0) / 100 * (stats.cpu_cores || 1)),
-                totalValue: stats.cpu_cores || 1,
-                unit: 'cores',
-                timestamp: stats.tier1_last_update
+                offline: !node.online
               }) %>
             </div>
             <div class="node-list-metric">
@@ -210,12 +205,7 @@
                 progressValue: stats.ram_percent,
                 thresholdWarning: 85,
                 thresholdCritical: 95,
-                offline: !node.online,
-                showAbsolute: true,
-                usedValue: formatBytes(stats.ram_used_bytes || 0),
-                totalValue: formatBytes(stats.ram_total_bytes || 0),
-                unit: '',
-                timestamp: stats.tier1_last_update
+                offline: !node.online
               }) %>
             </div>
             <div class="node-list-metric">
@@ -223,12 +213,7 @@
                 progressValue: stats.disk_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online,
-                showAbsolute: true,
-                usedValue: formatBytes(stats.disk_used_bytes || 0),
-                totalValue: formatBytes(stats.disk_total_bytes || 0),
-                unit: '',
-                timestamp: stats.tier2_last_update
+                offline: !node.online
               }) %>
             </div>
             <div class="node-list-count">
@@ -323,12 +308,7 @@
                 progressValue: stats.cpu_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online,
-                showAbsolute: true,
-                usedValue: Math.round((stats.cpu_percent || 0) / 100 * (stats.cpu_cores || 1)),
-                totalValue: stats.cpu_cores || 1,
-                unit: 'cores',
-                timestamp: stats.tier1_last_update
+                offline: !node.online
               }) %>
             </div>
             <div class="node-list-metric">
@@ -336,12 +316,7 @@
                 progressValue: stats.ram_percent,
                 thresholdWarning: 85,
                 thresholdCritical: 95,
-                offline: !node.online,
-                showAbsolute: true,
-                usedValue: formatBytes(stats.ram_used_bytes || 0),
-                totalValue: formatBytes(stats.ram_total_bytes || 0),
-                unit: '',
-                timestamp: stats.tier1_last_update
+                offline: !node.online
               }) %>
             </div>
             <div class="node-list-metric">
@@ -349,12 +324,7 @@
                 progressValue: stats.disk_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online,
-                showAbsolute: true,
-                usedValue: formatBytes(stats.disk_used_bytes || 0),
-                totalValue: formatBytes(stats.disk_total_bytes || 0),
-                unit: '',
-                timestamp: stats.tier2_last_update
+                offline: !node.online
               }) %>
             </div>
             <div class="node-list-count">
@@ -450,12 +420,7 @@
                 progressValue: stats.cpu_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online,
-                showAbsolute: true,
-                usedValue: Math.round((stats.cpu_percent || 0) / 100 * (stats.cpu_cores || 1)),
-                totalValue: stats.cpu_cores || 1,
-                unit: 'cores',
-                timestamp: stats.tier1_last_update
+                offline: !node.online
               }) %>
             </div>
             <div class="node-list-metric">
@@ -463,12 +428,7 @@
                 progressValue: stats.ram_percent,
                 thresholdWarning: 85,
                 thresholdCritical: 95,
-                offline: !node.online,
-                showAbsolute: true,
-                usedValue: formatBytes(stats.ram_used_bytes || 0),
-                totalValue: formatBytes(stats.ram_total_bytes || 0),
-                unit: '',
-                timestamp: stats.tier1_last_update
+                offline: !node.online
               }) %>
             </div>
             <div class="node-list-metric">
@@ -476,12 +436,7 @@
                 progressValue: stats.disk_percent,
                 thresholdWarning: 80,
                 thresholdCritical: 95,
-                offline: !node.online,
-                showAbsolute: true,
-                usedValue: formatBytes(stats.disk_used_bytes || 0),
-                totalValue: formatBytes(stats.disk_total_bytes || 0),
-                unit: '',
-                timestamp: stats.tier2_last_update
+                offline: !node.online
               }) %>
             </div>
             <div class="node-list-count">

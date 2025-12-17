@@ -99,25 +99,25 @@
                   <td class="container-ports"><%= container.ports || '-' %></td>
                   <td class="container-actions">
                     <% if (container.state === 'running') { %>
-                      <button class="btn btn-sm btn-icon" title="Stop" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'stop')">
+                      <button class="btn btn-sm btn-icon" title="Stop" onclick="containerAction(<%= node.id %>, <%- JSON.stringify(container.container_id) %>, 'stop')">
                         <span class="icon-stop"></span>
                       </button>
-                      <button class="btn btn-sm btn-icon" title="Restart" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'restart')">
+                      <button class="btn btn-sm btn-icon" title="Restart" onclick="containerAction(<%= node.id %>, <%- JSON.stringify(container.container_id) %>, 'restart')">
                         <span class="icon-restart"></span>
                       </button>
                     <% } else if (container.state === 'exited' || container.state === 'created') { %>
-                      <button class="btn btn-sm btn-icon" title="Start" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'start')">
+                      <button class="btn btn-sm btn-icon" title="Start" onclick="containerAction(<%= node.id %>, <%- JSON.stringify(container.container_id) %>, 'start')">
                         <span class="icon-start"></span>
                       </button>
                     <% } else if (container.state === 'paused') { %>
-                      <button class="btn btn-sm btn-icon" title="Unpause" onclick="containerAction(<%= node.id %>, '<%= container.container_id %>', 'unpause')">
+                      <button class="btn btn-sm btn-icon" title="Unpause" onclick="containerAction(<%= node.id %>, <%- JSON.stringify(container.container_id) %>, 'unpause')">
                         <span class="icon-start"></span>
                       </button>
                     <% } %>
-                    <button class="btn btn-sm btn-icon" title="Logs" onclick="showLogs(<%= node.id %>, '<%= container.container_id %>', '<%= container.name %>')">
+                    <button class="btn btn-sm btn-icon" title="Logs" onclick="showLogs(<%= node.id %>, <%- JSON.stringify(container.container_id) %>, <%- JSON.stringify(container.name) %>)">
                       <span class="icon-logs"></span>
                     </button>
-                    <button class="btn btn-sm btn-icon btn-danger" title="Löschen" onclick="confirmDeleteDocker(<%= node.id %>, 'containers', '<%= container.container_id %>', '<%= container.name %>', '<%= container.state %>')">
+                    <button class="btn btn-sm btn-icon btn-danger" title="Löschen" onclick="confirmDeleteDocker(<%= node.id %>, 'containers', <%- JSON.stringify(container.container_id) %>, <%- JSON.stringify(container.name) %>, <%- JSON.stringify(container.state) %>)">
                       <span class="icon-delete"></span>
                     </button>
                   </td>
@@ -160,7 +160,7 @@
                   <td><%= image.size %></td>
                   <td class="date-cell"><%= image.created %></td>
                   <td class="image-actions">
-                    <button class="btn btn-sm btn-danger" title="Löschen" onclick="confirmDeleteDocker(<%= node.id %>, 'images', '<%= image.image_id %>', '<%= image.repository %>:<%= image.tag %>')">
+                    <button class="btn btn-sm btn-danger" title="Löschen" onclick="confirmDeleteDocker(<%= node.id %>, 'images', <%- JSON.stringify(image.image_id) %>, <%- JSON.stringify((image.repository || '') + ':' + (image.tag || '')) %>)">
                       <span class="icon-delete"></span>
                     </button>
                   </td>
@@ -205,7 +205,7 @@
                     </span>
                   </td>
                   <td class="volume-actions">
-                    <button class="btn btn-sm btn-danger" title="Löschen" onclick="confirmDeleteDocker(<%= node.id %>, 'volumes', '<%= volume.name %>', '<%= volume.name %>', null, <%= volume.in_use ? 'true' : 'false' %>)" <%= volume.in_use ? 'disabled' : '' %>>
+                    <button class="btn btn-sm btn-danger" title="Löschen" onclick="confirmDeleteDocker(<%= node.id %>, 'volumes', <%- JSON.stringify(volume.name) %>, <%- JSON.stringify(volume.name) %>, null, <%= volume.in_use ? 'true' : 'false' %>)" <%= volume.in_use ? 'disabled' : '' %>>
                       <span class="icon-delete"></span>
                     </button>
                   </td>
@@ -248,7 +248,7 @@
                   <td><%= network.driver %></td>
                   <td><%= network.scope %></td>
                   <td class="network-actions">
-                    <button class="btn btn-sm btn-danger" title="<%= isProtected ? 'Standard-Netzwerk (nicht löschbar)' : 'Löschen' %>" onclick="confirmDeleteDocker(<%= node.id %>, 'networks', '<%= network.network_id %>', '<%= network.name %>')" <%= isProtected ? 'disabled' : '' %>>
+                    <button class="btn btn-sm btn-danger" title="<%= isProtected ? 'Standard-Netzwerk (nicht löschbar)' : 'Löschen' %>" onclick="confirmDeleteDocker(<%= node.id %>, 'networks', <%- JSON.stringify(network.network_id) %>, <%- JSON.stringify(network.name) %>)" <%= isProtected ? 'disabled' : '' %>>
                       <span class="icon-delete"></span>
                     </button>
                   </td>

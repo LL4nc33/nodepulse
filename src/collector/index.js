@@ -439,9 +439,29 @@ async function runDocker(node) {
  * @returns {Promise<{stdout: string, stderr: string, exitCode: number}>}
  */
 async function runDockerCommand(node, command, timeout = 30000) {
+  // Whitelist of allowed Docker subcommands (security hardening)
+  const ALLOWED_DOCKER_COMMANDS = [
+    'ps', 'stats', 'inspect', 'logs', 'images', 'volume', 'network',
+    'start', 'stop', 'restart', 'pause', 'unpause', 'kill',
+    'pull', 'exec', 'top', 'port', 'info', 'version'
+  ];
+
   // Validate command starts with docker
   if (!command.startsWith('docker ')) {
     throw new Error('Command must start with "docker "');
+  }
+
+  // Extract subcommand (second word after 'docker ')
+  const parts = command.substring(7).trim().split(/\s+/);
+  const subcommand = parts[0];
+
+  if (!ALLOWED_DOCKER_COMMANDS.includes(subcommand)) {
+    throw new Error('Docker subcommand not allowed: ' + subcommand);
+  }
+
+  // Check for dangerous metacharacters in the entire command
+  if (/[;&|`$()><\n\r\\]/.test(command)) {
+    throw new Error('Command contains forbidden characters');
   }
 
   const result = await ssh.execute(node, command, timeout);
@@ -496,7 +516,20 @@ async function runProxmox(node) {
  * @returns {Promise<{stdout: string, stderr: string, exitCode: number}>}
  */
 async function runProxmoxCommand(node, command, timeout = 60000) {
-  // Validate command starts with allowed Proxmox commands
+  // Whitelist of allowed Proxmox commands and subcommands
+  const ALLOWED_PROXMOX_COMMANDS = {
+    'qm': ['list', 'status', 'config', 'start', 'stop', 'shutdown', 'reset', 'suspend', 'resume',
+           'clone', 'template', 'set', 'snapshot', 'listsnapshot', 'rollback', 'delsnapshot',
+           'resize', 'migrate', 'pending', 'cloudinit'],
+    'pct': ['list', 'status', 'config', 'start', 'stop', 'shutdown', 'reboot',
+            'clone', 'template', 'set', 'snapshot', 'listsnapshot', 'rollback', 'delsnapshot',
+            'resize', 'migrate', 'pending'],
+    'pvesm': ['list', 'status', 'alloc', 'free', 'scan', 'nfsscan', 'cifsscan'],
+    'pveam': ['list', 'available', 'download', 'remove'],
+    'pvesh': ['get', 'ls']
+  };
+
+  // Validate command starts with allowed prefix
   var allowedPrefixes = ['qm ', 'pct ', 'pvesm ', 'pveam ', 'pvesh '];
   var isAllowed = allowedPrefixes.some(function(prefix) {
     return command.startsWith(prefix);
@@ -504,6 +537,20 @@ async function runProxmoxCommand(node, command, timeout = 60000) {
 
   if (!isAllowed) {
     throw new Error('Command must start with one of: qm, pct, pvesm, pveam, pvesh');
+  }
+
+  // Check for dangerous metacharacters
+  if (/[;&|`$()><\n\r]/.test(command)) {
+    throw new Error('Command contains forbidden characters');
+  }
+
+  // Extract and validate subcommand
+  var parts = command.trim().split(/\s+/);
+  var mainCmd = parts[0];
+  var subCmd = parts[1];
+
+  if (ALLOWED_PROXMOX_COMMANDS[mainCmd] && !ALLOWED_PROXMOX_COMMANDS[mainCmd].includes(subCmd)) {
+    throw new Error('Proxmox subcommand not allowed: ' + mainCmd + ' ' + subCmd);
   }
 
   var result = await ssh.execute(node, command, timeout);
@@ -618,6 +665,34 @@ async function runNetworkDiagnostics(node) {
 }
 
 /**
+ * Validate and sanitize network target (IP or hostname)
+ * Uses whitelist approach - only allows safe characters
+ * @param {string} target - IP or hostname
+ * @returns {string} - Sanitized target or throws error
+ */
+function validateNetworkTarget(target) {
+  if (!target || typeof target !== 'string') {
+    throw new Error('Target is required');
+  }
+
+  // Trim and convert to lowercase
+  const cleaned = target.trim().toLowerCase();
+
+  // Whitelist: Only allow alphanumeric, dots, hyphens, and colons (for IPv6)
+  // Maximum length 253 (DNS max hostname length)
+  if (!/^[a-z0-9][a-z0-9.\-:]{0,252}$/.test(cleaned)) {
+    throw new Error('Invalid target format - only alphanumeric, dots, hyphens allowed');
+  }
+
+  // Additional validation: No consecutive dots, no leading/trailing dots
+  if (/\.\./.test(cleaned) || cleaned.startsWith('.') || cleaned.endsWith('.')) {
+    throw new Error('Invalid hostname format');
+  }
+
+  return cleaned;
+}
+
+/**
  * Run a ping test from a node to a target
  * @param {Object} node - Node object from database
  * @param {string} target - IP or hostname to ping
@@ -625,9 +700,13 @@ async function runNetworkDiagnostics(node) {
  * @returns {Promise<Object>} Ping results
  */
 async function runPingTest(node, target, count = 4) {
-  // Sanitize target to prevent command injection
-  const sanitizedTarget = target.replace(/[;&|`$()]/g, '');
-  const command = `ping -c ${count} -W 5 ${sanitizedTarget} 2>&1`;
+  // Validate and sanitize target using whitelist approach
+  const sanitizedTarget = validateNetworkTarget(target);
+
+  // Validate count is a safe integer
+  const safeCount = Math.min(Math.max(parseInt(count, 10) || 4, 1), 20);
+
+  const command = `ping -c ${safeCount} -W 5 ${sanitizedTarget} 2>&1`;
 
   const result = await ssh.execute(node, command, 30000);
 
@@ -678,8 +757,8 @@ async function runPingTest(node, target, count = 4) {
  * @returns {Promise<Object>} DNS results
  */
 async function runDnsLookup(node, hostname) {
-  // Sanitize hostname
-  const sanitizedHostname = hostname.replace(/[;&|`$()]/g, '');
+  // Validate and sanitize hostname using whitelist approach
+  const sanitizedHostname = validateNetworkTarget(hostname);
   const command = `host ${sanitizedHostname} 2>&1 || nslookup ${sanitizedHostname} 2>&1`;
 
   const result = await ssh.execute(node, command, 10000);
@@ -710,9 +789,13 @@ async function runDnsLookup(node, hostname) {
  * @returns {Promise<Object>} Traceroute results
  */
 async function runTraceroute(node, target, maxHops = 20) {
-  // Sanitize target
-  const sanitizedTarget = target.replace(/[;&|`$()]/g, '');
-  const command = `traceroute -m ${maxHops} -w 2 ${sanitizedTarget} 2>&1 || tracepath ${sanitizedTarget} 2>&1`;
+  // Validate and sanitize target using whitelist approach
+  const sanitizedTarget = validateNetworkTarget(target);
+
+  // Validate maxHops is a safe integer (1-64)
+  const safeMaxHops = Math.min(Math.max(parseInt(maxHops, 10) || 20, 1), 64);
+
+  const command = `traceroute -m ${safeMaxHops} -w 2 ${sanitizedTarget} 2>&1 || tracepath ${sanitizedTarget} 2>&1`;
 
   const result = await ssh.execute(node, command, 60000);
 
@@ -783,11 +866,12 @@ function startTieredMonitoring(nodeId) {
 /**
  * Stop tiered polling for a node
  * @param {number} nodeId - Node ID
+ * @returns {Promise<void>}
  */
-function stopTieredMonitoring(nodeId) {
+async function stopTieredMonitoring(nodeId) {
   const poller = activePollers.get(nodeId);
   if (poller) {
-    poller.stop();
+    await poller.stop();
     activePollers.delete(nodeId);
     console.log(`[Collector] Stopped tiered monitoring for node ${nodeId}`);
   }
@@ -808,11 +892,14 @@ function startAllMonitoring() {
 
 /**
  * Stop all monitoring
+ * @returns {Promise<void>}
  */
-function stopAllMonitoring() {
+async function stopAllMonitoring() {
+  const stopPromises = [];
   activePollers.forEach((poller, nodeId) => {
-    poller.stop();
+    stopPromises.push(poller.stop());
   });
+  await Promise.all(stopPromises);
   activePollers.clear();
   console.log('[Collector] Stopped all monitoring');
 }

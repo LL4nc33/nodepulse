@@ -1153,7 +1153,8 @@ router.post('/vms/create', asyncHandler(async (req, res) => {
   }
 
   // ISO: required, must be volid format (storage:iso/filename.iso)
-  if (!iso || typeof iso !== 'string' || !/^[a-zA-Z0-9_-]+:iso\/[^\s]+\.iso$/i.test(iso)) {
+  // Security: Only allow alphanumeric, dots, hyphens, underscores in filename (no path traversal)
+  if (!iso || typeof iso !== 'string' || !/^[a-zA-Z0-9_-]+:iso\/[a-zA-Z0-9._-]+\.iso$/i.test(iso)) {
     return apiResponse(res, 400, null, { code: 'INVALID_ISO', message: 'ISO muss im Format storage:iso/filename.iso sein' });
   }
 
@@ -1319,7 +1320,8 @@ router.post('/cts/create', asyncHandler(async (req, res) => {
   }
 
   // Template: required, must be volid format (storage:vztmpl/filename)
-  if (!template || typeof template !== 'string' || !/^[a-zA-Z0-9_-]+:vztmpl\/[^\s]+$/.test(template)) {
+  // Security: Only allow alphanumeric, dots, hyphens, underscores in filename (no path traversal)
+  if (!template || typeof template !== 'string' || !/^[a-zA-Z0-9_-]+:vztmpl\/[a-zA-Z0-9._-]+$/.test(template)) {
     return apiResponse(res, 400, null, { code: 'INVALID_TEMPLATE', message: 'Template muss im Format storage:vztmpl/filename sein' });
   }
 

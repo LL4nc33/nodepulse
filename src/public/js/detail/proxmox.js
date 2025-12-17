@@ -341,6 +341,8 @@ function refreshProxmox(nodeId) {
     .then(function(data) {
       NP.UI.showAlert(resultEl, 'success', 'Proxmox-Daten aktualisiert. Seite wird neu geladen...');
       NP.UI.toast('Proxmox-Daten aktualisiert', 'success');
+      // ES5: cleanup moved here (instead of .finally)
+      NP.UI.setButtonLoading(btnEl, false);
       setTimeout(function() {
         window.location.reload();
       }, 1000);
@@ -348,8 +350,7 @@ function refreshProxmox(nodeId) {
     .catch(function(error) {
       NP.UI.showAlert(resultEl, 'error', 'Fehler: ' + (error.message || 'Unbekannter Fehler'));
       NP.UI.toast(error.message || 'Proxmox-Fehler', 'error');
-    })
-    .finally(function() {
+      // ES5: cleanup moved here (instead of .finally)
       NP.UI.setButtonLoading(btnEl, false);
     });
 }

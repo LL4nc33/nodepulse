@@ -131,17 +131,17 @@
                           <span class="icon-start"></span>
                         </button>
                       <% } %>
-                      <button class="btn btn-sm" title="Config" onclick="openConfigModal(<%= node.id %>, 'vm', <%= vm.vmid %>, '<%= vm.name || '' %>', <%= vm.cpu_cores %>, <%= Math.round((vm.memory_bytes || 0) / 1048576) %>)">
+                      <button class="btn btn-sm" title="Config" onclick="openConfigModal(<%= node.id %>, 'vm', <%= vm.vmid %>, <%- JSON.stringify(vm.name || '') %>, <%= vm.cpu_cores %>, <%= Math.round((vm.memory_bytes || 0) / 1048576) %>)">
                         <span class="icon-edit"></span>
                       </button>
-                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'vm', <%= vm.vmid %>, '<%= vm.name || '' %>')">
+                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'vm', <%= vm.vmid %>, <%- JSON.stringify(vm.name || '') %>)">
                         <span class="icon-clone"></span>
                       </button>
-                      <button class="btn btn-sm btn-warning" title="Template" onclick="confirmTemplate(<%= node.id %>, 'vm', <%= vm.vmid %>, '<%= vm.name || '' %>')">
+                      <button class="btn btn-sm btn-warning" title="Template" onclick="confirmTemplate(<%= node.id %>, 'vm', <%= vm.vmid %>, <%- JSON.stringify(vm.name || '') %>)">
                         <span class="icon-template"></span>
                       </button>
                     <% } else { %>
-                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'vm', <%= vm.vmid %>, '<%= vm.name || '' %>')">
+                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'vm', <%= vm.vmid %>, <%- JSON.stringify(vm.name || '') %>)">
                         <span class="icon-clone"></span>
                       </button>
                     <% } %>
@@ -234,17 +234,17 @@
                           <span class="icon-start"></span>
                         </button>
                       <% } %>
-                      <button class="btn btn-sm" title="Config" onclick="openConfigModal(<%= node.id %>, 'ct', <%= ct.ctid %>, '<%= ct.name || '' %>', <%= ct.cpu_cores %>, <%= Math.round((ct.memory_bytes || 0) / 1048576) %>)">
+                      <button class="btn btn-sm" title="Config" onclick="openConfigModal(<%= node.id %>, 'ct', <%= ct.ctid %>, <%- JSON.stringify(ct.name || '') %>, <%= ct.cpu_cores %>, <%= Math.round((ct.memory_bytes || 0) / 1048576) %>)">
                         <span class="icon-edit"></span>
                       </button>
-                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'ct', <%= ct.ctid %>, '<%= ct.name || '' %>')">
+                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'ct', <%= ct.ctid %>, <%- JSON.stringify(ct.name || '') %>)">
                         <span class="icon-clone"></span>
                       </button>
-                      <button class="btn btn-sm btn-warning" title="Template" onclick="confirmTemplate(<%= node.id %>, 'ct', <%= ct.ctid %>, '<%= ct.name || '' %>')">
+                      <button class="btn btn-sm btn-warning" title="Template" onclick="confirmTemplate(<%= node.id %>, 'ct', <%= ct.ctid %>, <%- JSON.stringify(ct.name || '') %>)">
                         <span class="icon-template"></span>
                       </button>
                     <% } else { %>
-                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'ct', <%= ct.ctid %>, '<%= ct.name || '' %>')">
+                      <button class="btn btn-sm" title="Clone" onclick="openCloneModal(<%= node.id %>, 'ct', <%= ct.ctid %>, <%- JSON.stringify(ct.name || '') %>)">
                         <span class="icon-clone"></span>
                       </button>
                     <% } %>
@@ -343,7 +343,7 @@
                   <td class="snap-name"><%= snap.snap_name %></td>
                   <td class="snap-desc"><%= snap.description || '-' %></td>
                   <td class="snap-actions">
-                    <button class="btn btn-sm btn-danger" title="Löschen" onclick="deleteSnapshot(<%= node.id %>, '<%= snap.vm_type %>', <%= snap.vmid %>, '<%= snap.snap_name %>')">
+                    <button class="btn btn-sm btn-danger" title="Löschen" onclick="deleteSnapshot(<%= node.id %>, <%- JSON.stringify(snap.vm_type) %>, <%= snap.vmid %>, <%- JSON.stringify(snap.snap_name) %>)">
                       Löschen
                     </button>
                   </td>

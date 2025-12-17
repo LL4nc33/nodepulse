@@ -412,7 +412,7 @@ switchSettingsTab = function(tabId, btnEl) {
   <% } %>
   <% if (typeof error !== 'undefined' && error) { %>
   if (window.NP && NP.UI && NP.UI.toast) {
-    NP.UI.toast('<%= error %>', 'error');
+    NP.UI.toast(<%- JSON.stringify(error) %>, 'error');
   }
   <% } %>
 

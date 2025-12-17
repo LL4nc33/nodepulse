@@ -915,10 +915,12 @@
       }
     }
 
-    var panelState = localStorage.getItem('nodepulse-panel');
-    if (panelState === 'collapsed') {
-      sidePanel.classList.add('collapsed');
-    }
+    try {
+      var panelState = localStorage.getItem('nodepulse-panel');
+      if (panelState === 'collapsed') {
+        sidePanel.classList.add('collapsed');
+      }
+    } catch (e) {}
 
     // Initialize terminal position on page load
     updateTerminalPosition();
@@ -931,11 +933,13 @@
         sidePanel.classList.remove('mobile-open');
         sidePanel.classList.toggle('collapsed');
 
-        if (sidePanel.classList.contains('collapsed')) {
-          localStorage.setItem('nodepulse-panel', 'collapsed');
-        } else {
-          localStorage.setItem('nodepulse-panel', 'open');
-        }
+        try {
+          if (sidePanel.classList.contains('collapsed')) {
+            localStorage.setItem('nodepulse-panel', 'collapsed');
+          } else {
+            localStorage.setItem('nodepulse-panel', 'open');
+          }
+        } catch (e) {}
 
         // Update terminal position after toggle with RAF for smooth animation
         requestAnimationFrame(updateTerminalPosition);
@@ -961,11 +965,13 @@
     themeToggle.addEventListener('click', function() {
       document.documentElement.classList.toggle('light-mode');
 
-      if (document.documentElement.classList.contains('light-mode')) {
-        localStorage.setItem('nodepulse-theme', 'light');
-      } else {
-        localStorage.setItem('nodepulse-theme', 'dark');
-      }
+      try {
+        if (document.documentElement.classList.contains('light-mode')) {
+          localStorage.setItem('nodepulse-theme', 'light');
+        } else {
+          localStorage.setItem('nodepulse-theme', 'dark');
+        }
+      } catch (e) {}
     });
   }
 
