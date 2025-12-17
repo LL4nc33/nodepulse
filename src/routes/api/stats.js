@@ -6,6 +6,7 @@ const router = express.Router();
 const db = require('../../db');
 const collector = require('../../collector');
 const { asyncHandler, apiResponse } = require('./helpers');
+const { getHierarchicalStats, aggregateChildStats } = require('../../db/stats-aggregation');
 
 // Get current stats for all nodes
 router.get('/', asyncHandler(async (req, res) => {
@@ -66,6 +67,29 @@ router.post('/node/:id/collect', asyncHandler(async (req, res) => {
     db.nodes.setOnline(node.id, false, err.message);
     apiResponse(res, 503, null, { code: 'STATS_ERROR', message: err.message });
   }
+}));
+
+// Get hierarchical stats tree with aggregation
+router.get('/hierarchy', asyncHandler(async (req, res) => {
+  const tree = getHierarchicalStats();
+  apiResponse(res, 200, tree);
+}));
+
+// Get aggregated stats for a parent node
+router.get('/node/:id/aggregate', asyncHandler(async (req, res) => {
+  const nodeId = parseInt(req.params.id, 10);
+
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Invalid node ID' });
+  }
+
+  const aggregate = aggregateChildStats(nodeId);
+
+  if (!aggregate) {
+    return apiResponse(res, 404, null, { code: 'NO_CHILDREN', message: 'Node has no children or not found' });
+  }
+
+  apiResponse(res, 200, aggregate);
 }));
 
 module.exports = router;
