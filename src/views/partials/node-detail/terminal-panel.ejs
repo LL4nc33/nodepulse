@@ -1,4 +1,4 @@
-<!-- Terminal Bottom Panel -->
+<!-- Terminal Bottom Panel - Real Terminal Style -->
 <div class="terminal-panel hidden" id="terminalPanel">
   <!-- Resize Handle -->
   <div class="terminal-resize-handle" id="terminalResizeHandle"></div>
@@ -10,82 +10,74 @@
       <!-- Tabs will be rendered by JavaScript -->
     </div>
 
-    <!-- Terminal Actions -->
+    <!-- Terminal Actions (compact) -->
     <div class="terminal-panel-actions">
-      <!-- Theme Toggle Button -->
+      <!-- Quick Commands Dropdown -->
+      <div class="quick-cmd-dropdown">
+        <button type="button" class="terminal-panel-btn" id="quickCmdToggle" title="Quick Commands">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="4 17 10 11 4 5"/>
+            <line x1="12" y1="19" x2="20" y2="19"/>
+          </svg>
+        </button>
+        <div class="quick-cmd-menu" id="quickCmdMenu">
+          <button type="button" onclick="runQuickCommand('uptime')">uptime</button>
+          <button type="button" onclick="runQuickCommand('free -h')">free -h</button>
+          <button type="button" onclick="runQuickCommand('df -h')">df -h</button>
+          <button type="button" onclick="runQuickCommand('top -bn1 | head -20')">top</button>
+          <button type="button" onclick="runQuickCommand('ps aux --sort=-%mem | head -15')">ps mem</button>
+          <button type="button" onclick="runQuickCommand('ls -la')">ls -la</button>
+        </div>
+      </div>
+
+      <!-- Theme Toggle -->
       <button type="button" class="terminal-panel-btn" id="terminalThemeToggle"
               title="Light/Dark Mode" onclick="toggleTerminalTheme()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="5"/>
           <line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </svg>
       </button>
 
-      <!-- Minimize Button -->
+      <!-- Clear -->
+      <button type="button" class="terminal-panel-btn" id="terminalClearBtn"
+              title="Clear (Ctrl+L)" onclick="clearTerminal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+        </svg>
+      </button>
+
+      <!-- Minimize -->
       <button type="button" class="terminal-panel-btn" id="terminalMinimizeBtn"
               title="Minimieren" onclick="toggleTerminalPanel()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="18 15 12 9 6 15"/>
         </svg>
       </button>
-
-      <!-- Clear Output Button -->
-      <button type="button" class="terminal-panel-btn" id="terminalClearBtn"
-              title="Output leeren" onclick="clearOutput()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-        </svg>
-      </button>
     </div>
   </div>
 
-  <!-- Terminal Content -->
-  <div class="terminal-panel-content" id="terminalPanelContent">
-    <!-- Command Input with Enhanced Prompt -->
-    <div class="terminal-input-section">
-      <form id="command-form" onsubmit="executeCommand(event, <%= node.id %>)">
-        <div class="terminal-input-wrapper">
-          <!-- Enhanced Bash-Style Prompt (user@host:~/path$) -->
-          <span class="terminal-prompt-display" id="terminalPromptDisplay">
-            <span class="prompt-user">root</span><span class="prompt-separator">@</span><span class="prompt-host"><%= node.name %></span><span class="prompt-separator">:</span><span class="prompt-path">~</span><span class="prompt-symbol">$</span>
-          </span>
-          <input type="text" id="command-input" name="command" class="terminal-input"
-                 placeholder="Befehl eingeben..." autocomplete="off" maxlength="2000">
-          <button type="submit" class="btn btn-primary btn-sm" id="btn-execute">
-            <span class="btn-text">Ausführen</span>
-            <span class="btn-loading"><span class="spinner"></span></span>
-          </button>
-        </div>
-      </form>
+  <!-- Terminal Body (single continuous area like real terminal) -->
+  <div class="terminal-body" id="terminalBody">
+    <!-- History + Output (scrollable) -->
+    <div class="terminal-history" id="terminalHistory">
+      <!-- Command history will be appended here -->
     </div>
 
-    <!-- Quick Commands -->
-    <div class="terminal-quick-commands">
-      <span class="quick-commands-label">Schnell:</span>
-      <button type="button" class="btn btn-xs btn-quick" onclick="setCommand('uptime')">uptime</button>
-      <button type="button" class="btn btn-xs btn-quick" onclick="setCommand('free -h')">free</button>
-      <button type="button" class="btn btn-xs btn-quick" onclick="setCommand('df -h')">df</button>
-      <button type="button" class="btn btn-xs btn-quick" onclick="setCommand('top -bn1 | head -20')">top</button>
-      <button type="button" class="btn btn-xs btn-quick" onclick="setCommand('ps aux --sort=-%mem | head -15')">ps</button>
-    </div>
-
-    <!-- Output Area -->
-    <div class="terminal-output-section">
-      <pre id="terminal-output" class="terminal-output">Bereit. Befehl eingeben und Enter drücken.</pre>
+    <!-- Current Input Line (always at bottom) -->
+    <div class="terminal-input-line" id="terminalInputLine">
+      <span class="terminal-prompt" id="terminalPrompt">
+        <span class="prompt-user"><%= node.ssh_user || 'root' %></span><span class="prompt-at">@</span><span class="prompt-host"><%= node.name %></span><span class="prompt-colon">:</span><span class="prompt-path">~</span><span class="prompt-dollar">$</span>
+      </span>
+      <input type="text" id="terminalInput" class="terminal-input-field"
+             autocomplete="off" spellcheck="false" autofocus>
     </div>
   </div>
 </div>
 
 <!-- Terminal Toggle Button (Floating) -->
-<button class="terminal-toggle-btn" id="terminalToggleBtn" onclick="toggleTerminalPanel()" title="Terminal öffnen">
+<button class="terminal-toggle-btn" id="terminalToggleBtn" onclick="toggleTerminalPanel()" title="Terminal (Ctrl+`)">
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <polyline points="4 17 10 11 4 5"/>
     <line x1="12" y1="19" x2="20" y2="19"/>

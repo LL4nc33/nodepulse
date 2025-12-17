@@ -843,10 +843,267 @@
 }
 
 /* ===================================================
-   Terminal Panel Content
+   Terminal Panel Content - Real Terminal Style
    =================================================== */
 
-/* Terminal Panel Content */
+/* Terminal Body - Main continuous area */
+.terminal-body {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  background: #012456; /* PowerShell Blue */
+  font-family: 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  overflow: hidden;
+  padding: 0.75rem 1rem;
+}
+
+/* History Area - Scrollable */
+.terminal-history {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  color: #cccccc;
+  padding-bottom: 0.5rem;
+}
+
+/* Scrollbar styling for history */
+.terminal-history::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-history::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.terminal-history::-webkit-scrollbar-thumb {
+  background: #1e3a5f;
+  border-radius: 4px;
+}
+
+.terminal-history::-webkit-scrollbar-thumb:hover {
+  background: #2e5a8f;
+}
+
+/* History Entry (command + output) */
+.terminal-entry {
+  margin-bottom: 0.5rem;
+}
+
+.terminal-entry:last-child {
+  margin-bottom: 0;
+}
+
+/* Command line in history */
+.terminal-cmd-line {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: baseline;
+  -webkit-align-items: baseline;
+  align-items: baseline;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+.terminal-cmd-line .cmd-prompt {
+  color: #4ec9b0; /* Cyan for user@host */
+  margin-right: 0;
+  white-space: nowrap;
+}
+
+.terminal-cmd-line .cmd-prompt .prompt-at,
+.terminal-cmd-line .cmd-prompt .prompt-colon {
+  color: #cccccc;
+}
+
+.terminal-cmd-line .cmd-prompt .prompt-path {
+  color: #569cd6; /* Blue for path */
+}
+
+.terminal-cmd-line .cmd-prompt .prompt-dollar {
+  color: #ffff00; /* Yellow for $ */
+  margin-right: 0.5rem;
+}
+
+.terminal-cmd-line .cmd-text {
+  color: #ffffff;
+  word-break: break-all;
+}
+
+/* Command text in history */
+.terminal-cmd-text {
+  color: #ffffff;
+  word-break: break-all;
+}
+
+/* Command output */
+.terminal-cmd-output {
+  color: #cccccc;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding-left: 0;
+  margin-top: 0.25rem;
+}
+
+.terminal-cmd-output.loading {
+  color: #888888;
+  font-style: italic;
+}
+
+.terminal-cmd-output.success {
+  color: #4ec9b0; /* Cyan */
+}
+
+.terminal-cmd-output.error {
+  color: #f14c4c; /* Red */
+}
+
+/* Current Input Line - Always at bottom */
+.terminal-input-line {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  min-height: 1.5rem;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+/* Prompt styling */
+.terminal-prompt {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.terminal-prompt .prompt-user {
+  color: #4ec9b0; /* Cyan */
+}
+
+.terminal-prompt .prompt-at {
+  color: #cccccc;
+}
+
+.terminal-prompt .prompt-host {
+  color: #4ec9b0; /* Cyan */
+}
+
+.terminal-prompt .prompt-colon {
+  color: #cccccc;
+}
+
+.terminal-prompt .prompt-path {
+  color: #569cd6; /* Blue */
+}
+
+.terminal-prompt .prompt-dollar {
+  color: #ffff00; /* Yellow */
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+/* Input field - transparent, inline */
+.terminal-input-field {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  margin: 0;
+  caret-color: #ffffff;
+}
+
+.terminal-input-field::placeholder {
+  color: transparent; /* No placeholder in real terminal */
+}
+
+/* Blinking cursor effect (optional) */
+.terminal-input-line::after {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 1.125rem;
+  background: #ffffff;
+  margin-left: 0;
+  animation: blink 1s step-end infinite;
+  vertical-align: text-bottom;
+  opacity: 0; /* Hidden by default, show when input focused */
+}
+
+.terminal-input-field:focus ~ .terminal-cursor,
+.terminal-input-line:focus-within::after {
+  opacity: 1;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Quick Commands Dropdown */
+.quick-cmd-dropdown {
+  position: relative;
+}
+
+.quick-cmd-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #01204a;
+  border: 1px solid #1e3a5f;
+  border-radius: 4px;
+  min-width: 120px;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.quick-cmd-menu.open {
+  display: block;
+}
+
+.quick-cmd-menu button {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: #cccccc;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.quick-cmd-menu button:hover {
+  background: #1e3a5f;
+  color: #ffffff;
+}
+
+/* Old terminal-panel-content for backwards compatibility */
 .terminal-panel-content {
   -webkit-box-flex: 1;
   -webkit-flex: 1;

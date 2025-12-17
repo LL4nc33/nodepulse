@@ -69,7 +69,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-17T21:22:35.562Z
+   Generated: 2025-12-17T21:36:14.516Z
 */
 
 
@@ -1576,12 +1576,12 @@ function deleteSnapshot(nodeId, vmType, vmid, snapName) {
 // =====================================================
 
 // ============================================================
-// FROM: terminal.js (776 lines)
+// FROM: terminal.js (827 lines)
 // ============================================================
 
 // ==================================================
-// PHASE 3-9: Multi-Tab Terminal Implementation
-// PowerShell 7-Style Terminal with Bash Prompt
+// MULTI-TAB TERMINAL - Real Terminal Style
+// PowerShell 7-Style with Bash Prompt
 // ==================================================
 
 // ==================================================
@@ -1595,24 +1595,20 @@ function deleteSnapshot(nodeId, vmType, vmid, snapName) {
 function renderTabs() {
   var tabManager = window.NP && window.NP.TerminalTabs;
   if (!tabManager) {
-    // Silent fail - tab manager not yet loaded
     return false;
   }
 
   var tabBar = document.getElementById('terminalTabBar');
   if (!tabBar) {
-    // DOM not ready yet
     return false;
   }
 
-  // Ensure tabs array exists
   if (!tabManager.tabs || !Array.isArray(tabManager.tabs)) {
     tabManager.tabs = [];
   }
 
   var html = '';
 
-  // Render each tab
   for (var i = 0; i < tabManager.tabs.length; i++) {
     var tab = tabManager.tabs[i];
     var isActive = tab.id === tabManager.activeTabId;
@@ -1625,7 +1621,6 @@ function renderTabs() {
     html += escapeHtml(tab.title);
     html += '</span>';
 
-    // Close button (only show if more than 1 tab)
     if (tabManager.tabs.length > 1) {
       html += '<button class="tab-close-btn" onclick="closeTab(\'' + tab.id + '\', event)" title="Tab schliessen">&times;</button>';
     }
@@ -1633,7 +1628,6 @@ function renderTabs() {
     html += '</div>';
   }
 
-  // New tab button
   html += '<button class="terminal-tab-new" onclick="createNewTab()" title="Neuer Tab (Ctrl+T)">';
   html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">';
   html += '<line x1="12" y1="5" x2="12" y2="19"/>';
@@ -1655,37 +1649,35 @@ function switchToTab(tabId) {
 
   var previousTab = tabManager.getActiveTab();
 
-  // Save current tab output before switching
+  // Save current tab history before switching
   if (previousTab) {
-    var currentOutput = document.getElementById('terminal-output');
-    if (currentOutput) {
-      previousTab.output = currentOutput.textContent;
+    var historyEl = document.getElementById('terminalHistory');
+    if (historyEl) {
+      previousTab.historyHtml = historyEl.innerHTML;
     }
     tabManager.updateTab(previousTab.id, previousTab);
   }
 
-  // Switch to new tab
   var success = tabManager.switchTab(tabId);
   if (!success) return;
 
   var newTab = tabManager.getActiveTab();
   if (!newTab) return;
 
-  // Update UI
   renderTabs();
 
-  // Restore output
-  var outputEl = document.getElementById('terminal-output');
-  if (outputEl) {
-    outputEl.textContent = newTab.output || 'Bereit. Befehl eingeben und Enter druecken.';
-    outputEl.className = 'terminal-output';
+  // Restore history
+  var historyEl = document.getElementById('terminalHistory');
+  if (historyEl) {
+    historyEl.innerHTML = newTab.historyHtml || '';
+    scrollToBottom();
   }
 
   // Update prompt display
   updatePromptDisplay(newTab.prompt);
 
   // Clear and focus input
-  var input = document.getElementById('command-input');
+  var input = document.getElementById('terminalInput');
   if (input) {
     input.value = '';
     input.focus();
@@ -1697,18 +1689,46 @@ function switchToTab(tabId) {
  * @param {Object} promptData - Object with username, hostname, path
  */
 function updatePromptDisplay(promptData) {
-  var promptEl = document.getElementById('terminalPromptDisplay');
-  if (!promptEl || !promptData) return;
+  var promptEl = document.getElementById('terminalPrompt');
+  if (!promptEl) return;
+
+  // Use nodeData if promptData not available
+  var data = promptData || {};
+  var username = data.username || (typeof nodeData !== 'undefined' ? nodeData.sshUser : 'root') || 'root';
+  var hostname = data.hostname || (typeof nodeData !== 'undefined' ? nodeData.name : 'server') || 'server';
+  var path = data.path || '~';
 
   var html = '';
-  html += '<span class="prompt-user">' + escapeHtml(promptData.username || 'root') + '</span>';
-  html += '<span class="prompt-separator">@</span>';
-  html += '<span class="prompt-host">' + escapeHtml(promptData.hostname || 'server') + '</span>';
-  html += '<span class="prompt-separator">:</span>';
-  html += '<span class="prompt-path">' + escapeHtml(promptData.path || '~') + '</span>';
-  html += '<span class="prompt-symbol">$</span>';
+  html += '<span class="prompt-user">' + escapeHtml(username) + '</span>';
+  html += '<span class="prompt-at">@</span>';
+  html += '<span class="prompt-host">' + escapeHtml(hostname) + '</span>';
+  html += '<span class="prompt-colon">:</span>';
+  html += '<span class="prompt-path">' + escapeHtml(path) + '</span>';
+  html += '<span class="prompt-dollar">$</span>';
 
   promptEl.innerHTML = html;
+}
+
+/**
+ * Build prompt HTML string for history entry
+ * @param {Object} promptData - Prompt data
+ * @returns {string} HTML string
+ */
+function buildPromptHtml(promptData) {
+  var data = promptData || {};
+  var username = data.username || (typeof nodeData !== 'undefined' ? nodeData.sshUser : 'root') || 'root';
+  var hostname = data.hostname || (typeof nodeData !== 'undefined' ? nodeData.name : 'server') || 'server';
+  var path = data.path || '~';
+
+  var html = '';
+  html += '<span class="prompt-user">' + escapeHtml(username) + '</span>';
+  html += '<span class="prompt-at">@</span>';
+  html += '<span class="prompt-host">' + escapeHtml(hostname) + '</span>';
+  html += '<span class="prompt-colon">:</span>';
+  html += '<span class="prompt-path">' + escapeHtml(path) + '</span>';
+  html += '<span class="prompt-dollar">$</span>';
+
+  return html;
 }
 
 /**
@@ -1721,6 +1741,17 @@ function escapeHtml(str) {
   var div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+/**
+ * Scroll terminal history to bottom
+ */
+function scrollToBottom() {
+  var historyEl = document.getElementById('terminalHistory');
+  var bodyEl = document.getElementById('terminalBody');
+  if (bodyEl) {
+    bodyEl.scrollTop = bodyEl.scrollHeight;
+  }
 }
 
 // ==================================================
@@ -1736,7 +1767,6 @@ function createNewTab() {
 
   var newTab = tabManager.createTab();
 
-  // Initialize prompt with actual node data
   if (typeof nodeData !== 'undefined') {
     newTab.prompt = {
       username: nodeData.sshUser || 'root',
@@ -1744,16 +1774,15 @@ function createNewTab() {
       path: '~'
     };
     newTab.workingDir = '~';
+    newTab.historyHtml = '';
     tabManager.updateTab(newTab.id, newTab);
   }
 
-  // Switch to new tab
   tabManager.switchTab(newTab.id);
   renderTabs();
   switchToTab(newTab.id);
 
-  // Focus input
-  var input = document.getElementById('command-input');
+  var input = document.getElementById('terminalInput');
   if (input) {
     input.focus();
   }
@@ -1772,12 +1801,9 @@ function closeTab(tabId, event) {
   var tabManager = window.NP && window.NP.TerminalTabs;
   if (!tabManager) return;
 
-  // Prevent closing last tab
   if (tabManager.tabs.length === 1) {
     if (window.NP && window.NP.Toast) {
       window.NP.Toast.show('Letztes Terminal-Tab kann nicht geschlossen werden.', 'warning');
-    } else {
-      alert('Letztes Terminal-Tab kann nicht geschlossen werden.');
     }
     return;
   }
@@ -1785,7 +1811,6 @@ function closeTab(tabId, event) {
   var tab = tabManager.getTabById(tabId);
   if (!tab) return;
 
-  // If closing active tab, switch to another tab first
   if (tabId === tabManager.activeTabId) {
     var currentIndex = -1;
     for (var i = 0; i < tabManager.tabs.length; i++) {
@@ -1795,18 +1820,15 @@ function closeTab(tabId, event) {
       }
     }
 
-    // Switch to next tab, or previous if this is the last tab
     var nextTab = tabManager.tabs[currentIndex + 1] || tabManager.tabs[currentIndex - 1];
     if (nextTab) {
       tabManager.switchTab(nextTab.id);
     }
   }
 
-  // Remove tab
   tabManager.removeTab(tabId);
   renderTabs();
 
-  // Update display
   if (tabManager.activeTabId) {
     switchToTab(tabManager.activeTabId);
   }
@@ -1840,11 +1862,7 @@ function startTabRename(event, tabId) {
 // Phase 5: Keyboard Shortcuts
 // ==================================================
 
-/**
- * Global keyboard shortcut handler for terminal tabs
- */
 document.addEventListener('keydown', function(e) {
-  // Only handle shortcuts when terminal panel exists
   var terminalPanel = document.getElementById('terminalPanel');
   if (!terminalPanel) return;
 
@@ -1865,6 +1883,13 @@ document.addEventListener('keydown', function(e) {
     if (activeTab) {
       closeTab(activeTab.id, e);
     }
+    return;
+  }
+
+  // Ctrl+L: Clear Terminal
+  if (e.ctrlKey && e.key === 'l') {
+    e.preventDefault();
+    clearTerminal();
     return;
   }
 
@@ -1917,7 +1942,6 @@ document.addEventListener('keydown', function(e) {
 // Phase 6: Initialization & Migration
 // ==================================================
 
-// Track initialization state to prevent multiple inits
 var terminalTabsInitialized = false;
 var initRetryCount = 0;
 var MAX_INIT_RETRIES = 10;
@@ -1926,56 +1950,40 @@ var MAX_INIT_RETRIES = 10;
  * Initialize terminal tab system with retry mechanism
  */
 function initializeTerminalTabs() {
-  // Prevent multiple initializations
   if (terminalTabsInitialized) {
     return;
   }
 
-  // Check if we're on a node detail page
   if (typeof nodeId === 'undefined') {
-    // Not a node detail page, no terminal needed
     return;
   }
 
-  // Check if TerminalTabManager is loaded
   if (!window.NP || !window.NP.TerminalTabs) {
-    // Retry after short delay if not yet loaded
     if (initRetryCount < MAX_INIT_RETRIES) {
       initRetryCount++;
       setTimeout(initializeTerminalTabs, 100);
-    } else {
-      console.error('TerminalTabManager not loaded after ' + MAX_INIT_RETRIES + ' retries');
     }
     return;
   }
 
-  // Check if required DOM elements exist
   var tabBar = document.getElementById('terminalTabBar');
   var terminalPanel = document.getElementById('terminalPanel');
   if (!tabBar || !terminalPanel) {
-    // Retry after short delay if DOM not ready
     if (initRetryCount < MAX_INIT_RETRIES) {
       initRetryCount++;
       setTimeout(initializeTerminalTabs, 100);
-    } else {
-      console.error('Terminal DOM elements not found after ' + MAX_INIT_RETRIES + ' retries');
     }
     return;
   }
 
-  // Mark as initialized
   terminalTabsInitialized = true;
 
-  // Initialize tab manager with node ID
   window.NP.TerminalTabs.init(nodeId);
 
-  // Migrate old single-terminal state if exists
   migrateOldTerminalState(nodeId);
 
-  // Ensure active tab has correct prompt with actual node data
   var activeTab = window.NP.TerminalTabs.getActiveTab();
   if (activeTab && typeof nodeData !== 'undefined') {
-    // Always update prompt if nodeData is available
     activeTab.prompt = activeTab.prompt || {};
     activeTab.prompt.username = nodeData.sshUser || activeTab.prompt.username || 'root';
     activeTab.prompt.hostname = nodeData.name || activeTab.prompt.hostname || 'server';
@@ -1983,16 +1991,54 @@ function initializeTerminalTabs() {
     window.NP.TerminalTabs.updateTab(activeTab.id, activeTab);
   }
 
-  // Render tabs
   renderTabs();
 
-  // Switch to active tab (restores state)
   if (activeTab) {
     switchToTab(activeTab.id);
   }
 
-  // Restore terminal theme
   restoreTerminalTheme();
+  setupTerminalInput();
+  setupQuickCmdDropdown();
+}
+
+/**
+ * Setup Enter key handler for terminal input
+ */
+function setupTerminalInput() {
+  var input = document.getElementById('terminalInput');
+  if (!input) return;
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      executeTerminalCommand();
+    }
+  });
+}
+
+/**
+ * Setup quick command dropdown toggle
+ */
+function setupQuickCmdDropdown() {
+  var toggle = document.getElementById('quickCmdToggle');
+  var menu = document.getElementById('quickCmdMenu');
+  if (!toggle || !menu) return;
+
+  toggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    menu.classList.toggle('open');
+  });
+
+  // Close on outside click
+  document.addEventListener('click', function() {
+    menu.classList.remove('open');
+  });
+
+  // Prevent menu clicks from closing
+  menu.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
 }
 
 /**
@@ -2008,40 +2054,29 @@ function migrateOldTerminalState(nodeId) {
     if (stored) {
       oldState = JSON.parse(stored);
     }
-  } catch(e) {
-    // Ignore parse errors
-  }
+  } catch(e) {}
 
   var tabManager = window.NP.TerminalTabs;
 
-  // Only migrate if old state exists and no tabs exist yet
   if (oldState && tabManager.tabs.length === 0) {
     var firstTab = tabManager.createTab('Terminal 1');
 
-    // Restore old output
-    if (oldState.lastOutput) {
-      firstTab.output = oldState.lastOutput;
-    }
-
-    // Set prompt
     firstTab.prompt = {
-      username: 'root',
+      username: (typeof nodeData !== 'undefined' && nodeData.sshUser) || 'root',
       hostname: (typeof nodeData !== 'undefined' && nodeData.name) || 'server',
       path: '~'
     };
 
     firstTab.workingDir = '~';
+    firstTab.historyHtml = '';
 
     tabManager.updateTab(firstTab.id, firstTab);
     tabManager.activeTabId = firstTab.id;
     tabManager.save();
 
-    // Remove old key
     try {
       localStorage.removeItem(oldKey);
-    } catch(e) {
-      // Ignore
-    }
+    } catch(e) {}
   }
 }
 
@@ -2055,38 +2090,48 @@ function migrateOldTerminalState(nodeId) {
  * @param {string} newPath - New path from cd command
  */
 function updateWorkingDirLocally(tab, newPath) {
-  // Validate inputs
   if (!tab || !newPath) {
     return;
   }
 
-  // Use TerminalHelpers if available, otherwise do basic resolution
-  var helpers = window.NP && window.NP.TerminalHelpers;
+  var currentDir = tab.workingDir || '~';
   var resolvedPath;
 
-  if (helpers && typeof helpers.resolveCdPath === 'function') {
-    resolvedPath = helpers.resolveCdPath(tab.workingDir || '~', newPath);
-  } else {
-    // Basic fallback resolution
-    if (newPath === '~' || newPath === '') {
-      resolvedPath = '~';
-    } else if (newPath === '/') {
-      resolvedPath = '/';
-    } else if (newPath.charAt(0) === '/') {
-      resolvedPath = newPath; // Absolute path
+  if (newPath === '~' || newPath === '') {
+    resolvedPath = '~';
+  } else if (newPath === '-') {
+    resolvedPath = tab.previousDir || '~';
+    tab.previousDir = currentDir;
+  } else if (newPath === '..') {
+    if (currentDir === '~' || currentDir === '/') {
+      resolvedPath = currentDir;
     } else {
-      resolvedPath = newPath; // Relative path (simplified)
+      var parts = currentDir.split('/');
+      parts.pop();
+      resolvedPath = parts.length === 0 ? '/' : parts.join('/');
+      if (resolvedPath === '') resolvedPath = '/';
+    }
+  } else if (newPath.charAt(0) === '/') {
+    resolvedPath = newPath;
+  } else if (newPath.substring(0, 2) === '~/') {
+    resolvedPath = newPath;
+  } else {
+    if (currentDir === '~') {
+      resolvedPath = '~/' + newPath;
+    } else if (currentDir === '/') {
+      resolvedPath = '/' + newPath;
+    } else {
+      resolvedPath = currentDir + '/' + newPath;
     }
   }
 
-  // Update tab
+  tab.previousDir = currentDir;
   tab.workingDir = resolvedPath;
   if (!tab.prompt) {
     tab.prompt = {};
   }
   tab.prompt.path = resolvedPath;
 
-  // Save to tab manager
   var tabManager = window.NP && window.NP.TerminalTabs;
   if (tabManager && typeof tabManager.updateTab === 'function') {
     tabManager.updateTab(tab.id, tab);
@@ -2094,98 +2139,98 @@ function updateWorkingDirLocally(tab, newPath) {
 }
 
 // ==================================================
-// Phase 8: Enhanced executeCommand with Tab-Awareness
+// Phase 8: Real Terminal Command Execution
 // ==================================================
 
 /**
- * Enhanced executeCommand with multi-tab and working directory tracking
- * @param {Event} event - Form submit event
- * @param {number} targetNodeId - Node ID (passed from form)
+ * Execute command and append to history (real terminal style)
  */
-window.executeCommand = function(event, targetNodeId) {
-  event.preventDefault();
-
-  // Use passed nodeId or fall back to global
-  var nodeIdToUse = targetNodeId || (typeof nodeId !== 'undefined' ? nodeId : null);
+function executeTerminalCommand() {
+  var nodeIdToUse = (typeof nodeId !== 'undefined') ? nodeId : null;
   if (!nodeIdToUse) {
-    console.error('executeCommand: No nodeId available');
+    console.error('executeTerminalCommand: No nodeId available');
     return;
   }
 
   var tabManager = window.NP && window.NP.TerminalTabs;
   var activeTab = null;
 
-  // Safely get active tab with null checks
   if (tabManager && typeof tabManager.getActiveTab === 'function') {
     activeTab = tabManager.getActiveTab();
   }
 
-  var input = document.getElementById('command-input');
-  var output = document.getElementById('terminal-output');
-  var btn = document.getElementById('btn-execute');
+  var input = document.getElementById('terminalInput');
+  var historyEl = document.getElementById('terminalHistory');
 
   var command = input ? input.value.trim() : '';
 
   if (!command) {
-    if (output) {
-      output.textContent = 'Bitte einen Befehl eingeben.';
-      output.className = 'terminal-output error';
-    }
     return;
   }
 
-  // Add to tab's command history (with null checks)
+  // Add to tab's command history
   if (activeTab && tabManager) {
     if (!activeTab.commandHistory) {
       activeTab.commandHistory = [];
     }
     activeTab.commandHistory.push(command);
-    if (typeof tabManager.updateTab === 'function') {
-      tabManager.updateTab(activeTab.id, activeTab);
-    }
+  }
+
+  // Build prompt HTML for this command
+  var promptHtml = buildPromptHtml(activeTab ? activeTab.prompt : null);
+
+  // Create command entry in history
+  var entryDiv = document.createElement('div');
+  entryDiv.className = 'terminal-entry';
+
+  var cmdLineDiv = document.createElement('div');
+  cmdLineDiv.className = 'terminal-cmd-line';
+  cmdLineDiv.innerHTML = '<span class="terminal-prompt">' + promptHtml + '</span> <span class="terminal-cmd-text">' + escapeHtml(command) + '</span>';
+  entryDiv.appendChild(cmdLineDiv);
+
+  // Create output placeholder
+  var outputDiv = document.createElement('div');
+  outputDiv.className = 'terminal-cmd-output loading';
+  outputDiv.textContent = 'Ausfuehrung...';
+  entryDiv.appendChild(outputDiv);
+
+  // Append to history
+  if (historyEl) {
+    historyEl.appendChild(entryDiv);
+    scrollToBottom();
+  }
+
+  // Clear input
+  if (input) {
+    input.value = '';
   }
 
   // Working Directory Tracking: Parse cd commands BEFORE sending
-  var cdMatch = command.match(/^cd\s+(.*)$/);
+  var cdMatch = command.match(/^cd\s*(.*)$/);
   if (cdMatch && activeTab) {
     var newPath = cdMatch[1].trim() || '~';
     updateWorkingDirLocally(activeTab, newPath);
-  }
-
-  // Show loading state
-  if (btn) {
-    btn.classList.add('loading');
-    btn.disabled = true;
-  }
-
-  if (output) {
-    output.textContent = 'Ausfuehrung...';
-    output.className = 'terminal-output';
+    updatePromptDisplay(activeTab.prompt);
   }
 
   // Execute command via API
   var xhr = new XMLHttpRequest();
   xhr.open('POST', '/api/nodes/' + nodeIdToUse + '/commands', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 125000; // 125s (backend 120s + 5s network buffer)
+  xhr.timeout = 125000;
 
   xhr.onreadystatechange = function() {
     if (xhr.readyState === 4) {
-      if (btn) {
-        btn.classList.remove('loading');
-        btn.disabled = false;
-      }
-
       var response;
       try {
         response = JSON.parse(xhr.responseText);
       } catch(e) {
-        if (output) {
-          output.textContent = 'Fehler beim Parsen der Antwort.';
-          output.className = 'terminal-output error';
-        }
+        outputDiv.textContent = 'Fehler beim Parsen der Antwort.';
+        outputDiv.className = 'terminal-cmd-output error';
         return;
       }
+
+      outputDiv.classList.remove('loading');
 
       if (response.success && response.data) {
         var data = response.data;
@@ -2197,78 +2242,91 @@ window.executeCommand = function(event, targetNodeId) {
 
         if (data.error && data.error.trim()) {
           if (data.output) outputText += '\n';
-          outputText += '[STDERR]\n' + data.error;
+          outputText += data.error;
         }
 
         if (!data.output && !data.error) {
-          outputText = '(Keine Ausgabe)';
+          outputText = '';
         }
 
-        if (output) {
-          output.textContent = outputText;
-          output.className = 'terminal-output ' + (data.status === 'success' ? 'success' : 'error');
+        outputDiv.textContent = outputText;
+        outputDiv.className = 'terminal-cmd-output ' + (data.status === 'success' ? 'success' : 'error');
+
+        // Hide empty output
+        if (!outputText) {
+          outputDiv.style.display = 'none';
         }
       } else if (response.error) {
-        if (output) {
-          output.textContent = 'Fehler: ' + (response.error.message || 'Unbekannter Fehler');
-          output.className = 'terminal-output error';
-        }
+        outputDiv.textContent = 'Fehler: ' + (response.error.message || 'Unbekannter Fehler');
+        outputDiv.className = 'terminal-cmd-output error';
       }
 
-      // Update tab state
-      if (activeTab && tabManager) {
-        var currentActiveTab = tabManager.getActiveTab();
-        if (currentActiveTab && currentActiveTab.id === activeTab.id && output) {
-          currentActiveTab.output = output.textContent;
-          tabManager.updateTab(currentActiveTab.id, currentActiveTab);
+      scrollToBottom();
 
-          // Update prompt display if cd command
-          if (cdMatch) {
-            updatePromptDisplay(currentActiveTab.prompt);
-          }
-        }
-      }
-
-      // Clear input
-      if (input) {
-        input.value = '';
-        input.focus();
+      // Save history to tab
+      if (activeTab && tabManager && historyEl) {
+        activeTab.historyHtml = historyEl.innerHTML;
+        tabManager.updateTab(activeTab.id, activeTab);
       }
     }
   };
 
   xhr.onerror = function() {
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    if (output) {
-      output.textContent = 'Netzwerkfehler beim Ausfuehren des Befehls.';
-      output.className = 'terminal-output error';
-    }
+    outputDiv.textContent = 'Netzwerkfehler beim Ausfuehren des Befehls.';
+    outputDiv.className = 'terminal-cmd-output error';
+    scrollToBottom();
   };
 
   xhr.ontimeout = function() {
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    if (output) {
-      output.textContent = 'Timeout: Befehl dauert zu lange (> 2 Minuten).';
-      output.className = 'terminal-output error';
-    }
+    outputDiv.textContent = 'Timeout: Befehl dauert zu lange (> 2 Minuten).';
+    outputDiv.className = 'terminal-cmd-output error';
+    scrollToBottom();
   };
 
   xhr.send(JSON.stringify({ command: command }));
-};
+}
+
+/**
+ * Run a quick command directly
+ * @param {string} cmd - Command to run
+ */
+function runQuickCommand(cmd) {
+  var input = document.getElementById('terminalInput');
+  if (input) {
+    input.value = cmd;
+  }
+
+  // Close dropdown
+  var menu = document.getElementById('quickCmdMenu');
+  if (menu) {
+    menu.classList.remove('open');
+  }
+
+  executeTerminalCommand();
+}
+
+/**
+ * Clear terminal history
+ */
+function clearTerminal() {
+  var historyEl = document.getElementById('terminalHistory');
+  if (historyEl) {
+    historyEl.innerHTML = '';
+  }
+
+  var tabManager = window.NP && window.NP.TerminalTabs;
+  var activeTab = tabManager ? tabManager.getActiveTab() : null;
+
+  if (activeTab && tabManager) {
+    activeTab.historyHtml = '';
+    tabManager.updateTab(activeTab.id, activeTab);
+  }
+}
 
 // ==================================================
 // Phase 9: Theme Toggle (Light/Dark Mode)
 // ==================================================
 
-/**
- * Toggle terminal theme between light and dark mode
- */
 function toggleTerminalTheme() {
   var panel = document.getElementById('terminalPanel');
   if (!panel) return;
@@ -2276,27 +2334,18 @@ function toggleTerminalTheme() {
   var isLightMode = panel.classList.contains('light-mode');
 
   if (isLightMode) {
-    // Switch to Dark Mode
     panel.classList.remove('light-mode');
     try {
       localStorage.setItem('nodepulse-terminal-theme', 'dark');
-    } catch(e) {
-      // Ignore localStorage errors
-    }
+    } catch(e) {}
   } else {
-    // Switch to Light Mode
     panel.classList.add('light-mode');
     try {
       localStorage.setItem('nodepulse-terminal-theme', 'light');
-    } catch(e) {
-      // Ignore localStorage errors
-    }
+    } catch(e) {}
   }
 }
 
-/**
- * Restore terminal theme from localStorage on page load
- */
 function restoreTerminalTheme() {
   var theme = 'dark';
 
@@ -2305,9 +2354,7 @@ function restoreTerminalTheme() {
     if (stored) {
       theme = stored;
     }
-  } catch(e) {
-    // Ignore localStorage errors
-  }
+  } catch(e) {}
 
   var panel = document.getElementById('terminalPanel');
   if (panel && theme === 'light') {
@@ -2315,29 +2362,35 @@ function restoreTerminalTheme() {
   }
 }
 
-// Helper functions for Quick Commands
-function setCommand(cmd) {
-  var input = document.getElementById('command-input');
-  if (input) {
-    input.value = cmd;
-    input.focus();
-  }
-}
+// ==================================================
+// Terminal Panel Toggle (for minimize button & FAB)
+// ==================================================
 
-function clearOutput() {
-  var tabManager = window.NP && window.NP.TerminalTabs;
-  var activeTab = tabManager ? tabManager.getActiveTab() : null;
+function toggleTerminalPanel() {
+  var panel = document.getElementById('terminalPanel');
+  var toggleBtn = document.getElementById('terminalToggleBtn');
+  if (!panel) return;
 
-  var output = document.getElementById('terminal-output');
-  if (output) {
-    output.textContent = 'Bereit. Befehl eingeben und Enter druecken.';
-    output.className = 'terminal-output';
-  }
+  if (panel.classList.contains('hidden')) {
+    panel.classList.remove('hidden');
+    panel.classList.remove('minimized');
+    if (toggleBtn) toggleBtn.style.display = 'none';
 
-  // Update tab state
-  if (activeTab && tabManager) {
-    activeTab.output = 'Bereit. Befehl eingeben und Enter druecken.';
-    tabManager.updateTab(activeTab.id, activeTab);
+    var input = document.getElementById('terminalInput');
+    if (input) {
+      setTimeout(function() { input.focus(); }, 100);
+    }
+  } else if (panel.classList.contains('minimized')) {
+    panel.classList.remove('minimized');
+    if (toggleBtn) toggleBtn.style.display = 'none';
+
+    var input = document.getElementById('terminalInput');
+    if (input) {
+      setTimeout(function() { input.focus(); }, 100);
+    }
+  } else {
+    panel.classList.add('minimized');
+    if (toggleBtn) toggleBtn.style.display = 'flex';
   }
 }
 
@@ -2346,11 +2399,9 @@ function clearOutput() {
 // ==================================================
 
 (function() {
-  // Wait for DOM to be ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeTerminalTabs);
   } else {
-    // DOM already loaded
     initializeTerminalTabs();
   }
 })();
