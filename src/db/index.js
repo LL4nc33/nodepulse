@@ -59,6 +59,19 @@ async function init() {
       throw err;  // Re-throw to prevent app start with incomplete schema
     }
 
+    // Migration: Add thermal_json column to node_hardware
+    try {
+      const columns = db.prepare("PRAGMA table_info(node_hardware)").all();
+      const hasThermal = columns.some(col => col.name === 'thermal_json');
+      if (!hasThermal) {
+        db.exec('ALTER TABLE node_hardware ADD COLUMN thermal_json TEXT');
+        console.log('[DB] Migration: Added thermal_json column');
+      }
+    } catch (err) {
+      console.error('[DB] Migration error (thermal):', err.message);
+      throw err;
+    }
+
     // Run seed data
     const seedPath = path.join(__dirname, 'seed.sql');
     const seed = fs.readFileSync(seedPath, 'utf8');
@@ -657,7 +670,7 @@ const hardware = {
         cpu_model, cpu_vendor, cpu_cores, cpu_threads, cpu_max_mhz, cpu_arch,
         cpu_cache_l1, cpu_cache_l2, cpu_cache_l3, cpu_virt_support,
         ram_total_bytes, ram_type, ram_speed_mhz, swap_total_bytes,
-        disks_json, network_json, gpu_json,
+        disks_json, network_json, gpu_json, thermal_json,
         updated_at
       ) VALUES (
         @node_id,
@@ -665,7 +678,7 @@ const hardware = {
         @cpu_model, @cpu_vendor, @cpu_cores, @cpu_threads, @cpu_max_mhz, @cpu_arch,
         @cpu_cache_l1, @cpu_cache_l2, @cpu_cache_l3, @cpu_virt_support,
         @ram_total_bytes, @ram_type, @ram_speed_mhz, @swap_total_bytes,
-        @disks_json, @network_json, @gpu_json,
+        @disks_json, @network_json, @gpu_json, @thermal_json,
         CURRENT_TIMESTAMP
       )
       ON CONFLICT(node_id) DO UPDATE SET
@@ -691,6 +704,7 @@ const hardware = {
         disks_json = excluded.disks_json,
         network_json = excluded.network_json,
         gpu_json = excluded.gpu_json,
+        thermal_json = excluded.thermal_json,
         updated_at = CURRENT_TIMESTAMP
     `);
 
@@ -722,6 +736,7 @@ const hardware = {
       disks_json: JSON.stringify(data.disks || []),
       network_json: JSON.stringify(data.network || []),
       gpu_json: JSON.stringify(data.gpu || []),
+      thermal_json: JSON.stringify(data.thermal || []),
     });
   },
 

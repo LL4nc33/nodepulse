@@ -138,6 +138,9 @@ CREATE TABLE IF NOT EXISTS node_hardware (
     -- GPU (JSON array)
     gpu_json TEXT,
 
+    -- Thermal sensors (JSON array)
+    thermal_json TEXT,
+
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
 );

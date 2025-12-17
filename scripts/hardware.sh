@@ -2,6 +2,8 @@
 # nodepulse Hardware Script
 # Sammelt Hardware-Infos
 # Robuste JSON-Ausgabe mit korrektem Escaping
+# Funktioniert auf: Raspberry Pi, Proxmox, VMs, Bare Metal
+# Keine Extra-Pakete noetig - nutzt /sys und /proc
 
 # Escape string for JSON - handles all special characters
 json_escape() {
@@ -19,6 +21,18 @@ safe_num() {
         echo "0"
     else
         echo "$val"
+    fi
+}
+
+# Safe float output (returns null if empty/invalid)
+safe_float() {
+    local val="$1"
+    if [ -z "$val" ]; then
+        echo "null"
+    elif [[ "$val" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+        echo "$val"
+    else
+        echo "null"
     fi
 }
 
@@ -101,6 +115,11 @@ echo "},"
 # === STORAGE ===
 echo "\"disks\": ["
 DISK_LIST=""
+HAS_SMARTCTL=0
+if command -v smartctl &>/dev/null; then
+    HAS_SMARTCTL=1
+fi
+
 if command -v lsblk &>/dev/null; then
     while IFS= read -r line; do
         [ -z "$line" ] && continue
@@ -115,12 +134,63 @@ if command -v lsblk &>/dev/null; then
         [ -z "$NAME" ] && continue
 
         IS_SSD=0
+        DISK_TYPE="HDD"
         if [ "$ROTA" = "0" ]; then
             IS_SSD=1
+            if [ "$TRAN" = "nvme" ]; then
+                DISK_TYPE="NVMe"
+            else
+                DISK_TYPE="SSD"
+            fi
+        fi
+
+        # Try to get serial from /sys (no smartctl needed)
+        SERIAL=""
+        if [ -f "/sys/block/$NAME/device/serial" ]; then
+            SERIAL=$(cat "/sys/block/$NAME/device/serial" 2>/dev/null | xargs)
+        elif [ -f "/sys/block/$NAME/device/wwid" ]; then
+            SERIAL=$(cat "/sys/block/$NAME/device/wwid" 2>/dev/null | xargs)
+        fi
+
+        # SMART data (only if smartctl available and root)
+        SMART_STATUS="null"
+        SMART_HEALTH="null"
+        POWER_ON_HOURS="null"
+        DISK_TEMP="null"
+
+        if [ "$HAS_SMARTCTL" -eq 1 ] && [ "$(id -u)" -eq 0 ]; then
+            SMART_OUT=$(smartctl -H -A "/dev/$NAME" 2>/dev/null)
+            if [ -n "$SMART_OUT" ]; then
+                # Health status
+                if echo "$SMART_OUT" | grep -q "PASSED"; then
+                    SMART_STATUS="\"passed\""
+                    SMART_HEALTH="\"Healthy\""
+                elif echo "$SMART_OUT" | grep -q "FAILED"; then
+                    SMART_STATUS="\"failed\""
+                    SMART_HEALTH="\"Failed\""
+                fi
+
+                # Power-On Hours (ID 9 for SATA, or search for Power On Hours)
+                POH=$(echo "$SMART_OUT" | grep -E "Power_On_Hours|Power On Hours" | awk '{print $NF}' | grep -oE '[0-9]+' | head -1)
+                if [ -n "$POH" ] && [ "$POH" -gt 0 ] 2>/dev/null; then
+                    POWER_ON_HOURS="$POH"
+                fi
+
+                # Temperature (ID 194 for SATA, or search for Temperature)
+                TEMP=$(echo "$SMART_OUT" | grep -iE "Temperature_Celsius|Temperature:" | awk '{print $NF}' | grep -oE '[0-9]+' | head -1)
+                if [ -n "$TEMP" ] && [ "$TEMP" -gt 0 ] && [ "$TEMP" -lt 150 ] 2>/dev/null; then
+                    DISK_TEMP="$TEMP"
+                fi
+
+                # Serial from smartctl if not found in /sys
+                if [ -z "$SERIAL" ]; then
+                    SERIAL=$(smartctl -i "/dev/$NAME" 2>/dev/null | grep -i "Serial Number:" | awk '{print $NF}')
+                fi
+            fi
         fi
 
         [ -n "$DISK_LIST" ] && DISK_LIST="$DISK_LIST,"
-        DISK_LIST="$DISK_LIST{\"name\": \"$(json_escape "$NAME")\", \"size_bytes\": $(safe_num "$SIZE"), \"model\": \"$(json_escape "$MODEL")\", \"is_ssd\": $IS_SSD, \"transport\": \"$(json_escape "$TRAN")\"}"
+        DISK_LIST="$DISK_LIST{\"name\": \"$(json_escape "$NAME")\", \"size_bytes\": $(safe_num "$SIZE"), \"model\": \"$(json_escape "$MODEL")\", \"type\": \"$DISK_TYPE\", \"is_ssd\": $IS_SSD, \"transport\": \"$(json_escape "$TRAN")\", \"serial\": \"$(json_escape "$SERIAL")\", \"smart_status\": $SMART_STATUS, \"smart_health\": $SMART_HEALTH, \"power_on_hours\": $POWER_ON_HOURS, \"temp_c\": $DISK_TEMP}"
     done < <(lsblk -bno NAME,SIZE,TYPE,ROTA,TRAN,MODEL 2>/dev/null)
 fi
 echo "$DISK_LIST"
@@ -139,8 +209,61 @@ while IFS= read -r iface; do
     IPV4=$(ip -4 addr show "$iface" 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1)
     IPV6=$(ip -6 addr show "$iface" 2>/dev/null | grep -oP 'inet6 \K[0-9a-f:]+' | grep -v "^fe80" | head -1)
 
+    # Speed (in Mbps) - from /sys, no ethtool needed
+    SPEED="null"
+    if [ -f "/sys/class/net/$iface/speed" ]; then
+        SPEED_VAL=$(cat "/sys/class/net/$iface/speed" 2>/dev/null)
+        if [ -n "$SPEED_VAL" ] && [ "$SPEED_VAL" -gt 0 ] 2>/dev/null; then
+            SPEED="$SPEED_VAL"
+        fi
+    fi
+
+    # MTU
+    MTU="null"
+    if [ -f "/sys/class/net/$iface/mtu" ]; then
+        MTU_VAL=$(cat "/sys/class/net/$iface/mtu" 2>/dev/null)
+        if [ -n "$MTU_VAL" ] && [ "$MTU_VAL" -gt 0 ] 2>/dev/null; then
+            MTU="$MTU_VAL"
+        fi
+    fi
+
+    # Duplex - from /sys (may not exist on all interfaces)
+    DUPLEX="null"
+    if [ -f "/sys/class/net/$iface/duplex" ]; then
+        DUPLEX_VAL=$(cat "/sys/class/net/$iface/duplex" 2>/dev/null)
+        if [ -n "$DUPLEX_VAL" ]; then
+            DUPLEX="\"$DUPLEX_VAL\""
+        fi
+    fi
+
+    # Interface type detection
+    IFACE_TYPE="Virtual"
+    if [ -d "/sys/class/net/$iface/device" ]; then
+        IFACE_TYPE="Physical"
+    elif [ -d "/sys/class/net/$iface/bridge" ]; then
+        IFACE_TYPE="Bridge"
+    elif [ -d "/sys/class/net/$iface/bonding" ]; then
+        IFACE_TYPE="Bond"
+    elif echo "$iface" | grep -qE "^(veth|docker|br-|virbr|tap|vmbr)"; then
+        IFACE_TYPE="Virtual"
+    elif [ "$iface" = "lo" ]; then
+        IFACE_TYPE="Loopback"
+    fi
+
+    # Driver (from /sys, no ethtool needed)
+    DRIVER=""
+    if [ -L "/sys/class/net/$iface/device/driver" ]; then
+        DRIVER=$(basename "$(readlink -f /sys/class/net/$iface/device/driver 2>/dev/null)" 2>/dev/null)
+    fi
+
+    # Bridge ports (if this is a bridge)
+    BRIDGE_PORTS=""
+    if [ -d "/sys/class/net/$iface/brif" ]; then
+        BRIDGE_PORTS=$(ls "/sys/class/net/$iface/brif" 2>/dev/null | tr '\n' ',' | sed 's/,$//')
+    fi
+
     [ -n "$NET_LIST" ] && NET_LIST="$NET_LIST,"
-    NET_LIST="$NET_LIST{\"name\": \"$(json_escape "$iface")\", \"mac\": \"$(json_escape "$MAC")\", \"state\": \"$(json_escape "$STATE")\", \"ipv4\": \"$(json_escape "$IPV4")\", \"ipv6\": \"$(json_escape "$IPV6")\"}"
+    NET_LIST="$NET_LIST{\"name\": \"$(json_escape "$iface")\", \"type\": \"$IFACE_TYPE\", \"mac\": \"$(json_escape "$MAC")\", \"state\": \"$(json_escape "$STATE")\", \"ipv4\": \"$(json_escape "$IPV4")\", \"ipv6\": \"$(json_escape "$IPV6")\", \"speed_mbps\": $SPEED, \"mtu\": $MTU, \"duplex\": $DUPLEX, \"driver\": \"$(json_escape "$DRIVER")\", \"bridge_ports\": \"$(json_escape "$BRIDGE_PORTS")\"}"
 done < <(ls /sys/class/net 2>/dev/null)
 echo "$NET_LIST"
 echo "],"
@@ -157,6 +280,102 @@ if command -v lspci &>/dev/null; then
     done < <(lspci 2>/dev/null | grep -iE 'vga|3d|display')
 fi
 echo "$GPU_LIST"
+echo "],"
+
+# === THERMAL SENSORS ===
+echo "\"thermal\": ["
+THERMAL_LIST=""
+
+# Method 1: /sys/class/thermal (thermal_zone*)
+# Raspberry Pi, most Linux systems
+for zone in /sys/class/thermal/thermal_zone*; do
+    [ ! -d "$zone" ] && continue
+
+    ZONE_NAME=$(basename "$zone")
+    ZONE_TYPE=$(cat "$zone/type" 2>/dev/null || echo "unknown")
+    ZONE_TEMP_RAW=$(cat "$zone/temp" 2>/dev/null || echo "")
+
+    # Temperature is in millidegrees (divide by 1000)
+    if [ -n "$ZONE_TEMP_RAW" ] && [ "$ZONE_TEMP_RAW" -gt 0 ] 2>/dev/null; then
+        ZONE_TEMP=$(echo "scale=1; $ZONE_TEMP_RAW / 1000" | bc 2>/dev/null || echo "null")
+        if [ "$ZONE_TEMP" = "null" ] || [ -z "$ZONE_TEMP" ]; then
+            # Fallback without bc (integer division)
+            ZONE_TEMP=$((ZONE_TEMP_RAW / 1000))
+        fi
+    else
+        ZONE_TEMP="null"
+    fi
+
+    [ -n "$THERMAL_LIST" ] && THERMAL_LIST="$THERMAL_LIST,"
+    if [ "$ZONE_TEMP" = "null" ]; then
+        THERMAL_LIST="$THERMAL_LIST{\"name\": \"$(json_escape "$ZONE_NAME")\", \"type\": \"$(json_escape "$ZONE_TYPE")\", \"source\": \"thermal_zone\", \"temp_c\": null}"
+    else
+        THERMAL_LIST="$THERMAL_LIST{\"name\": \"$(json_escape "$ZONE_NAME")\", \"type\": \"$(json_escape "$ZONE_TYPE")\", \"source\": \"thermal_zone\", \"temp_c\": $ZONE_TEMP}"
+    fi
+done
+
+# Method 2: /sys/class/hwmon (hwmon*)
+# More detailed sensors (CPU cores, chipset, NVMe, etc.)
+for hwmon in /sys/class/hwmon/hwmon*; do
+    [ ! -d "$hwmon" ] && continue
+
+    HWMON_NAME=$(cat "$hwmon/name" 2>/dev/null || echo "unknown")
+
+    # Find all temp*_input files
+    for temp_file in "$hwmon"/temp*_input; do
+        [ ! -f "$temp_file" ] && continue
+
+        # Extract sensor number (temp1_input -> 1)
+        SENSOR_NUM=$(basename "$temp_file" | grep -oE '[0-9]+')
+
+        # Get label if exists (e.g., "Core 0", "Package id 0")
+        LABEL_FILE="${hwmon}/temp${SENSOR_NUM}_label"
+        if [ -f "$LABEL_FILE" ]; then
+            SENSOR_LABEL=$(cat "$LABEL_FILE" 2>/dev/null | xargs)
+        else
+            SENSOR_LABEL="Sensor $SENSOR_NUM"
+        fi
+
+        # Temperature in millidegrees
+        TEMP_RAW=$(cat "$temp_file" 2>/dev/null || echo "")
+        if [ -n "$TEMP_RAW" ] && [ "$TEMP_RAW" -gt 0 ] 2>/dev/null; then
+            TEMP_C=$(echo "scale=1; $TEMP_RAW / 1000" | bc 2>/dev/null || echo "")
+            if [ -z "$TEMP_C" ]; then
+                # Fallback without bc
+                TEMP_C=$((TEMP_RAW / 1000))
+            fi
+        else
+            TEMP_C="null"
+        fi
+
+        # Get crit/max thresholds if available
+        TEMP_CRIT="null"
+        TEMP_MAX="null"
+        CRIT_FILE="${hwmon}/temp${SENSOR_NUM}_crit"
+        MAX_FILE="${hwmon}/temp${SENSOR_NUM}_max"
+        if [ -f "$CRIT_FILE" ]; then
+            CRIT_RAW=$(cat "$CRIT_FILE" 2>/dev/null || echo "")
+            if [ -n "$CRIT_RAW" ] && [ "$CRIT_RAW" -gt 0 ] 2>/dev/null; then
+                TEMP_CRIT=$((CRIT_RAW / 1000))
+            fi
+        fi
+        if [ -f "$MAX_FILE" ]; then
+            MAX_RAW=$(cat "$MAX_FILE" 2>/dev/null || echo "")
+            if [ -n "$MAX_RAW" ] && [ "$MAX_RAW" -gt 0 ] 2>/dev/null; then
+                TEMP_MAX=$((MAX_RAW / 1000))
+            fi
+        fi
+
+        [ -n "$THERMAL_LIST" ] && THERMAL_LIST="$THERMAL_LIST,"
+        if [ "$TEMP_C" = "null" ]; then
+            THERMAL_LIST="$THERMAL_LIST{\"name\": \"$(json_escape "$HWMON_NAME")\", \"label\": \"$(json_escape "$SENSOR_LABEL")\", \"source\": \"hwmon\", \"temp_c\": null, \"temp_crit\": $TEMP_CRIT, \"temp_max\": $TEMP_MAX}"
+        else
+            THERMAL_LIST="$THERMAL_LIST{\"name\": \"$(json_escape "$HWMON_NAME")\", \"label\": \"$(json_escape "$SENSOR_LABEL")\", \"source\": \"hwmon\", \"temp_c\": $TEMP_C, \"temp_crit\": $TEMP_CRIT, \"temp_max\": $TEMP_MAX}"
+        fi
+    done
+done
+
+echo "$THERMAL_LIST"
 echo "]"
 
 echo "}"
