@@ -148,10 +148,20 @@
     },
 
     // Get next tab number for default naming
+    // Calculate based on existing tab titles to avoid duplicates
     getNextTabNumber: function() {
-      var num = this.nextTabNumber;
-      this.nextTabNumber++;
-      return num;
+      var maxNum = 0;
+      for (var i = 0; i < this.tabs.length; i++) {
+        var title = this.tabs[i].title;
+        var match = title.match(/^Terminal\s*(\d+)$/);
+        if (match) {
+          var num = parseInt(match[1], 10);
+          if (num > maxNum) {
+            maxNum = num;
+          }
+        }
+      }
+      return maxNum + 1;
     },
 
     // Get next tab (for Ctrl+Tab navigation)

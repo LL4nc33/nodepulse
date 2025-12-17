@@ -163,6 +163,23 @@ function escapeHtml(str) {
 }
 
 /**
+ * Strip ANSI escape codes from string
+ * Used for commands like fastfetch, neofetch that output colored text
+ * @param {string} str - String with potential ANSI codes
+ * @returns {string} Clean string without ANSI codes
+ */
+function stripAnsiCodes(str) {
+  if (typeof str !== 'string') return '';
+  // Match ANSI escape sequences:
+  // - CSI sequences: \x1b[ followed by params and letter (e.g., \x1b[31m, \x1b[1;32m, \x1b[0m)
+  // - SGR reset: \x1b(B
+  // - OSC sequences: \x1b] followed by content and terminator
+  // - Other escape sequences: \x1b followed by single char
+  var ansiRegex = /\x1b\[[0-9;?]*[A-Za-z]|\x1b\([A-Za-z]|\x1b\][^\x07]*\x07|\x1b[A-Za-z]/g;
+  return str.replace(ansiRegex, '');
+}
+
+/**
  * Scroll terminal history to bottom
  */
 function scrollToBottom() {
@@ -184,6 +201,17 @@ function createNewTab() {
   var tabManager = window.NP && window.NP.TerminalTabs;
   if (!tabManager) return;
 
+  // IMPORTANT: Save current tab's history BEFORE creating new tab
+  var currentTab = tabManager.getActiveTab();
+  if (currentTab) {
+    var historyEl = document.getElementById('terminalHistory');
+    if (historyEl) {
+      currentTab.historyHtml = historyEl.innerHTML;
+      tabManager.updateTab(currentTab.id, currentTab);
+    }
+  }
+
+  // Create new tab
   var newTab = tabManager.createTab();
 
   if (typeof nodeData !== 'undefined') {
@@ -193,16 +221,26 @@ function createNewTab() {
       path: '~'
     };
     newTab.workingDir = '~';
-    newTab.historyHtml = '';
-    tabManager.updateTab(newTab.id, newTab);
+  }
+  // Always start with empty history for new tab
+  newTab.historyHtml = '';
+  tabManager.updateTab(newTab.id, newTab);
+
+  // Clear the history DOM before switching
+  var historyEl = document.getElementById('terminalHistory');
+  if (historyEl) {
+    historyEl.innerHTML = '';
   }
 
-  tabManager.switchTab(newTab.id);
+  // Switch to new tab (don't call tabManager.switchTab first!)
+  tabManager.activeTabId = newTab.id;
+  tabManager.save();
   renderTabs();
-  switchToTab(newTab.id);
+  updatePromptDisplay(newTab.prompt);
 
   var input = document.getElementById('terminalInput');
   if (input) {
+    input.value = '';
     input.focus();
   }
 }
@@ -673,6 +711,9 @@ function executeTerminalCommand() {
         if (!data.output && !data.error) {
           outputText = '';
         }
+
+        // Strip ANSI escape codes (for fastfetch, neofetch, etc.)
+        outputText = stripAnsiCodes(outputText);
 
         outputDiv.textContent = outputText;
         outputDiv.className = 'terminal-cmd-output ' + (data.status === 'success' ? 'success' : 'error');

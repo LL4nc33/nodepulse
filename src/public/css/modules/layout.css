@@ -963,7 +963,8 @@
 }
 
 .terminal-cmd-output.success {
-  color: var(--ps-success);
+  /* Use normal text color for output, not cyan/success color */
+  color: var(--ps-text);
 }
 
 .terminal-cmd-output.error {
