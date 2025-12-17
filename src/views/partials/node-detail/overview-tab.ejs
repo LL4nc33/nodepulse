@@ -2,7 +2,7 @@
 <div class="tab-content active" id="tab-overview">
   <!-- Status & Verbindung -->
   <div class="detail-grid">
-    <div class="detail-card">
+    <div class="detail-card compact">
       <h3>Status</h3>
       <dl>
         <dt>Online</dt>
@@ -16,7 +16,7 @@
       </dl>
     </div>
 
-    <div class="detail-card">
+    <div class="detail-card compact">
       <h3>Verbindung</h3>
       <dl>
         <dt>Host</dt>
@@ -30,7 +30,7 @@
       </dl>
     </div>
 
-    <div class="detail-card">
+    <div class="detail-card compact">
       <h3>Monitoring</h3>
       <dl>
         <dt>Aktiv</dt>
@@ -42,7 +42,7 @@
       </dl>
     </div>
 
-    <div class="detail-card">
+    <div class="detail-card compact">
       <h3>Tags</h3>
       <div class="tags">
         <% if (tags.length === 0) { %>
@@ -177,19 +177,16 @@
             try { thermalSensors = JSON.parse(hardware.thermal_json || '[]'); } catch(e) {}
           %>
           <% if (thermalSensors.length > 0) { %>
-          <div class="detail-card">
+          <div class="detail-card compact">
             <h3>Temperaturen</h3>
-            <div class="thermal-list">
-              <% thermalSensors.forEach(function(sensor) { %>
+            <div class="thermal-list-compact">
+              <% thermalSensors.slice(0, 6).forEach(function(sensor) { %>
                 <% if (sensor.temp_c !== null && sensor.temp_c !== undefined) { %>
-                  <div class="thermal-item">
-                    <div class="thermal-info">
-                      <strong><%= sensor.label || sensor.type || sensor.name || 'Sensor' %></strong>
-                      <small><%= sensor.source === 'hwmon' ? sensor.name : 'thermal_zone' %></small>
-                    </div>
-                    <div class="thermal-temp <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : '') %>">
+                  <div class="thermal-item-compact">
+                    <span class="thermal-label"><%= (sensor.label || sensor.type || sensor.name || 'Sensor').substring(0, 12) %></span>
+                    <span class="thermal-temp <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : '') %>">
                       <%= typeof sensor.temp_c === 'number' ? sensor.temp_c.toFixed(1) : sensor.temp_c %>&deg;C
-                    </div>
+                    </span>
                   </div>
                 <% } %>
               <% }); %>
