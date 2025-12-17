@@ -587,6 +587,12 @@ function executeTerminalCommand() {
     return;
   }
 
+  // Handle 'clear' command locally (don't send to server)
+  if (command === 'clear' || command === 'cls') {
+    clearTerminal();
+    return;
+  }
+
   // Add to tab's command history
   if (activeTab && tabManager) {
     if (!activeTab.commandHistory) {
@@ -739,6 +745,13 @@ function clearTerminal() {
   if (activeTab && tabManager) {
     activeTab.historyHtml = '';
     tabManager.updateTab(activeTab.id, activeTab);
+  }
+
+  // Clear input and refocus
+  var input = document.getElementById('terminalInput');
+  if (input) {
+    input.value = '';
+    input.focus();
   }
 }
 

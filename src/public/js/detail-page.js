@@ -69,7 +69,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-17T21:56:21.287Z
+   Generated: 2025-12-17T22:37:49.139Z
 */
 
 
@@ -1576,7 +1576,7 @@ function deleteSnapshot(nodeId, vmType, vmid, snapName) {
 // =====================================================
 
 // ============================================================
-// FROM: terminal.js (827 lines)
+// FROM: terminal.js (840 lines)
 // ============================================================
 
 // ==================================================
@@ -2168,6 +2168,12 @@ function executeTerminalCommand() {
     return;
   }
 
+  // Handle 'clear' command locally (don't send to server)
+  if (command === 'clear' || command === 'cls') {
+    clearTerminal();
+    return;
+  }
+
   // Add to tab's command history
   if (activeTab && tabManager) {
     if (!activeTab.commandHistory) {
@@ -2320,6 +2326,13 @@ function clearTerminal() {
   if (activeTab && tabManager) {
     activeTab.historyHtml = '';
     tabManager.updateTab(activeTab.id, activeTab);
+  }
+
+  // Clear input and refocus
+  var input = document.getElementById('terminalInput');
+  if (input) {
+    input.value = '';
+    input.focus();
   }
 }
 
