@@ -5,6 +5,7 @@ const ssh = require('../ssh');
 const alertsService = require('../services/alerts');
 const { getThresholds } = require('../lib/thresholds');
 const TieredPoller = require('./tiered-poller');
+const statsRouter = require('../routes/api/stats');
 
 // Load scripts
 const scriptsDir = path.join(__dirname, '../../scripts');
@@ -132,6 +133,10 @@ async function runHardware(node) {
 
   // Save to database
   db.hardware.save(node.id, data);
+
+  // Invalidate metadata hash cache (TOON integration)
+  // Hardware changed → metadata hash must be recalculated
+  statsRouter.clearMetadataHashCache(node.id);
 
   return data;
 }

@@ -20,6 +20,7 @@
 const db = require('../db');
 const ssh = require('../ssh');
 const { getCommandsForTier } = require('../lib/command-registry');
+const statsRouter = require('../routes/api/stats');
 
 // Polling intervals (ms)
 const TIER_1_INTERVAL = 5000;   // 5 seconds
@@ -291,6 +292,10 @@ class TieredPoller {
 
       if (hardwareData) {
         db.hardware.save(this.nodeId, hardwareData);
+
+        // Invalidate metadata hash cache (TOON integration)
+        // Hardware changed → metadata hash must be recalculated
+        statsRouter.clearMetadataHashCache(this.nodeId);
 
         // Update tier3_last_update timestamp
         db.getDb().prepare(

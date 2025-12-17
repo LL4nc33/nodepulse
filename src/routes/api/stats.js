@@ -3,10 +3,122 @@
  */
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const db = require('../../db');
 const collector = require('../../collector');
 const { asyncHandler, apiResponse } = require('./helpers');
 const { getHierarchicalStats, aggregateChildStats } = require('../../db/stats-aggregation');
+
+// =============================================================================
+// METADATA HASH SYSTEM (TOON Integration)
+// =============================================================================
+
+/**
+ * In-Memory Metadata Hash Cache
+ * Structure: Map<nodeId, {hash: string, timestamp: number}>
+ * TTL: 5 minutes (300000ms)
+ */
+const metadataHashCache = new Map();
+const HASH_CACHE_TTL = 300000; // 5 min
+
+/**
+ * Calculate MD5 hash of node metadata
+ * Used for TOON metadata change detection
+ *
+ * @param {number} nodeId - Node ID
+ * @returns {string|null} - 8-char hex hash or null if node not found
+ */
+function calculateMetadataHash(nodeId) {
+  const hardware = db.hardware.getByNodeId(nodeId);
+
+  // Fallback: Use node data if no hardware discovered yet
+  if (!hardware) {
+    const node = db.nodes.getById(nodeId);
+    if (!node) {
+      return 'unknown-node';
+    }
+
+    // Hash basic node info
+    const hashInput = JSON.stringify({
+      name: node.name,
+      host: node.host,
+      type: node.node_type
+    });
+
+    return hashString(hashInput);
+  }
+
+  // Hash hardware specs (these change = metadata update required)
+  const hashInput = JSON.stringify({
+    cpu_cores: hardware.cpu_cores || 0,
+    cpu_model: hardware.cpu_model || '',
+    ram_total: hardware.ram_total_bytes || 0,
+    disk_total: hardware.disk_total_bytes || 0
+  });
+
+  return hashString(hashInput);
+}
+
+/**
+ * MD5 hash a string and return 8-char hex
+ * Collision probability: ~1:2^32 (acceptable for metadata change detection)
+ *
+ * @param {string} str - String to hash
+ * @returns {string} - 8-character hex hash
+ */
+function hashString(str) {
+  return crypto.createHash('md5').update(str).digest('hex').substring(0, 8);
+}
+
+/**
+ * Get cached metadata hash or calculate new one
+ * Implements 5-minute TTL cache to reduce hash calculation overhead
+ *
+ * @param {number} nodeId - Node ID
+ * @returns {string} - Metadata hash
+ */
+function getCachedHash(nodeId) {
+  const cached = metadataHashCache.get(nodeId);
+  const now = Date.now();
+
+  if (cached && (now - cached.timestamp) < HASH_CACHE_TTL) {
+    return cached.hash;
+  }
+
+  // Cache miss or expired - recalculate
+  const hash = calculateMetadataHash(nodeId);
+  metadataHashCache.set(nodeId, { hash: hash, timestamp: now });
+
+  return hash;
+}
+
+/**
+ * Clear metadata hash cache for a specific node
+ * Called when hardware data is updated
+ *
+ * @param {number} nodeId - Node ID
+ */
+function clearMetadataHashCache(nodeId) {
+  metadataHashCache.delete(nodeId);
+}
+
+/**
+ * Clear all metadata hash cache
+ * Useful for system-wide cache invalidation
+ */
+function clearAllMetadataHashCache() {
+  metadataHashCache.clear();
+}
+
+// Export hash functions for use in other modules
+router.calculateMetadataHash = calculateMetadataHash;
+router.getCachedHash = getCachedHash;
+router.clearMetadataHashCache = clearMetadataHashCache;
+router.clearAllMetadataHashCache = clearAllMetadataHashCache;
+
+// =============================================================================
+// STATS API ROUTES
+// =============================================================================
 
 // Get current stats for all nodes
 router.get('/', asyncHandler(async (req, res) => {

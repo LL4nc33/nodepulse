@@ -5,6 +5,7 @@
 
 const db = require('../db');
 const collector = require('./index');
+const CircuitBreaker = require('../lib/circuit-breaker');
 
 // Track collection state
 let isRunning = false;
@@ -42,16 +43,30 @@ async function collectNode(node) {
   const startMs = Date.now();
   stats.totalCollections++;
 
+  // Circuit Breaker: Skip collection if breaker is open
+  if (!CircuitBreaker.canExecute(node.id)) {
+    console.log(`[SCHEDULER] Skipping ${node.name} (circuit breaker open)`);
+    return { success: false, error: 'Circuit breaker open', skipped: true };
+  }
+
   try {
     await collector.runStats(node, true);
     const durationMs = Date.now() - startMs;
     stats.successfulCollections++;
     stats.totalDurationMs += durationMs;
+
+    // Circuit Breaker: Record success (closes circuit)
+    CircuitBreaker.recordSuccess(node.id);
+
     console.log(`[SCHEDULER] Stats collected for ${node.name} (${durationMs}ms)`);
     return { success: true, durationMs };
   } catch (err) {
     stats.failedCollections++;
     stats.errorsLastHour.push({ time: Date.now(), node: node.name, error: err.message });
+
+    // Circuit Breaker: Record failure (may open circuit)
+    CircuitBreaker.recordFailure(node.id);
+
     console.error(`[SCHEDULER] Stats collection failed for ${node.name}:`, err.message);
     try {
       db.nodes.setOnline(node.id, false, err.message);
@@ -190,11 +205,29 @@ async function collectNow(nodeId) {
     return { success: false, error: 'Node not found' };
   }
 
+  // Circuit Breaker: Check if manual collection should proceed
+  // Manual collections respect circuit breaker to prevent user spam on offline nodes
+  if (!CircuitBreaker.canExecute(node.id)) {
+    console.log(`[SCHEDULER] Manual collection skipped for ${node.name} (circuit breaker open)`);
+    return {
+      success: false,
+      error: 'Circuit breaker open - node appears offline. Try again in 60 seconds.',
+      circuitBreakerOpen: true
+    };
+  }
+
   try {
     const data = await collector.runStats(node, true);
     lastCollectionTime.set(node.id, Date.now());
+
+    // Circuit Breaker: Record success
+    CircuitBreaker.recordSuccess(node.id);
+
     return { success: true, data };
   } catch (err) {
+    // Circuit Breaker: Record failure
+    CircuitBreaker.recordFailure(node.id);
+
     return { success: false, error: err.message };
   }
 }
