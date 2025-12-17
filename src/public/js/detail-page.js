@@ -69,7 +69,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-17T03:04:17.756Z
+   Generated: 2025-12-17T04:22:45.529Z
 */
 
 
@@ -2623,6 +2623,11 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
+
+// ============================================================
+// FROM: health.js (153 lines)
+// ============================================================
+
 // =============================================================================
 // HEALTH CHECK FUNCTIONS
 // =============================================================================
@@ -2706,17 +2711,11 @@ function runUpgrade(nodeId) {
       if (window.NP && window.NP.Toast) {
         window.NP.Toast.show(msg, 'success');
       }
-      // Reload page after short delay
-      setTimeout(function() {
-        window.location.reload();
-      }, 2000);
+      // Reload page to refresh health data
+      setTimeout(function() { window.location.reload(); }, 2000);
     } else {
       if (window.NP && window.NP.Toast) {
         window.NP.Toast.show('Upgrade fehlgeschlagen: ' + (data.error && data.error.message || 'Unbekannter Fehler'), 'error');
-      }
-      if (btn) {
-        btn.classList.remove('loading');
-        btn.disabled = false;
       }
     }
   })
@@ -2724,6 +2723,8 @@ function runUpgrade(nodeId) {
     if (window.NP && window.NP.Toast) {
       window.NP.Toast.show('Upgrade fehlgeschlagen: ' + err.message, 'error');
     }
+  })
+  .finally(function() {
     if (btn) {
       btn.classList.remove('loading');
       btn.disabled = false;
@@ -2734,14 +2735,11 @@ function runUpgrade(nodeId) {
 /**
  * Switch Proxmox repository
  * @param {number} nodeId - The node ID
- * @param {string} mode - 'enterprise' or 'no-subscription'
+ * @param {string} mode - "enterprise" or "no-subscription"
  */
 function switchProxmoxRepo(nodeId, mode) {
-  var confirmMsg = mode === 'no-subscription'
-    ? 'Zu No-Subscription-Repository wechseln? Dies deaktiviert das Enterprise-Repo.'
-    : 'Zu Enterprise-Repository wechseln? Eine gueltige Lizenz ist erforderlich.';
-
-  if (!confirm(confirmMsg)) {
+  var modeName = mode === 'enterprise' ? 'Enterprise' : 'No-Subscription';
+  if (!confirm('Wirklich zu ' + modeName + ' Repository wechseln?')) {
     return;
   }
 
@@ -2758,21 +2756,15 @@ function switchProxmoxRepo(nodeId, mode) {
   })
   .then(function(response) { return response.json(); })
   .then(function(data) {
-    if (data.success && data.data && data.data.success) {
+    if (data.success) {
       if (window.NP && window.NP.Toast) {
-        window.NP.Toast.show('Repository gewechselt zu ' + mode, 'success');
+        window.NP.Toast.show('Repository gewechselt zu ' + modeName, 'success');
       }
-      // Reload page after short delay
-      setTimeout(function() {
-        window.location.reload();
-      }, 1500);
+      // Reload page to refresh data
+      setTimeout(function() { window.location.reload(); }, 1500);
     } else {
       if (window.NP && window.NP.Toast) {
         window.NP.Toast.show('Repository-Wechsel fehlgeschlagen: ' + (data.error && data.error.message || 'Unbekannter Fehler'), 'error');
-      }
-      if (btn) {
-        btn.classList.remove('loading');
-        btn.disabled = false;
       }
     }
   })
@@ -2780,6 +2772,8 @@ function switchProxmoxRepo(nodeId, mode) {
     if (window.NP && window.NP.Toast) {
       window.NP.Toast.show('Repository-Wechsel fehlgeschlagen: ' + err.message, 'error');
     }
+  })
+  .finally(function() {
     if (btn) {
       btn.classList.remove('loading');
       btn.disabled = false;

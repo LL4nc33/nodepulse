@@ -16,7 +16,8 @@ const modules = [
   'modals.js',
   'terminal.js',
   'services.js',
-  'network.js'
+  'network.js',
+  'health.js'
 ];
 
 console.log('🔨 Building detail-page.js from modules...\n');
