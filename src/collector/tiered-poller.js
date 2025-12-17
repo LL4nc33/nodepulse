@@ -44,6 +44,13 @@ class TieredPoller {
       tier2: null,
       tier3: null,
     };
+    // Change Detection: Track last mtimes
+    this.lastMtimes = {
+      meminfo: 0,
+      loadavg: 0,
+      dockerConfigs: 0,
+      proxmoxConfigs: 0
+    };
   }
 
   /**
@@ -95,8 +102,50 @@ class TieredPoller {
   }
 
   /**
+   * Check if files have changed (Change Detection)
+   * @param {Object} node - Node object with credentials
+   * @param {Array} files - Files to check ['/proc/meminfo', '/proc/loadavg']
+   * @returns {Promise<boolean>} True if any file changed
+   */
+  async checkFileChanges(node, files) {
+    try {
+      // Build stat command for all files
+      const statCommand = files.map(f => `stat -c %Y ${f} 2>/dev/null || echo 0`).join('; ');
+      const result = await ssh.controlMaster.executeMultiple(node, [statCommand], {
+        timeout: 2000,
+        silent: true
+      });
+
+      if (!result || !result[0] || !result[0].stdout) {
+        return true; // If check fails, poll anyway
+      }
+
+      const mtimes = result[0].stdout.trim().split('\n').map(m => parseInt(m, 10));
+      let changed = false;
+
+      // Check meminfo
+      if (mtimes[0] && mtimes[0] !== this.lastMtimes.meminfo) {
+        this.lastMtimes.meminfo = mtimes[0];
+        changed = true;
+      }
+
+      // Check loadavg
+      if (mtimes[1] && mtimes[1] !== this.lastMtimes.loadavg) {
+        this.lastMtimes.loadavg = mtimes[1];
+        changed = true;
+      }
+
+      return changed;
+    } catch (err) {
+      // If change detection fails, poll anyway
+      return true;
+    }
+  }
+
+  /**
    * Tier 1: Live Metrics (5s interval)
    * Fast commands: uptime, free, docker stats
+   * Uses Change Detection to skip unnecessary polls
    */
   async runTier1() {
     try {
@@ -109,6 +158,13 @@ class TieredPoller {
 
       if (!node.monitoring_enabled) {
         return;
+      }
+
+      // Change Detection: Check if /proc files changed
+      const filesChanged = await this.checkFileChanges(node, ['/proc/meminfo', '/proc/loadavg']);
+      if (!filesChanged) {
+        // console.log(`[TieredPoller:Tier1] No changes for node ${this.nodeId}, skipping poll`);
+        return; // Skip this poll cycle
       }
 
       const commands = [
