@@ -9,16 +9,25 @@
 
 /**
  * Render all tabs in the tab bar
+ * @returns {boolean} True if rendered successfully
  */
 function renderTabs() {
   var tabManager = window.NP && window.NP.TerminalTabs;
   if (!tabManager) {
-    console.error('TerminalTabManager not available');
-    return;
+    // Silent fail - tab manager not yet loaded
+    return false;
   }
 
   var tabBar = document.getElementById('terminalTabBar');
-  if (!tabBar) return;
+  if (!tabBar) {
+    // DOM not ready yet
+    return false;
+  }
+
+  // Ensure tabs array exists
+  if (!tabManager.tabs || !Array.isArray(tabManager.tabs)) {
+    tabManager.tabs = [];
+  }
 
   var html = '';
 
@@ -52,6 +61,7 @@ function renderTabs() {
   html += '</button>';
 
   tabBar.innerHTML = html;
+  return true;
 }
 
 /**
@@ -326,20 +336,54 @@ document.addEventListener('keydown', function(e) {
 // Phase 6: Initialization & Migration
 // ==================================================
 
+// Track initialization state to prevent multiple inits
+var terminalTabsInitialized = false;
+var initRetryCount = 0;
+var MAX_INIT_RETRIES = 10;
+
 /**
- * Initialize terminal tab system
+ * Initialize terminal tab system with retry mechanism
  */
 function initializeTerminalTabs() {
-  // Check if we're on a node detail page
-  if (typeof nodeId === 'undefined') {
+  // Prevent multiple initializations
+  if (terminalTabsInitialized) {
     return;
   }
 
-  // Ensure TerminalTabManager is loaded
-  if (!window.NP || !window.NP.TerminalTabs) {
-    console.error('TerminalTabManager not loaded! Ensure terminal-tabs.js is included.');
+  // Check if we're on a node detail page
+  if (typeof nodeId === 'undefined') {
+    // Not a node detail page, no terminal needed
     return;
   }
+
+  // Check if TerminalTabManager is loaded
+  if (!window.NP || !window.NP.TerminalTabs) {
+    // Retry after short delay if not yet loaded
+    if (initRetryCount < MAX_INIT_RETRIES) {
+      initRetryCount++;
+      setTimeout(initializeTerminalTabs, 100);
+    } else {
+      console.error('TerminalTabManager not loaded after ' + MAX_INIT_RETRIES + ' retries');
+    }
+    return;
+  }
+
+  // Check if required DOM elements exist
+  var tabBar = document.getElementById('terminalTabBar');
+  var terminalPanel = document.getElementById('terminalPanel');
+  if (!tabBar || !terminalPanel) {
+    // Retry after short delay if DOM not ready
+    if (initRetryCount < MAX_INIT_RETRIES) {
+      initRetryCount++;
+      setTimeout(initializeTerminalTabs, 100);
+    } else {
+      console.error('Terminal DOM elements not found after ' + MAX_INIT_RETRIES + ' retries');
+    }
+    return;
+  }
+
+  // Mark as initialized
+  terminalTabsInitialized = true;
 
   // Initialize tab manager with node ID
   window.NP.TerminalTabs.init(nodeId);
@@ -350,13 +394,12 @@ function initializeTerminalTabs() {
   // Ensure active tab has correct prompt with actual node data
   var activeTab = window.NP.TerminalTabs.getActiveTab();
   if (activeTab && typeof nodeData !== 'undefined') {
-    if (!activeTab.prompt || !activeTab.prompt.hostname) {
-      activeTab.prompt = activeTab.prompt || {};
-      activeTab.prompt.username = nodeData.sshUser || 'root';
-      activeTab.prompt.hostname = nodeData.name || 'server';
-      activeTab.prompt.path = activeTab.prompt.path || activeTab.workingDir || '~';
-      window.NP.TerminalTabs.updateTab(activeTab.id, activeTab);
-    }
+    // Always update prompt if nodeData is available
+    activeTab.prompt = activeTab.prompt || {};
+    activeTab.prompt.username = nodeData.sshUser || activeTab.prompt.username || 'root';
+    activeTab.prompt.hostname = nodeData.name || activeTab.prompt.hostname || 'server';
+    activeTab.prompt.path = activeTab.prompt.path || activeTab.workingDir || '~';
+    window.NP.TerminalTabs.updateTab(activeTab.id, activeTab);
   }
 
   // Render tabs
@@ -431,18 +474,42 @@ function migrateOldTerminalState(nodeId) {
  * @param {string} newPath - New path from cd command
  */
 function updateWorkingDirLocally(tab, newPath) {
-  if (!window.NP || !window.NP.TerminalHelpers) {
-    console.error('TerminalHelpers not available');
+  // Validate inputs
+  if (!tab || !newPath) {
     return;
   }
 
-  var helpers = window.NP.TerminalHelpers;
-  var resolvedPath = helpers.resolveCdPath(tab.workingDir, newPath);
+  // Use TerminalHelpers if available, otherwise do basic resolution
+  var helpers = window.NP && window.NP.TerminalHelpers;
+  var resolvedPath;
 
+  if (helpers && typeof helpers.resolveCdPath === 'function') {
+    resolvedPath = helpers.resolveCdPath(tab.workingDir || '~', newPath);
+  } else {
+    // Basic fallback resolution
+    if (newPath === '~' || newPath === '') {
+      resolvedPath = '~';
+    } else if (newPath === '/') {
+      resolvedPath = '/';
+    } else if (newPath.charAt(0) === '/') {
+      resolvedPath = newPath; // Absolute path
+    } else {
+      resolvedPath = newPath; // Relative path (simplified)
+    }
+  }
+
+  // Update tab
   tab.workingDir = resolvedPath;
+  if (!tab.prompt) {
+    tab.prompt = {};
+  }
   tab.prompt.path = resolvedPath;
 
-  window.NP.TerminalTabs.updateTab(tab.id, tab);
+  // Save to tab manager
+  var tabManager = window.NP && window.NP.TerminalTabs;
+  if (tabManager && typeof tabManager.updateTab === 'function') {
+    tabManager.updateTab(tab.id, tab);
+  }
 }
 
 // ==================================================
@@ -452,13 +519,25 @@ function updateWorkingDirLocally(tab, newPath) {
 /**
  * Enhanced executeCommand with multi-tab and working directory tracking
  * @param {Event} event - Form submit event
- * @param {number} nodeId - Node ID
+ * @param {number} targetNodeId - Node ID (passed from form)
  */
-window.executeCommand = function(event, nodeId) {
+window.executeCommand = function(event, targetNodeId) {
   event.preventDefault();
 
+  // Use passed nodeId or fall back to global
+  var nodeIdToUse = targetNodeId || (typeof nodeId !== 'undefined' ? nodeId : null);
+  if (!nodeIdToUse) {
+    console.error('executeCommand: No nodeId available');
+    return;
+  }
+
   var tabManager = window.NP && window.NP.TerminalTabs;
-  var activeTab = tabManager ? tabManager.getActiveTab() : null;
+  var activeTab = null;
+
+  // Safely get active tab with null checks
+  if (tabManager && typeof tabManager.getActiveTab === 'function') {
+    activeTab = tabManager.getActiveTab();
+  }
 
   var input = document.getElementById('command-input');
   var output = document.getElementById('terminal-output');
@@ -474,13 +553,15 @@ window.executeCommand = function(event, nodeId) {
     return;
   }
 
-  // Add to tab's command history
-  if (activeTab) {
+  // Add to tab's command history (with null checks)
+  if (activeTab && tabManager) {
     if (!activeTab.commandHistory) {
       activeTab.commandHistory = [];
     }
     activeTab.commandHistory.push(command);
-    tabManager.updateTab(activeTab.id, activeTab);
+    if (typeof tabManager.updateTab === 'function') {
+      tabManager.updateTab(activeTab.id, activeTab);
+    }
   }
 
   // Working Directory Tracking: Parse cd commands BEFORE sending
@@ -503,7 +584,7 @@ window.executeCommand = function(event, nodeId) {
 
   // Execute command via API
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/commands', true);
+  xhr.open('POST', '/api/nodes/' + nodeIdToUse + '/commands', true);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.timeout = 125000; // 125s (backend 120s + 5s network buffer)
 

@@ -21,6 +21,7 @@ const asyncHandler = (fn) => (req, res, next) => {
 router.use((req, res, next) => {
   const settings = db.settings.getAll();
   res.locals.toastNotificationsEnabled = settings.toast_notifications_enabled === 'true';
+  res.locals.useToonFormat = settings.use_toon_format === 'true';
   next();
 });
 
