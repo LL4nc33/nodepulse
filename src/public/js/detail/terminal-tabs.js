@@ -55,6 +55,13 @@
     // Create default tab (first tab)
     createDefaultTab: function() {
       var tab = this.createTab('Terminal 1');
+
+      // Initialize prompt with actual node data if available
+      if (typeof nodeData !== 'undefined') {
+        tab.prompt.username = nodeData.sshUser || 'root';
+        tab.prompt.hostname = nodeData.name || 'server';
+      }
+
       this.activeTabId = tab.id;
       this.save();
       return tab;
