@@ -57,11 +57,11 @@
 
     <!-- Containers Section -->
     <div class="docker-section collapsible">
-      <h3 class="section-header" onclick="toggleSection(this)">
+      <h2 class="section-header" onclick="toggleSection(this)">
         <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Container
         <span class="section-count">(<%= docker.containers.length %>)</span>
-      </h3>
+      </h2>
       <div class="section-content">
       <% if (docker.containers.length === 0) { %>
         <p class="empty">Keine Container vorhanden</p>
@@ -132,11 +132,11 @@
 
     <!-- Images Section -->
     <div class="docker-section collapsible">
-      <h3 class="section-header" onclick="toggleSection(this)">
+      <h2 class="section-header" onclick="toggleSection(this)">
         <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Images
         <span class="section-count">(<%= docker.images.length %>)</span>
-      </h3>
+      </h2>
       <div class="section-content">
       <% if (docker.images.length === 0) { %>
         <p class="empty">Keine Images vorhanden</p>
@@ -175,11 +175,11 @@
 
     <!-- Volumes Section -->
     <div class="docker-section collapsible">
-      <h3 class="section-header" onclick="toggleSection(this)">
+      <h2 class="section-header" onclick="toggleSection(this)">
         <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Volumes
         <span class="section-count">(<%= docker.volumes.length %>)</span>
-      </h3>
+      </h2>
       <div class="section-content">
       <% if (docker.volumes.length === 0) { %>
         <p class="empty">Keine Volumes vorhanden</p>
@@ -220,11 +220,11 @@
 
     <!-- Networks Section -->
     <div class="docker-section collapsible">
-      <h3 class="section-header" onclick="toggleSection(this)">
+      <h2 class="section-header" onclick="toggleSection(this)">
         <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Networks
         <span class="section-count">(<%= docker.networks.length %>)</span>
-      </h3>
+      </h2>
       <div class="section-content">
       <% if (docker.networks.length === 0) { %>
         <p class="empty">Keine Networks vorhanden</p>

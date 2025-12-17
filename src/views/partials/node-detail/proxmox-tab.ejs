@@ -54,11 +54,11 @@
 
     <!-- VMs Section -->
     <div class="proxmox-section collapsible">
-      <h3 class="section-header" onclick="toggleSection(this)">
+      <h2 class="section-header" onclick="toggleSection(this)">
         <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Virtuelle Maschinen (VMs)
         <span class="section-count">(<%= proxmox.vms.length %>)</span>
-      </h3>
+      </h2>
       <div class="section-content">
       <% if (proxmox.vms.length === 0) { %>
         <p class="empty">Keine VMs vorhanden</p>
@@ -157,11 +157,11 @@
 
     <!-- CTs Section -->
     <div class="proxmox-section collapsible">
-      <h3 class="section-header" onclick="toggleSection(this)">
+      <h2 class="section-header" onclick="toggleSection(this)">
         <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Container (LXC)
         <span class="section-count">(<%= proxmox.cts.length %>)</span>
-      </h3>
+      </h2>
       <div class="section-content">
       <% if (proxmox.cts.length === 0) { %>
         <p class="empty">Keine Container vorhanden</p>
@@ -260,11 +260,11 @@
 
     <!-- Storage Section -->
     <div class="proxmox-section collapsible collapsed">
-      <h3 class="section-header" onclick="toggleSection(this)">
+      <h2 class="section-header" onclick="toggleSection(this)">
         <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Storage
         <span class="section-count">(<%= proxmox.storage.length %>)</span>
-      </h3>
+      </h2>
       <div class="section-content" style="display: none;">
       <% if (proxmox.storage.length === 0) { %>
         <p class="empty">Kein Storage vorhanden</p>
@@ -315,11 +315,11 @@
 
     <!-- Snapshots Section -->
     <div class="proxmox-section collapsible collapsed">
-      <h3 class="section-header" onclick="toggleSection(this)">
+      <h2 class="section-header" onclick="toggleSection(this)">
         <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
         Snapshots
         <span class="section-count">(<%= proxmox.snapshots.length %>)</span>
-      </h3>
+      </h2>
       <div class="section-content" style="display: none;">
       <% if (proxmox.snapshots.length === 0) { %>
         <p class="empty">Keine Snapshots vorhanden</p>
