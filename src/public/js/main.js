@@ -845,10 +845,25 @@
 
     if (!panelToggle || !sidePanel) return;
 
+    // Terminal panel positioning helper
+    function updateTerminalPosition() {
+      var terminalPanel = document.querySelector('.terminal-panel');
+      if (!terminalPanel) return;
+
+      if (window.innerWidth < 768) {
+        terminalPanel.style.left = '0';
+      } else {
+        terminalPanel.style.left = sidePanel.classList.contains('collapsed') ? '60px' : '280px';
+      }
+    }
+
     var panelState = localStorage.getItem('nodepulse-panel');
     if (panelState === 'collapsed') {
       sidePanel.classList.add('collapsed');
     }
+
+    // Initialize terminal position on page load
+    updateTerminalPosition();
 
     panelToggle.addEventListener('click', function() {
       if (window.innerWidth < 768) {
@@ -863,6 +878,9 @@
         } else {
           localStorage.setItem('nodepulse-panel', 'open');
         }
+
+        // Update terminal position after toggle
+        updateTerminalPosition();
       }
     });
 
@@ -873,6 +891,9 @@
         }
       }
     });
+
+    // Update terminal position on window resize
+    window.addEventListener('resize', updateTerminalPosition);
   }
 
   function setupThemeToggle() {
