@@ -3,22 +3,42 @@
   <!-- Resize Handle -->
   <div class="terminal-resize-handle" id="terminalResizeHandle"></div>
 
-  <!-- Terminal Header -->
+  <!-- Terminal Header with Tab Bar -->
   <div class="terminal-panel-header">
-    <div class="terminal-panel-title">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="4 17 10 11 4 5"/>
-        <line x1="12" y1="19" x2="20" y2="19"/>
-      </svg>
-      <span>Terminal (<%= node.name %>)</span>
+    <!-- Tab Bar -->
+    <div class="terminal-tab-bar" role="tablist" id="terminalTabBar">
+      <!-- Tabs will be rendered by JavaScript -->
     </div>
+
+    <!-- Terminal Actions -->
     <div class="terminal-panel-actions">
-      <button type="button" class="terminal-panel-btn" id="terminalMinimizeBtn" title="Minimieren" onclick="toggleTerminalPanel()">
+      <!-- Theme Toggle Button -->
+      <button type="button" class="terminal-panel-btn" id="terminalThemeToggle"
+              title="Light/Dark Mode" onclick="toggleTerminalTheme()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+
+      <!-- Minimize Button -->
+      <button type="button" class="terminal-panel-btn" id="terminalMinimizeBtn"
+              title="Minimieren" onclick="toggleTerminalPanel()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="18 15 12 9 6 15"/>
         </svg>
       </button>
-      <button type="button" class="terminal-panel-btn" id="terminalClearBtn" title="Output leeren" onclick="clearOutput()">
+
+      <!-- Clear Output Button -->
+      <button type="button" class="terminal-panel-btn" id="terminalClearBtn"
+              title="Output leeren" onclick="clearOutput()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="3 6 5 6 21 6"/>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -29,13 +49,16 @@
 
   <!-- Terminal Content -->
   <div class="terminal-panel-content" id="terminalPanelContent">
-    <!-- Command Input -->
+    <!-- Command Input with Enhanced Prompt -->
     <div class="terminal-input-section">
       <form id="command-form" onsubmit="executeCommand(event, <%= node.id %>)">
         <div class="terminal-input-wrapper">
-          <span class="terminal-prompt">$</span>
+          <!-- Enhanced Bash-Style Prompt (user@host:~/path$) -->
+          <span class="terminal-prompt-display" id="terminalPromptDisplay">
+            <span class="prompt-user">root</span><span class="prompt-separator">@</span><span class="prompt-host"><%= node.name %></span><span class="prompt-separator">:</span><span class="prompt-path">~</span><span class="prompt-symbol">$</span>
+          </span>
           <input type="text" id="command-input" name="command" class="terminal-input"
-                 placeholder="Befehl eingeben (z.B. uptime, free -h)..." autocomplete="off" maxlength="2000">
+                 placeholder="Befehl eingeben..." autocomplete="off" maxlength="2000">
           <button type="submit" class="btn btn-primary btn-sm" id="btn-execute">
             <span class="btn-text">Ausführen</span>
             <span class="btn-loading"><span class="spinner"></span></span>

@@ -469,15 +469,13 @@
    Terminal Bottom Panel
    ===================================================== */
 
-/* Terminal Panel Container - PowerShell Style */
+/* Terminal Panel Container - PowerShell 7 Theme */
 .terminal-panel {
   position: fixed;
   bottom: 0;
   left: 280px; /* Side-panel width */
   right: 0;
   height: 400px;
-  background: #012456; /* PowerShell Blue */
-  border-top: 2px solid #1e3a5f;
   z-index: 100;
   display: -webkit-box;
   display: -webkit-flex;
@@ -488,6 +486,39 @@
   flex-direction: column;
   -webkit-transition: left 0.3s ease, height 0.3s ease, -webkit-transform 0.3s ease;
   transition: left 0.3s ease, height 0.3s ease, transform 0.3s ease;
+
+  /* PowerShell 7 Dark Mode Colors (Default) */
+  --ps-bg: #012456;
+  --ps-bg-dark: #01204a;
+  --ps-border: #1e3a5f;
+  --ps-text: #cccccc;
+  --ps-prompt-user-host: #4ec9b0;
+  --ps-prompt-path: #569cd6;
+  --ps-prompt-symbol: #ffff00;
+  --ps-success: #4ec9b0;
+  --ps-error: #f14c4c;
+  --ps-tab-active-bg: #1e3a5f;
+  --ps-tab-hover-bg: rgba(255,255,255,0.1);
+
+  /* Apply dark mode colors */
+  background: var(--ps-bg);
+  border-top: 2px solid var(--ps-border);
+  color: var(--ps-text);
+}
+
+/* Docker Desktop Light Mode */
+.terminal-panel.light-mode {
+  --ps-bg: #f5f5f5;
+  --ps-bg-dark: #e0e0e0;
+  --ps-border: #d0d0d0;
+  --ps-text: #2d2d2d;
+  --ps-prompt-user-host: #008080;
+  --ps-prompt-path: #0066cc;
+  --ps-prompt-symbol: #996600;
+  --ps-success: #006666;
+  --ps-error: #cc0000;
+  --ps-tab-active-bg: #ffffff;
+  --ps-tab-hover-bg: rgba(0,0,0,0.05);
 }
 
 /* Terminal position when side-panel is collapsed */
@@ -537,9 +568,9 @@
   -webkit-box-pack: justify;
   -webkit-justify-content: space-between;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: #01204a; /* Darker PowerShell Blue */
-  border-bottom: 1px solid #1e3a5f;
+  padding: 0;
+  background: var(--ps-bg-dark);
+  border-bottom: 1px solid var(--ps-border);
   min-height: 44px;
 }
 
@@ -571,9 +602,10 @@
 .terminal-panel-btn {
   background: none;
   border: none;
-  color: #cccccc;
+  color: var(--ps-text);
   cursor: pointer;
-  padding: 0.25rem;
+  padding: 0.5rem;
+  margin-right: 0.25rem;
   border-radius: 4px;
   -webkit-transition: all 0.2s;
   transition: all 0.2s;
@@ -589,14 +621,230 @@
 }
 
 .terminal-panel-btn:hover {
-  background: #3d3d3d;
-  color: #ffffff;
+  background: var(--ps-tab-hover-bg);
+  color: var(--ps-text);
 }
 
 .terminal-panel-btn svg {
   -webkit-flex-shrink: 0;
   flex-shrink: 0;
 }
+
+/* Light Mode Theme Toggle Icon Animation */
+.terminal-panel.light-mode #terminalThemeToggle svg {
+  -webkit-transform: rotate(180deg);
+  transform: rotate(180deg);
+  -webkit-transition: transform 0.3s ease;
+  transition: transform 0.3s ease;
+}
+
+/* ===================================================
+   Terminal Tab Bar (PowerShell 7 Style)
+   =================================================== */
+
+.terminal-tab-bar {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: flex-end;
+  -webkit-align-items: flex-end;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0 12px;
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ps-border) transparent;
+}
+
+.terminal-tab-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.terminal-tab-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.terminal-tab-bar::-webkit-scrollbar-thumb {
+  background: var(--ps-border);
+  border-radius: 2px;
+}
+
+/* Individual Tab */
+.terminal-tab {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: transparent;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border: 1px solid transparent;
+  color: var(--ps-text);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  white-space: nowrap;
+  -webkit-transition: all 0.2s ease;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  max-width: 200px;
+}
+
+.terminal-tab:hover:not(.active) {
+  background: var(--ps-tab-hover-bg);
+}
+
+.terminal-tab.active {
+  background: var(--ps-bg);
+  border-color: var(--ps-border);
+  border-bottom-color: var(--ps-bg);
+  font-weight: 500;
+}
+
+.tab-icon {
+  font-family: monospace;
+  font-size: 0.875rem;
+  opacity: 0.8;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.tab-title {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.875rem;
+}
+
+.tab-close-btn {
+  background: none;
+  border: none;
+  color: var(--ps-text);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  opacity: 0;
+  -webkit-transition: opacity 0.2s;
+  transition: opacity 0.2s;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.terminal-tab:hover .tab-close-btn {
+  opacity: 0.7;
+}
+
+.tab-close-btn:hover {
+  opacity: 1 !important;
+  color: var(--ps-error);
+}
+
+/* New Tab Button */
+.terminal-tab-new {
+  background: none;
+  border: none;
+  color: var(--ps-text);
+  cursor: pointer;
+  padding: 8px 12px;
+  opacity: 0.6;
+  -webkit-transition: opacity 0.2s;
+  transition: opacity 0.2s;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.terminal-tab-new:hover {
+  opacity: 1;
+}
+
+/* Tab Animations */
+@-webkit-keyframes tabSlideIn {
+  from {
+    opacity: 0;
+    -webkit-transform: translateX(-20px);
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes tabSlideIn {
+  from {
+    opacity: 0;
+    -webkit-transform: translateX(-20px);
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+}
+
+.terminal-tab.new {
+  -webkit-animation: tabSlideIn 0.3s ease;
+  animation: tabSlideIn 0.3s ease;
+}
+
+/* ===================================================
+   Enhanced Prompt Display (user@host:~/path$)
+   =================================================== */
+
+.terminal-prompt-display {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  font-family: 'Cascadia Code', 'Consolas', 'Monaco', monospace;
+  font-size: 0.9375rem;
+  margin-right: 0.5rem;
+  white-space: nowrap;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.prompt-user,
+.prompt-host {
+  color: var(--ps-prompt-user-host);
+  font-weight: 500;
+}
+
+.prompt-path {
+  color: var(--ps-prompt-path);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prompt-symbol {
+  color: var(--ps-prompt-symbol);
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+.prompt-separator {
+  color: var(--ps-text);
+}
+
+/* ===================================================
+   Terminal Panel Content
+   =================================================== */
 
 /* Terminal Panel Content */
 .terminal-panel-content {
@@ -941,6 +1189,73 @@
   background: var(--color-bg-elevated);
 }
 
+/* ===================================================
+   Light Mode Specific Styles (Docker Desktop Style)
+   =================================================== */
+
+.terminal-panel.light-mode .terminal-output {
+  background: #ffffff;
+  color: var(--ps-text);
+  border-color: var(--ps-border);
+}
+
+.terminal-panel.light-mode .terminal-output.loading {
+  color: #996600;
+}
+
+.terminal-panel.light-mode .terminal-output.success {
+  color: var(--ps-success);
+}
+
+.terminal-panel.light-mode .terminal-output.error {
+  color: var(--ps-error);
+}
+
+.terminal-panel.light-mode .terminal-input {
+  background: transparent;
+  color: var(--ps-text);
+}
+
+.terminal-panel.light-mode .terminal-input:focus {
+  outline-color: var(--ps-prompt-path);
+}
+
+.terminal-panel.light-mode .terminal-input::placeholder {
+  color: #999999;
+}
+
+.terminal-panel.light-mode .terminal-input-wrapper {
+  background: #ffffff;
+  border-color: var(--ps-border);
+}
+
+.terminal-panel.light-mode .btn-quick {
+  background: #e8e8e8;
+  color: var(--ps-text);
+  border-color: var(--ps-border);
+}
+
+.terminal-panel.light-mode .btn-quick:hover {
+  background: #d0d0d0;
+}
+
+.terminal-panel.light-mode .btn-quick:focus {
+  outline-color: var(--ps-prompt-path);
+  background: #d0d0d0;
+}
+
+.terminal-panel.light-mode .terminal-output-section {
+  border-top-color: var(--ps-border);
+}
+
+.terminal-panel.light-mode .terminal-tab-bar {
+  scrollbar-color: #b0b0b0 transparent;
+}
+
+.terminal-panel.light-mode .terminal-tab-bar::-webkit-scrollbar-thumb {
+  background: #b0b0b0;
+}
+
 /* Terminal Responsive */
 @media (max-width: 768px) {
   .terminal-panel {
@@ -986,6 +1301,30 @@
   .history-command {
     font-size: 0.75rem;
     max-width: 200px;
+  }
+
+  /* Tab Bar Responsive */
+  .terminal-tab-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .terminal-tab {
+    min-width: 100px;
+    font-size: 0.8125rem;
+  }
+
+  .tab-icon {
+    display: none; /* Hide icon on mobile for more space */
+  }
+
+  /* Enhanced Prompt Responsive */
+  .prompt-path {
+    max-width: 100px; /* Shorten path on mobile */
+  }
+
+  .terminal-prompt-display {
+    font-size: 0.875rem;
   }
 }
 
