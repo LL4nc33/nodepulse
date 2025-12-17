@@ -81,6 +81,25 @@
       <% } else { %>
         <div class="detail-grid">
           <!-- CPU -->
+          <%
+            var cpuThermalSensors = [];
+            try {
+              var allThermals = JSON.parse(hardware.thermal_json || '[]');
+              // Filter CPU-related sensors
+              cpuThermalSensors = allThermals.filter(function(s) {
+                var name = (s.name || '').toLowerCase();
+                var label = (s.label || '').toLowerCase();
+                var type = (s.type || '').toLowerCase();
+                return name.indexOf('cpu') !== -1 ||
+                       name.indexOf('coretemp') !== -1 ||
+                       name.indexOf('k10temp') !== -1 ||
+                       label.indexOf('cpu') !== -1 ||
+                       label.indexOf('tctl') !== -1 ||
+                       label.indexOf('package') !== -1 ||
+                       type.indexOf('cpu') !== -1;
+              });
+            } catch(e) {}
+          %>
           <div class="detail-card compact">
             <h3>CPU</h3>
             <dl>
@@ -92,6 +111,18 @@
               <dd><%= hardware.cpu_arch || '-' %></dd>
               <dt>Virtualisierung</dt>
               <dd><%= hardware.cpu_virt_support || '-' %></dd>
+              <% if (cpuThermalSensors.length > 0) { %>
+                <% cpuThermalSensors.slice(0, 2).forEach(function(sensor) { %>
+                  <% if (sensor.temp_c !== null && sensor.temp_c !== undefined) { %>
+                    <dt><%= (sensor.label || sensor.type || sensor.name || 'Temp').substring(0, 15) %></dt>
+                    <dd>
+                      <span class="temp-badge <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : 'ok') %>">
+                        <%= typeof sensor.temp_c === 'number' ? sensor.temp_c.toFixed(1) : sensor.temp_c %>&deg;C
+                      </span>
+                    </dd>
+                  <% } %>
+                <% }); %>
+              <% } %>
             </dl>
           </div>
 
@@ -171,21 +202,21 @@
             </dl>
           </div>
 
-          <!-- Thermal Sensors -->
+          <!-- Power Sensors -->
           <%
-            var thermalSensors = [];
-            try { thermalSensors = JSON.parse(hardware.thermal_json || '[]'); } catch(e) {}
+            var powerSensors = [];
+            try { powerSensors = JSON.parse(hardware.power_json || '[]'); } catch(e) {}
           %>
-          <% if (thermalSensors.length > 0) { %>
+          <% if (powerSensors.length > 0) { %>
           <div class="detail-card compact">
-            <h3>Temperaturen</h3>
+            <h3>Stromverbrauch</h3>
             <div class="thermal-list-compact">
-              <% thermalSensors.slice(0, 6).forEach(function(sensor) { %>
-                <% if (sensor.temp_c !== null && sensor.temp_c !== undefined) { %>
+              <% powerSensors.slice(0, 6).forEach(function(sensor) { %>
+                <% if (sensor.power_w !== null && sensor.power_w !== undefined) { %>
                   <div class="thermal-item-compact">
-                    <span class="thermal-label"><%= (sensor.label || sensor.type || sensor.name || 'Sensor').substring(0, 12) %></span>
-                    <span class="thermal-temp <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : '') %>">
-                      <%= typeof sensor.temp_c === 'number' ? sensor.temp_c.toFixed(1) : sensor.temp_c %>&deg;C
+                    <span class="thermal-label"><%= (sensor.label || sensor.name || 'Power').substring(0, 12) %></span>
+                    <span class="thermal-temp ok">
+                      <%= typeof sensor.power_w === 'number' ? sensor.power_w.toFixed(2) : sensor.power_w %> W
                     </span>
                   </div>
                 <% } %>
