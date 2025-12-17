@@ -4,9 +4,13 @@ const db = require('../db');
 const ssh = require('../ssh');
 const alertsService = require('../services/alerts');
 const { getThresholds } = require('../lib/thresholds');
+const TieredPoller = require('./tiered-poller');
 
 // Load scripts
 const scriptsDir = path.join(__dirname, '../../scripts');
+
+// Active pollers (nodeId -> TieredPoller instance)
+const activePollers = new Map();
 
 /**
  * Get script content
@@ -656,6 +660,95 @@ async function runTraceroute(node, target, maxHops = 20) {
   };
 }
 
+/**
+ * Start tiered polling for a node
+ * @param {number} nodeId - Node ID
+ */
+function startTieredMonitoring(nodeId) {
+  // Check if already running
+  if (activePollers.has(nodeId)) {
+    console.log(`[Collector] Tiered monitoring already running for node ${nodeId}`);
+    return;
+  }
+
+  const node = db.nodes.getById(nodeId);
+  if (!node) {
+    console.error(`[Collector] Cannot start monitoring: Node ${nodeId} not found`);
+    return;
+  }
+
+  if (!node.monitoring_enabled) {
+    console.log(`[Collector] Monitoring disabled for node ${nodeId}`);
+    return;
+  }
+
+  // Get capabilities (if exists)
+  const capsData = db.capabilities.get(nodeId);
+  let capabilities = {};
+  if (capsData && capsData.capabilities_json) {
+    try {
+      capabilities = JSON.parse(capsData.capabilities_json);
+    } catch (err) {
+      console.error(`[Collector] Error parsing capabilities for node ${nodeId}:`, err.message);
+    }
+  }
+
+  // Create and start poller
+  const poller = new TieredPoller(nodeId, capabilities);
+  activePollers.set(nodeId, poller);
+  poller.start();
+
+  console.log(`[Collector] Started tiered monitoring for node ${nodeId} (${node.name})`);
+}
+
+/**
+ * Stop tiered polling for a node
+ * @param {number} nodeId - Node ID
+ */
+function stopTieredMonitoring(nodeId) {
+  const poller = activePollers.get(nodeId);
+  if (poller) {
+    poller.stop();
+    activePollers.delete(nodeId);
+    console.log(`[Collector] Stopped tiered monitoring for node ${nodeId}`);
+  }
+}
+
+/**
+ * Start monitoring for all nodes
+ */
+function startAllMonitoring() {
+  const nodes = db.nodes.getAll();
+  nodes.forEach(node => {
+    if (node.monitoring_enabled) {
+      startTieredMonitoring(node.id);
+    }
+  });
+  console.log(`[Collector] Started monitoring for ${activePollers.size} nodes`);
+}
+
+/**
+ * Stop all monitoring
+ */
+function stopAllMonitoring() {
+  activePollers.forEach((poller, nodeId) => {
+    poller.stop();
+  });
+  activePollers.clear();
+  console.log('[Collector] Stopped all monitoring');
+}
+
+/**
+ * Get monitoring status
+ */
+function getMonitoringStatus() {
+  const status = [];
+  activePollers.forEach((poller, nodeId) => {
+    status.push(poller.getStatus());
+  });
+  return status;
+}
+
 module.exports = {
   runDiscovery,
   runHardware,
@@ -674,4 +767,10 @@ module.exports = {
   determineNodeType,
   getTagsFromDiscovery,
   applyAutoTags,
+  // Tiered monitoring
+  startTieredMonitoring,
+  stopTieredMonitoring,
+  startAllMonitoring,
+  stopAllMonitoring,
+  getMonitoringStatus,
 };

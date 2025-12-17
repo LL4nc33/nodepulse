@@ -296,9 +296,13 @@ async function executeScript(node, scriptContent, timeout = 60000) {
   return execute(node, command, timeout);
 }
 
+// SSH ControlMaster for performance-critical operations
+const controlMaster = require('./control-master');
+
 module.exports = {
   testConnection,
   execute,
   executeScript,
   COMMAND_TIMEOUT,
+  controlMaster, // High-performance SSH with connection pooling
 };

@@ -111,6 +111,42 @@ async function init() {
       throw err;
     }
 
+    // Migration 7: Tiered Polling Timestamps + Capabilities
+    try {
+      const statsCols = db.prepare("PRAGMA table_info(node_stats_current)").all();
+      const hasTier1 = statsCols.some(col => col.name === 'tier1_last_update');
+      const hasTier2 = statsCols.some(col => col.name === 'tier2_last_update');
+
+      if (!hasTier1) {
+        db.exec('ALTER TABLE node_stats_current ADD COLUMN tier1_last_update INTEGER DEFAULT 0');
+        console.log('[DB] Migration: Added tier1_last_update column to node_stats_current');
+      }
+      if (!hasTier2) {
+        db.exec('ALTER TABLE node_stats_current ADD COLUMN tier2_last_update INTEGER DEFAULT 0');
+        console.log('[DB] Migration: Added tier2_last_update column to node_stats_current');
+      }
+
+      const hardwareCols = db.prepare("PRAGMA table_info(node_hardware)").all();
+      const hasTier3 = hardwareCols.some(col => col.name === 'tier3_last_update');
+      if (!hasTier3) {
+        db.exec('ALTER TABLE node_hardware ADD COLUMN tier3_last_update INTEGER DEFAULT 0');
+        console.log('[DB] Migration: Added tier3_last_update column to node_hardware');
+      }
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS node_capabilities (
+          node_id INTEGER PRIMARY KEY,
+          capabilities_json TEXT NOT NULL,
+          last_detected_at INTEGER NOT NULL,
+          FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('[DB] Migration: Created node_capabilities table');
+    } catch (err) {
+      console.error('[DB] Migration error (tiered timestamps):', err.message);
+      throw err;
+    }
+
     // Run seed data
     const seedPath = path.join(__dirname, 'seed.sql');
     const seed = fs.readFileSync(seedPath, 'utf8');
@@ -818,19 +854,28 @@ const stats = {
 
   /**
    * Get all nodes with their current stats (including nodes without stats)
+   * Extended version with hardware info and VM/container counts
    */
   getAllNodesWithStats() {
     const stmt = getDb().prepare(`
       SELECT
         n.id, n.name, n.host, n.node_type, n.online, n.last_seen,
-        n.monitoring_enabled, n.monitoring_interval,
+        n.monitoring_enabled, n.monitoring_interval, n.parent_id,
         s.timestamp, s.cpu_percent, s.load_1m, s.load_5m, s.load_15m,
         s.ram_used_bytes, s.ram_available_bytes, s.ram_percent,
         s.swap_used_bytes, s.disk_used_bytes, s.disk_available_bytes,
         s.disk_percent, s.net_rx_bytes, s.net_tx_bytes,
-        s.temp_cpu, s.uptime_seconds, s.processes
+        s.temp_cpu, s.uptime_seconds, s.processes,
+        s.tier1_last_update, s.tier2_last_update,
+        h.cpu_cores,
+        h.ram_total_bytes,
+        (s.disk_used_bytes + s.disk_available_bytes) AS disk_total_bytes,
+        (SELECT COUNT(*) FROM proxmox_vms WHERE node_id = n.id AND status = 'running') AS vms_running,
+        (SELECT COUNT(*) FROM proxmox_cts WHERE node_id = n.id AND status = 'running') AS cts_running,
+        (SELECT COUNT(*) FROM docker_containers WHERE node_id = n.id AND state = 'running') AS containers_running
       FROM nodes n
       LEFT JOIN node_stats_current s ON n.id = s.node_id
+      LEFT JOIN node_hardware h ON n.id = h.node_id
       ORDER BY n.name
     `);
     return stmt.all();
@@ -1825,6 +1870,40 @@ var health = {
   },
 };
 
+// =============================================================================
+// CAPABILITIES
+// =============================================================================
+
+var capabilities = {
+  // Get capabilities for a node
+  get: function(nodeId) {
+    return getDb().prepare(
+      'SELECT * FROM node_capabilities WHERE node_id = ?'
+    ).get(nodeId);
+  },
+
+  // Get all node capabilities
+  getAll: function() {
+    return getDb().prepare(
+      'SELECT c.*, n.name as node_name FROM node_capabilities c INNER JOIN nodes n ON c.node_id = n.id'
+    ).all();
+  },
+
+  // Save or update capabilities for a node
+  upsert: function(nodeId, capabilitiesJson, timestamp) {
+    var stmt = getDb().prepare(`
+      INSERT OR REPLACE INTO node_capabilities (node_id, capabilities_json, last_detected_at)
+      VALUES (?, ?, ?)
+    `);
+    return stmt.run(nodeId, capabilitiesJson, timestamp);
+  },
+
+  // Delete capabilities for a node
+  delete: function(nodeId) {
+    return getDb().prepare('DELETE FROM node_capabilities WHERE node_id = ?').run(nodeId);
+  },
+};
+
 module.exports = {
   init,
   getDb,
@@ -1840,4 +1919,5 @@ module.exports = {
   proxmox,
   commands,
   health,
+  capabilities,
 };
