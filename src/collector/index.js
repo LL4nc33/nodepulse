@@ -169,6 +169,49 @@ async function runStats(node, saveHistory = true) {
     throw err;
   }
 
+  // Defensive Parsing: Sanitize NaN/Infinity values (TOON Integration - Problem 2)
+  Object.keys(data).forEach(key => {
+    if (typeof data[key] === 'number' && !isFinite(data[key])) {
+      console.warn(`[Collector] Invalid number for ${node.name}.${key}: ${data[key]}, replacing with 0`);
+      data[key] = 0;
+    }
+  });
+
+  // Timestamp Validation (TOON Integration - Problem 7)
+  const now = Date.now();
+  const minDate = new Date('2024-01-01').getTime();
+  const maxDate = now + 3600000; // +1h future tolerance
+
+  if (data.timestamp) {
+    const ts = data.timestamp;
+    if (ts < minDate || ts > maxDate) {
+      console.warn(`[Collector] Invalid timestamp for ${node.name}: ${ts}, using current time`);
+      data.timestamp = now;
+    }
+  } else {
+    data.timestamp = now;
+  }
+
+  // Counter Reset Detection (TOON Integration - Problem 11)
+  const previousStats = db.stats.getCurrent(node.id);
+  if (previousStats) {
+    // Check net_rx_bytes for counter reset (reboot or overflow)
+    if (data.net_rx_bytes < previousStats.net_rx_bytes) {
+      const diff = previousStats.net_rx_bytes - data.net_rx_bytes;
+      if (diff > 1073741824) { // 1 GB difference = likely reset
+        console.warn(`[Collector] Counter reset detected for ${node.name} (RX: ${previousStats.net_rx_bytes} -> ${data.net_rx_bytes})`);
+        // Don't throw error - just log it, data is still valid
+      }
+    }
+    // Check net_tx_bytes
+    if (data.net_tx_bytes < previousStats.net_tx_bytes) {
+      const diff = previousStats.net_tx_bytes - data.net_tx_bytes;
+      if (diff > 1073741824) {
+        console.warn(`[Collector] Counter reset detected for ${node.name} (TX: ${previousStats.net_tx_bytes} -> ${data.net_tx_bytes})`);
+      }
+    }
+  }
+
   // Count VMs/Containers (TOON Integration - moved from SubQuery to Collector)
   // Improves getAllNodesWithStats() performance by 30-50%
   let vmsRunning = 0;
