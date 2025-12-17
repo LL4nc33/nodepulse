@@ -469,15 +469,15 @@
    Terminal Bottom Panel
    ===================================================== */
 
-/* Terminal Panel Container */
+/* Terminal Panel Container - PowerShell Style */
 .terminal-panel {
   position: fixed;
   bottom: 0;
   left: 280px; /* Side-panel width */
   right: 0;
   height: 400px;
-  background: #1e1e1e;
-  border-top: 2px solid var(--color-border);
+  background: #012456; /* PowerShell Blue */
+  border-top: 2px solid #1e3a5f;
   z-index: 100;
   display: -webkit-box;
   display: -webkit-flex;
@@ -526,7 +526,7 @@
   background: var(--color-accent);
 }
 
-/* Terminal Panel Header */
+/* Terminal Panel Header - PowerShell Style */
 .terminal-panel-header {
   display: -webkit-box;
   display: -webkit-flex;
@@ -538,8 +538,8 @@
   -webkit-justify-content: space-between;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  background: #2d2d2d;
-  border-bottom: 1px solid #3d3d3d;
+  background: #01204a; /* Darker PowerShell Blue */
+  border-bottom: 1px solid #1e3a5f;
   min-height: 44px;
 }
 
@@ -551,7 +551,7 @@
   -webkit-align-items: center;
   align-items: center;
   gap: 0.5rem;
-  color: #a0a0a0;
+  color: #cccccc;
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -571,7 +571,7 @@
 .terminal-panel-btn {
   background: none;
   border: none;
-  color: #a0a0a0;
+  color: #cccccc;
   cursor: pointer;
   padding: 0.25rem;
   border-radius: 4px;
@@ -687,10 +687,11 @@
   margin-right: 0;
 }
 
+/* PowerShell-style prompt */
 .terminal-prompt {
-  color: var(--color-accent-hover);
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 1.125rem;
+  color: #ffff00; /* PowerShell Yellow */
+  font-family: 'Cascadia Code', 'Consolas', 'Monaco', monospace;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -700,20 +701,20 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: var(--color-text);
-  font-family: 'Consolas', 'Monaco', monospace;
+  color: #cccccc; /* PowerShell light grey text */
+  font-family: 'Cascadia Code', 'Consolas', 'Monaco', monospace;
   font-size: 1rem;
   padding: 0.5rem 0;
   min-height: 44px;
 }
 
 .terminal-input:focus {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid #569cd6; /* PowerShell blue highlight */
   outline-offset: 2px;
 }
 
 .terminal-input::placeholder {
-  color: var(--color-text-muted);
+  color: #6a9955; /* PowerShell green for hints */
 }
 
 /* Quick Commands */
@@ -768,10 +769,21 @@
   background: var(--color-border-light);
 }
 
-/* Terminal Output */
+/* Terminal Output - PowerShell Style */
 .terminal-output-section {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #3E3E3E;
+  border-top: 1px solid #1e3a5f;
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+  overflow: hidden;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+  flex-direction: column;
 }
 
 .terminal-output-header {
@@ -788,38 +800,40 @@
 }
 
 .terminal-output-header span {
-  color: var(--color-text-muted);
+  color: #cccccc;
   font-size: 0.875rem;
   font-weight: 600;
 }
 
 .terminal-output {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
+  background: #012456; /* PowerShell Blue */
+  border: 1px solid #1e3a5f;
   border-radius: 4px;
   padding: 1rem;
   margin: 0;
-  font-family: 'Consolas', 'Monaco', monospace;
+  font-family: 'Cascadia Code', 'Consolas', 'Monaco', monospace;
   font-size: 0.875rem;
   line-height: 1.5;
-  color: var(--color-text-muted);
+  color: #cccccc; /* PowerShell light grey */
   white-space: pre-wrap;
   word-wrap: break-word;
-  max-height: 400px;
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .terminal-output.loading {
-  color: var(--color-warning);
+  color: #dcdcaa; /* PowerShell yellow for loading */
 }
 
 .terminal-output.success {
-  color: var(--color-accent);
+  color: #4ec9b0; /* PowerShell cyan for success */
 }
 
 .terminal-output.error {
-  color: var(--color-error-text);
+  color: #f14c4c; /* PowerShell red for errors */
 }
 
 /* Command History */
