@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-17T21:36:10.681Z
+   Generated: 2025-12-17T21:56:19.841Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -1207,18 +1207,18 @@ a:focus {
   -webkit-transition: left 0.3s ease, height 0.3s ease, -webkit-transform 0.3s ease;
   transition: left 0.3s ease, height 0.3s ease, transform 0.3s ease;
 
-  /* PowerShell 7 Dark Mode Colors (Default) */
-  --ps-bg: #012456;
-  --ps-bg-dark: #01204a;
-  --ps-border: #1e3a5f;
-  --ps-text: #cccccc;
+  /* Dark Terminal Colors (Default) */
+  --ps-bg: #1e1e1e;
+  --ps-bg-dark: #181818;
+  --ps-border: #333333;
+  --ps-text: #d4d4d4;
   --ps-prompt-user-host: #4ec9b0;
   --ps-prompt-path: #569cd6;
-  --ps-prompt-symbol: #ffff00;
+  --ps-prompt-symbol: #dcdcaa;
   --ps-success: #4ec9b0;
   --ps-error: #f14c4c;
-  --ps-tab-active-bg: #1e3a5f;
-  --ps-tab-hover-bg: rgba(255,255,255,0.1);
+  --ps-tab-active-bg: #2d2d2d;
+  --ps-tab-hover-bg: rgba(255,255,255,0.08);
 
   /* Apply dark mode colors */
   background: var(--ps-bg);
@@ -1578,7 +1578,7 @@ a:focus {
   -webkit-box-direction: normal;
   -webkit-flex-direction: column;
   flex-direction: column;
-  background: #012456; /* PowerShell Blue */
+  background: var(--ps-bg);
   font-family: 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.9375rem;
   line-height: 1.5;
@@ -1594,7 +1594,7 @@ a:focus {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  color: #cccccc;
+  color: var(--ps-text);
   padding-bottom: 0.5rem;
 }
 
@@ -1608,12 +1608,12 @@ a:focus {
 }
 
 .terminal-history::-webkit-scrollbar-thumb {
-  background: #1e3a5f;
+  background: var(--ps-border);
   border-radius: 4px;
 }
 
 .terminal-history::-webkit-scrollbar-thumb:hover {
-  background: #2e5a8f;
+  background: #555555;
 }
 
 /* History Entry (command + output) */
@@ -1638,22 +1638,22 @@ a:focus {
 }
 
 .terminal-cmd-line .cmd-prompt {
-  color: #4ec9b0; /* Cyan for user@host */
+  color: var(--ps-prompt-user-host);
   margin-right: 0;
   white-space: nowrap;
 }
 
 .terminal-cmd-line .cmd-prompt .prompt-at,
 .terminal-cmd-line .cmd-prompt .prompt-colon {
-  color: #cccccc;
+  color: var(--ps-text);
 }
 
 .terminal-cmd-line .cmd-prompt .prompt-path {
-  color: #569cd6; /* Blue for path */
+  color: var(--ps-prompt-path);
 }
 
 .terminal-cmd-line .cmd-prompt .prompt-dollar {
-  color: #ffff00; /* Yellow for $ */
+  color: var(--ps-prompt-symbol);
   margin-right: 0.5rem;
 }
 
@@ -1670,7 +1670,7 @@ a:focus {
 
 /* Command output */
 .terminal-cmd-output {
-  color: #cccccc;
+  color: var(--ps-text);
   white-space: pre-wrap;
   word-wrap: break-word;
   padding-left: 0;
@@ -1683,11 +1683,11 @@ a:focus {
 }
 
 .terminal-cmd-output.success {
-  color: #4ec9b0; /* Cyan */
+  color: var(--ps-success);
 }
 
 .terminal-cmd-output.error {
-  color: #f14c4c; /* Red */
+  color: var(--ps-error);
 }
 
 /* Current Input Line - Always at bottom */
@@ -1714,27 +1714,27 @@ a:focus {
 }
 
 .terminal-prompt .prompt-user {
-  color: #4ec9b0; /* Cyan */
+  color: var(--ps-prompt-user-host);
 }
 
 .terminal-prompt .prompt-at {
-  color: #cccccc;
+  color: var(--ps-text);
 }
 
 .terminal-prompt .prompt-host {
-  color: #4ec9b0; /* Cyan */
+  color: var(--ps-prompt-user-host);
 }
 
 .terminal-prompt .prompt-colon {
-  color: #cccccc;
+  color: var(--ps-text);
 }
 
 .terminal-prompt .prompt-path {
-  color: #569cd6; /* Blue */
+  color: var(--ps-prompt-path);
 }
 
 .terminal-prompt .prompt-dollar {
-  color: #ffff00; /* Yellow */
+  color: var(--ps-prompt-symbol);
   margin-left: 0;
   margin-right: 0.5rem;
 }
@@ -1793,8 +1793,8 @@ a:focus {
   position: absolute;
   top: 100%;
   right: 0;
-  background: #01204a;
-  border: 1px solid #1e3a5f;
+  background: var(--ps-bg-dark);
+  border: 1px solid var(--ps-border);
   border-radius: 4px;
   min-width: 120px;
   z-index: 10;
@@ -1811,7 +1811,7 @@ a:focus {
   padding: 0.5rem 0.75rem;
   background: transparent;
   border: none;
-  color: #cccccc;
+  color: var(--ps-text);
   font-family: 'Cascadia Code', 'Consolas', monospace;
   font-size: 0.8125rem;
   text-align: left;
@@ -1819,7 +1819,7 @@ a:focus {
 }
 
 .quick-cmd-menu button:hover {
-  background: #1e3a5f;
+  background: var(--ps-tab-active-bg);
   color: #ffffff;
 }
 

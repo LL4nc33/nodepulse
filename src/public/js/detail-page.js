@@ -69,7 +69,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-17T21:36:14.516Z
+   Generated: 2025-12-17T21:56:21.287Z
 */
 
 
@@ -2215,7 +2215,7 @@ function executeTerminalCommand() {
 
   // Execute command via API
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeIdToUse + '/commands', true);
+  xhr.open('POST', '/api/commands/execute/' + nodeIdToUse, true);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.timeout = 125000;
 

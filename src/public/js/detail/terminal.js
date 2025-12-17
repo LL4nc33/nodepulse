@@ -634,7 +634,7 @@ function executeTerminalCommand() {
 
   // Execute command via API
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeIdToUse + '/commands', true);
+  xhr.open('POST', '/api/commands/execute/' + nodeIdToUse, true);
   xhr.setRequestHeader('Content-Type', 'application/json');
   xhr.timeout = 125000;
 
