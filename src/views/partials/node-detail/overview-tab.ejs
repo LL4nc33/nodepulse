@@ -170,6 +170,32 @@
               <dd><%= hardware.bios_version || '-' %></dd>
             </dl>
           </div>
+
+          <!-- Thermal Sensors -->
+          <%
+            var thermalSensors = [];
+            try { thermalSensors = JSON.parse(hardware.thermal_json || '[]'); } catch(e) {}
+          %>
+          <% if (thermalSensors.length > 0) { %>
+          <div class="detail-card">
+            <h3>Temperaturen</h3>
+            <div class="thermal-list">
+              <% thermalSensors.forEach(function(sensor) { %>
+                <% if (sensor.temp_c !== null && sensor.temp_c !== undefined) { %>
+                  <div class="thermal-item">
+                    <div class="thermal-info">
+                      <strong><%= sensor.label || sensor.type || sensor.name || 'Sensor' %></strong>
+                      <small><%= sensor.source === 'hwmon' ? sensor.name : 'thermal_zone' %></small>
+                    </div>
+                    <div class="thermal-temp <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : '') %>">
+                      <%= typeof sensor.temp_c === 'number' ? sensor.temp_c.toFixed(1) : sensor.temp_c %>&deg;C
+                    </div>
+                  </div>
+                <% } %>
+              <% }); %>
+            </div>
+          </div>
+          <% } %>
         </div>
       <% } %>
     </div>

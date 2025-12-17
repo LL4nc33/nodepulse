@@ -1706,6 +1706,57 @@ a:focus {
   color: var(--color-text-muted);
 }
 
+/* Thermal Sensors */
+.thermal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.thermal-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--color-bg-input);
+  padding: 0.75rem;
+  border-radius: 6px;
+}
+
+.thermal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.thermal-info strong {
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.thermal-info small {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.thermal-temp {
+  font-size: 1.125rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.thermal-temp.warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.thermal-temp.critical {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
 /* =====================================================
    Discovery Display
    ===================================================== */
