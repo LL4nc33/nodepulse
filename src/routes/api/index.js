@@ -9,6 +9,7 @@
  * - /api/nodes/:nodeId/docker       - Docker management (per node)
  * - /api/nodes/:nodeId/proxmox      - Proxmox VMs/CTs (per node)
  * - /api/nodes/:nodeId/services     - Systemd services (per node)
+ * - /api/nodes/:nodeId/health       - Health checks, updates, repo management
  * - /api/tags                       - Tag management
  * - /api/stats                      - Statistics collection
  * - /api/alerts                     - Alert management
@@ -30,6 +31,7 @@ const alertsRouter = require('./alerts');
 const commandsRouter = require('./commands');
 const servicesRouter = require('./services');
 const settingsRouter = require('./settings');
+const healthRouter = require('./health');
 
 // Mount sub-routers
 router.use('/metrics', metricsRouter);
@@ -45,5 +47,6 @@ router.use('/settings', settingsRouter);
 router.use('/nodes/:nodeId/docker', dockerRouter);
 router.use('/nodes/:nodeId/proxmox', proxmoxRouter);
 router.use('/nodes/:nodeId/services', servicesRouter);
+router.use('/nodes/:nodeId/health', healthRouter);
 
 module.exports = router;

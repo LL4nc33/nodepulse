@@ -440,3 +440,46 @@
   background: var(--color-bg-elevated);
   color: var(--color-text-muted);
 }
+
+/* Badge aliases for consistency */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badge-ok {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.badge-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.badge-critical {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
+.badge-neutral {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+}
+
+/* Button Stack (vertical button group) */
+.button-stack {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.button-stack .btn {
+  width: 100%;
+}

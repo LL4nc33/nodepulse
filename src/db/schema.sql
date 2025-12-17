@@ -411,6 +411,37 @@ CREATE TABLE IF NOT EXISTS command_results (
 );
 
 -- =====================================================
+-- HEALTH CHECK
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS node_health (
+    node_id INTEGER PRIMARY KEY,
+
+    -- System
+    kernel_version TEXT,
+    last_boot TEXT,
+    uptime_seconds INTEGER,
+    reboot_required INTEGER DEFAULT 0,
+
+    -- APT Updates
+    apt_updates INTEGER DEFAULT 0,
+    apt_security INTEGER DEFAULT 0,
+    apt_packages_json TEXT,  -- JSON array of packages
+
+    -- Proxmox specific
+    pve_version TEXT,
+    pve_repo TEXT,  -- 'enterprise', 'no-subscription', 'none'
+
+    -- Other
+    docker_images INTEGER DEFAULT 0,
+    npm_outdated INTEGER DEFAULT 0,
+    apt_cache_free_mb INTEGER DEFAULT 0,
+
+    checked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
+);
+
+-- =====================================================
 -- SETTINGS
 -- =====================================================
 

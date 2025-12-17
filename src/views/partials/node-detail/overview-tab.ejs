@@ -315,4 +315,115 @@
       <% } %>
     </div>
   </div>
+
+  <!-- System Health Section (Collapsible) -->
+  <div class="overview-section collapsible">
+    <h2 class="section-header" onclick="toggleSection(this)">
+      <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+      System Health
+      <% if (health && health.apt_updates > 0) { %>
+        <span class="badge badge-warning"><%= health.apt_updates %> Updates</span>
+      <% } %>
+      <% if (health && health.reboot_required) { %>
+        <span class="badge badge-critical">Reboot</span>
+      <% } %>
+    </h2>
+    <div class="section-content">
+      <% if (!health) { %>
+        <div class="empty-state">
+          <p>Noch kein Health-Check durchgefuehrt.</p>
+          <button class="btn btn-primary btn-health-check" onclick="runHealthCheck(<%= node.id %>)">
+            <span class="btn-text">Health-Check starten</span>
+            <span class="btn-loading"><span class="spinner"></span> Pruefe...</span>
+          </button>
+        </div>
+      <% } else { %>
+        <div class="detail-grid">
+          <!-- System Updates -->
+          <div class="detail-card compact">
+            <h3>Updates</h3>
+            <dl>
+              <dt>APT Updates</dt>
+              <dd>
+                <% if (health.apt_updates > 0) { %>
+                  <span class="badge badge-warning"><%= health.apt_updates %></span>
+                <% } else { %>
+                  <span class="badge badge-ok">0</span>
+                <% } %>
+              </dd>
+              <% if (health.apt_security > 0) { %>
+                <dt>Security</dt>
+                <dd><span class="badge badge-critical"><%= health.apt_security %></span></dd>
+              <% } %>
+              <dt>Disk-Platz</dt>
+              <dd><%= health.apt_cache_free_mb || 0 %> MB frei</dd>
+            </dl>
+          </div>
+
+          <!-- System Info -->
+          <div class="detail-card compact">
+            <h3>System</h3>
+            <dl>
+              <dt>Kernel</dt>
+              <dd><%= health.kernel_version || '-' %></dd>
+              <dt>Letzter Boot</dt>
+              <dd><%= health.last_boot || '-' %></dd>
+              <dt>Reboot noetig</dt>
+              <dd>
+                <% if (health.reboot_required) { %>
+                  <span class="badge badge-critical">Ja</span>
+                <% } else { %>
+                  <span class="badge badge-ok">Nein</span>
+                <% } %>
+              </dd>
+            </dl>
+          </div>
+
+          <% if (health.pve_version) { %>
+            <!-- Proxmox Repo -->
+            <div class="detail-card compact">
+              <h3>Proxmox</h3>
+              <dl>
+                <dt>Version</dt>
+                <dd><%= health.pve_version %></dd>
+                <dt>Repository</dt>
+                <dd>
+                  <% if (health.pve_repo === 'enterprise') { %>
+                    <span class="badge badge-warning">Enterprise</span>
+                  <% } else if (health.pve_repo === 'no-subscription') { %>
+                    <span class="badge badge-ok">No-Subscription</span>
+                  <% } else { %>
+                    <span class="badge badge-neutral">Unbekannt</span>
+                  <% } %>
+                </dd>
+              </dl>
+            </div>
+          <% } %>
+
+          <!-- Actions -->
+          <div class="detail-card compact">
+            <h3>Aktionen</h3>
+            <div class="button-stack">
+              <button class="btn btn-sm btn-secondary btn-health-check" onclick="runHealthCheck(<%= node.id %>)">
+                <span class="btn-text">Erneut pruefen</span>
+                <span class="btn-loading"><span class="spinner"></span></span>
+              </button>
+              <% if (health.apt_updates > 0) { %>
+                <button class="btn btn-sm btn-primary" onclick="runUpgrade(<%= node.id %>)">
+                  <span class="btn-text">Upgrade (<%= health.apt_updates %>)</span>
+                  <span class="btn-loading"><span class="spinner"></span></span>
+                </button>
+              <% } %>
+              <% if (health.pve_version && health.pve_repo === 'enterprise') { %>
+                <button class="btn btn-sm btn-warning" onclick="switchProxmoxRepo(<%= node.id %>, 'no-subscription')">
+                  No-Subscription
+                </button>
+              <% } %>
+            </div>
+            <small class="text-muted">Zuletzt: <%= health.checked_at || '-' %></small>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
 </div>

@@ -198,6 +198,7 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
   const docker = discovery && discovery.has_docker ? db.docker.getAllForNode(node.id) : null;
   const proxmox = discovery && discovery.is_proxmox_host ? db.proxmox.getAllForNode(node.id) : null;
   const currentStats = db.stats.getCurrent(node.id);
+  const health = db.health.get(node.id);
 
   // Sidebar data comes from middleware
   res.render('nodes/detail', {
@@ -210,6 +211,7 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     docker,
     proxmox,
     currentStats,
+    health,
     formatBytes
   });
 }));

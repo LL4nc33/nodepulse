@@ -85,6 +85,32 @@ async function init() {
       throw err;
     }
 
+    // Migration: Create node_health table if not exists
+    try {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS node_health (
+          node_id INTEGER PRIMARY KEY,
+          kernel_version TEXT,
+          last_boot TEXT,
+          uptime_seconds INTEGER,
+          reboot_required INTEGER DEFAULT 0,
+          apt_updates INTEGER DEFAULT 0,
+          apt_security INTEGER DEFAULT 0,
+          apt_packages_json TEXT,
+          pve_version TEXT,
+          pve_repo TEXT,
+          docker_images INTEGER DEFAULT 0,
+          npm_outdated INTEGER DEFAULT 0,
+          apt_cache_free_mb INTEGER DEFAULT 0,
+          checked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
+        )
+      `);
+    } catch (err) {
+      console.error('[DB] Migration error (health):', err.message);
+      throw err;
+    }
+
     // Run seed data
     const seedPath = path.join(__dirname, 'seed.sql');
     const seed = fs.readFileSync(seedPath, 'utf8');
@@ -1731,6 +1757,74 @@ const commands = {
   },
 };
 
+// =============================================================================
+// HEALTH
+// =============================================================================
+
+var health = {
+  // Get health data for a node
+  get: function(nodeId) {
+    return getDb().prepare(
+      'SELECT * FROM node_health WHERE node_id = ?'
+    ).get(nodeId);
+  },
+
+  // Get health data for all nodes
+  getAll: function() {
+    return getDb().prepare(
+      'SELECT h.*, n.name as node_name FROM node_health h INNER JOIN nodes n ON h.node_id = n.id ORDER BY h.apt_updates DESC'
+    ).all();
+  },
+
+  // Get nodes with pending updates
+  getNodesWithUpdates: function() {
+    return getDb().prepare(
+      'SELECT h.*, n.name as node_name FROM node_health h INNER JOIN nodes n ON h.node_id = n.id WHERE h.apt_updates > 0 ORDER BY h.apt_security DESC, h.apt_updates DESC'
+    ).all();
+  },
+
+  // Save or update health data
+  save: function(nodeId, data) {
+    var stmt = getDb().prepare(`
+      INSERT OR REPLACE INTO node_health (
+        node_id, kernel_version, last_boot, uptime_seconds, reboot_required,
+        apt_updates, apt_security, apt_packages_json,
+        pve_version, pve_repo,
+        docker_images, npm_outdated, apt_cache_free_mb,
+        checked_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+    return stmt.run(
+      nodeId,
+      data.kernel_version || null,
+      data.last_boot || null,
+      data.uptime_seconds || 0,
+      data.reboot_required ? 1 : 0,
+      data.apt_updates || 0,
+      data.apt_security || 0,
+      data.apt_packages_json || null,
+      data.pve_version || null,
+      data.pve_repo || null,
+      data.docker_images || 0,
+      data.npm_outdated || 0,
+      data.apt_cache_free_mb || 0
+    );
+  },
+
+  // Delete health data for a node
+  delete: function(nodeId) {
+    return getDb().prepare('DELETE FROM node_health WHERE node_id = ?').run(nodeId);
+  },
+
+  // Get total pending updates across all nodes
+  getTotalUpdates: function() {
+    var result = getDb().prepare(
+      'SELECT COALESCE(SUM(apt_updates), 0) as total, COALESCE(SUM(apt_security), 0) as security FROM node_health'
+    ).get();
+    return result || { total: 0, security: 0 };
+  },
+};
+
 module.exports = {
   init,
   getDb,
@@ -1745,4 +1839,5 @@ module.exports = {
   docker,
   proxmox,
   commands,
+  health,
 };
