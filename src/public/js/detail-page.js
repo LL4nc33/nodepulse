@@ -75,7 +75,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-18T11:52:41.341Z
+   Generated: 2025-12-18T14:05:43.961Z
 */
 
 
@@ -2472,7 +2472,7 @@ function toggleTerminalPanel() {
 
 
 // ============================================================
-// FROM: services.js (196 lines)
+// FROM: services.js (218 lines)
 // ============================================================
 
 // =====================================================
@@ -2552,6 +2552,28 @@ function loadServices(nodeId) {
 function renderServices() {
   var listEl = document.getElementById('services-list');
   if (!listEl) return;
+
+  // Update Summary Cards
+  var totalEl = document.getElementById('services-total');
+  var runningEl = document.getElementById('services-running');
+  var exitedEl = document.getElementById('services-exited');
+  var failedEl = document.getElementById('services-failed');
+
+  var runningCount = 0;
+  var exitedCount = 0;
+  var failedCount = 0;
+
+  for (var c = 0; c < servicesData.length; c++) {
+    var s = servicesData[c];
+    if (s.sub === 'running') runningCount++;
+    else if (s.sub === 'exited') exitedCount++;
+    else if (s.sub === 'failed' || s.active === 'failed') failedCount++;
+  }
+
+  if (totalEl) totalEl.textContent = servicesData.length;
+  if (runningEl) runningEl.textContent = runningCount;
+  if (exitedEl) exitedEl.textContent = exitedCount;
+  if (failedEl) failedEl.textContent = failedCount;
 
   var searchTerm = (document.getElementById('services-search').value || '').toLowerCase();
   var statusFilter = document.getElementById('services-status-filter').value;
@@ -4020,7 +4042,7 @@ if (taskTabBtn && !taskTabBtn.hasAttribute('data-task-listener')) {
 
 
 // ============================================================
-// FROM: network.js (637 lines)
+// FROM: network.js (654 lines)
 // ============================================================
 
 // =====================================================
@@ -4100,6 +4122,23 @@ function renderNetworkDiagnostics() {
   if (!contentEl || !networkData) return;
 
   var d = networkData;
+
+  // Update Summary Cards
+  var interfacesEl = document.getElementById('network-interfaces');
+  var portsEl = document.getElementById('network-ports');
+  var connectionsEl = document.getElementById('network-connections');
+  var dnsEl = document.getElementById('network-dns');
+
+  var interfaceCount = d.interfaces ? d.interfaces.length : 0;
+  var portCount = d.listening_ports ? d.listening_ports.length : 0;
+  var connectionCount = d.connections ? (d.connections.established || 0) : 0;
+  var dnsCount = d.dns && d.dns.nameservers ? d.dns.nameservers.length : 0;
+
+  if (interfacesEl) interfacesEl.textContent = interfaceCount;
+  if (portsEl) portsEl.textContent = portCount;
+  if (connectionsEl) connectionsEl.textContent = connectionCount;
+  if (dnsEl) dnsEl.textContent = dnsCount;
+
   var html = '<div class="network-grid">';
 
   // Connectivity Status

@@ -76,6 +76,28 @@ function renderServices() {
   var listEl = document.getElementById('services-list');
   if (!listEl) return;
 
+  // Update Summary Cards
+  var totalEl = document.getElementById('services-total');
+  var runningEl = document.getElementById('services-running');
+  var exitedEl = document.getElementById('services-exited');
+  var failedEl = document.getElementById('services-failed');
+
+  var runningCount = 0;
+  var exitedCount = 0;
+  var failedCount = 0;
+
+  for (var c = 0; c < servicesData.length; c++) {
+    var s = servicesData[c];
+    if (s.sub === 'running') runningCount++;
+    else if (s.sub === 'exited') exitedCount++;
+    else if (s.sub === 'failed' || s.active === 'failed') failedCount++;
+  }
+
+  if (totalEl) totalEl.textContent = servicesData.length;
+  if (runningEl) runningEl.textContent = runningCount;
+  if (exitedEl) exitedEl.textContent = exitedCount;
+  if (failedEl) failedEl.textContent = failedCount;
+
   var searchTerm = (document.getElementById('services-search').value || '').toLowerCase();
   var statusFilter = document.getElementById('services-status-filter').value;
 

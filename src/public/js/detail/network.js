@@ -144,6 +144,23 @@ function renderNetworkDiagnostics() {
   if (!contentEl || !networkData) return;
 
   var d = networkData;
+
+  // Update Summary Cards
+  var interfacesEl = document.getElementById('network-interfaces');
+  var portsEl = document.getElementById('network-ports');
+  var connectionsEl = document.getElementById('network-connections');
+  var dnsEl = document.getElementById('network-dns');
+
+  var interfaceCount = d.interfaces ? d.interfaces.length : 0;
+  var portCount = d.listening_ports ? d.listening_ports.length : 0;
+  var connectionCount = d.connections ? (d.connections.established || 0) : 0;
+  var dnsCount = d.dns && d.dns.nameservers ? d.dns.nameservers.length : 0;
+
+  if (interfacesEl) interfacesEl.textContent = interfaceCount;
+  if (portsEl) portsEl.textContent = portCount;
+  if (connectionsEl) connectionsEl.textContent = connectionCount;
+  if (dnsEl) dnsEl.textContent = dnsCount;
+
   var html = '<div class="network-grid">';
 
   // Connectivity Status
