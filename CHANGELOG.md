@@ -10,6 +10,22 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
 ### Added - UI/UX Overhaul
 
+- **Live-Metriken Auto-Refresh**
+  - Hero Cards (CPU, RAM, Disk, Network) aktualisieren alle 5 Sekunden
+  - Pausiert automatisch wenn Browser-Tab nicht sichtbar (spart Ressourcen)
+  - Mini-Sparklines zeigen 1-Stunden-History
+
+- **Mini-Sparklines in Hero Cards**
+  - CPU, RAM, Disk mit 1h Trend-Grafik
+  - Kompakte 80x32px Canvas-Sparklines
+  - Automatische History-Ladung beim Seitenaufruf
+
+- **systemd Service Setup**
+  - One-liner Installation: `curl ... | sudo bash`
+  - Autostart beim Boot
+  - Hintergrund-Ausführung ohne Terminal
+  - Setup-Script: `scripts/setup-service.sh`
+
 - **Sidebar Mini-Bars**
   - CPU/RAM Balken neben jedem Node in der Sidebar
   - Farbcodierung: Grün (ok), Orange (>60%), Rot (>80%)
@@ -66,6 +82,8 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 - Webkit-Prefixe für ältere Browser
 - `nodesWithStats` wird an Sidebar durchgereicht
 - CSS Variables für Terminal Light Mode erweitert
+- Neues `live-metrics.js` Modul für Auto-Refresh
+- `charts.js` wird vor `detail-page.js` geladen (Sparkline-Abhängigkeit)
 
 ---
 

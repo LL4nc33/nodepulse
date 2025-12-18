@@ -65,6 +65,27 @@ cd nodepulse && npm install
 npm start
 ```
 
+### Als systemd Service (empfohlen)
+
+Nach der Installation einmalig ausführen:
+
+```bash
+curl -sL https://raw.githubusercontent.com/LL4nc33/nodepulse/main/scripts/setup-service.sh | sudo bash
+```
+
+Das Script:
+- Erstellt einen systemd Service
+- Aktiviert Autostart beim Boot
+- Startet nodepulse im Hintergrund
+
+**Service-Befehle:**
+```bash
+sudo systemctl status nodepulse   # Status anzeigen
+sudo systemctl restart nodepulse  # Neustarten
+sudo systemctl stop nodepulse     # Stoppen
+journalctl -u nodepulse -f        # Logs anzeigen
+```
+
 ---
 
 ## CLI-Tool (np)
