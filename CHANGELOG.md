@@ -228,10 +228,10 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 ## Architektur-Entscheidungen
 
 ### Warum Server-Side Rendering?
-Fire HD 10 (2017) hat einen alten Browser (~Chrome 50-60) - React/Vue wuerden nicht zuverlaessig laufen.
+Fire HD 10 (2017) hat einen alten Browser (~Chrome 50-60) - React/Vue würden nicht zuverlässig laufen.
 
 ### Warum SQLite?
-Raspberry Pi 2B hat nur 1GB RAM - PostgreSQL/MySQL wuerden zu viel verbrauchen.
+Raspberry Pi 2B hat nur 1GB RAM - PostgreSQL/MySQL würden zu viel verbrauchen.
 
 ### Warum ssh2 statt child_process?
-Native SSH in Node.js ohne externe Abhaengigkeiten, besseres Error Handling.
+Native SSH in Node.js ohne externe Abhängigkeiten, besseres Error Handling.
