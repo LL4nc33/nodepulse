@@ -3,6 +3,7 @@
 Ein leichtgewichtiges Homelab Dashboard zur Verwaltung von Servern, Proxmox-Hosts und Docker-Containern.
 
 ![Version](https://img.shields.io/badge/version-0.4.5-green)
+![Status](https://img.shields.io/badge/status-alpha-yellow)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
@@ -106,7 +107,7 @@ np exec <node> "uptime"      # Befehl ausfuehren
 - Multi-User mit Rollen
 - API-Tokens
 
-**v1.0.0 - Production Ready**
+**v1.0.0 - Stable Release**
 - Cluster-Unterstuetzung
 - HA (High Availability)
 - Audit-Log
