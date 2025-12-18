@@ -1947,6 +1947,204 @@ var capabilities = {
   },
 };
 
+// =====================================================
+// LVM Storage Operations
+// =====================================================
+
+var lvm = {
+  // === Physical Volumes ===
+  savePVs: function(nodeId, pvs) {
+    var deleteStmt = getDb().prepare('DELETE FROM node_lvm_pvs WHERE node_id = ?');
+    deleteStmt.run(nodeId);
+
+    if (!pvs || pvs.length === 0) return;
+
+    var insertStmt = getDb().prepare(`
+      INSERT INTO node_lvm_pvs (node_id, pv_name, vg_name, pv_size_bytes, pv_free_bytes, pv_used_bytes, pv_uuid)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (var i = 0; i < pvs.length; i++) {
+      var pv = pvs[i];
+      insertStmt.run(
+        nodeId,
+        pv.pv_name,
+        pv.vg_name || null,
+        pv.pv_size || 0,
+        pv.pv_free || 0,
+        (pv.pv_size || 0) - (pv.pv_free || 0),
+        pv.pv_uuid || null
+      );
+    }
+  },
+
+  getPVs: function(nodeId) {
+    return getDb().prepare('SELECT * FROM node_lvm_pvs WHERE node_id = ? ORDER BY pv_name').all(nodeId);
+  },
+
+  // === Volume Groups ===
+  saveVGs: function(nodeId, vgs) {
+    // Nicht loeschen - nur upsert um registered_storage_id zu erhalten
+    var upsertStmt = getDb().prepare(`
+      INSERT INTO node_lvm_vgs (node_id, vg_name, vg_size_bytes, vg_free_bytes, vg_used_bytes, pv_count, lv_count, vg_uuid)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(node_id, vg_name) DO UPDATE SET
+        vg_size_bytes = excluded.vg_size_bytes,
+        vg_free_bytes = excluded.vg_free_bytes,
+        vg_used_bytes = excluded.vg_used_bytes,
+        pv_count = excluded.pv_count,
+        lv_count = excluded.lv_count,
+        vg_uuid = excluded.vg_uuid,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+
+    for (var i = 0; i < vgs.length; i++) {
+      var vg = vgs[i];
+      upsertStmt.run(
+        nodeId,
+        vg.vg_name,
+        vg.vg_size || 0,
+        vg.vg_free || 0,
+        (vg.vg_size || 0) - (vg.vg_free || 0),
+        vg.pv_count || 0,
+        vg.lv_count || 0,
+        vg.vg_uuid || null
+      );
+    }
+  },
+
+  getVGs: function(nodeId) {
+    return getDb().prepare('SELECT * FROM node_lvm_vgs WHERE node_id = ? ORDER BY vg_name').all(nodeId);
+  },
+
+  getVGByName: function(nodeId, vgName) {
+    return getDb().prepare('SELECT * FROM node_lvm_vgs WHERE node_id = ? AND vg_name = ?').get(nodeId, vgName);
+  },
+
+  setVGRegistration: function(nodeId, vgName, storageId, storageType) {
+    getDb().prepare(`
+      UPDATE node_lvm_vgs SET registered_storage_id = ?, registered_storage_type = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE node_id = ? AND vg_name = ?
+    `).run(storageId, storageType, nodeId, vgName);
+  },
+
+  // === Logical Volumes ===
+  saveLVs: function(nodeId, lvs) {
+    var deleteStmt = getDb().prepare('DELETE FROM node_lvm_lvs WHERE node_id = ?');
+    deleteStmt.run(nodeId);
+
+    if (!lvs || lvs.length === 0) return;
+
+    var insertStmt = getDb().prepare(`
+      INSERT INTO node_lvm_lvs (node_id, lv_name, vg_name, lv_size_bytes, lv_path, lv_attr, is_thin_pool, thin_pool_name, data_percent)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (var i = 0; i < lvs.length; i++) {
+      var lv = lvs[i];
+      // Thin Pool Detection: lv_attr beginnt mit 't' oder 'T'
+      var isThinPool = lv.lv_attr && lv.lv_attr.charAt(0).toLowerCase() === 't' ? 1 : 0;
+
+      insertStmt.run(
+        nodeId,
+        lv.lv_name,
+        lv.vg_name,
+        lv.lv_size || 0,
+        lv.lv_path || '/dev/' + lv.vg_name + '/' + lv.lv_name,
+        lv.lv_attr || '',
+        isThinPool,
+        lv.pool_lv || null,
+        lv.data_percent || null
+      );
+    }
+  },
+
+  getLVs: function(nodeId) {
+    return getDb().prepare('SELECT * FROM node_lvm_lvs WHERE node_id = ? ORDER BY vg_name, lv_name').all(nodeId);
+  },
+
+  getThinPools: function(nodeId) {
+    return getDb().prepare('SELECT * FROM node_lvm_lvs WHERE node_id = ? AND is_thin_pool = 1 ORDER BY vg_name, lv_name').all(nodeId);
+  },
+
+  setLVRegistration: function(nodeId, vgName, lvName, storageId, storageType) {
+    getDb().prepare(`
+      UPDATE node_lvm_lvs SET registered_storage_id = ?, registered_storage_type = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE node_id = ? AND vg_name = ? AND lv_name = ?
+    `).run(storageId, storageType, nodeId, vgName, lvName);
+  },
+
+  // === Available Disks ===
+  saveAvailableDisks: function(nodeId, disks) {
+    var deleteStmt = getDb().prepare('DELETE FROM node_available_disks WHERE node_id = ?');
+    deleteStmt.run(nodeId);
+
+    if (!disks || disks.length === 0) return;
+
+    var insertStmt = getDb().prepare(`
+      INSERT INTO node_available_disks (node_id, device_path, size_bytes, model, serial, rotational, has_partitions, in_use)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (var i = 0; i < disks.length; i++) {
+      var disk = disks[i];
+      insertStmt.run(
+        nodeId,
+        disk.device_path,
+        disk.size_bytes || 0,
+        disk.model || null,
+        disk.serial || null,
+        disk.rotational ? 1 : 0,
+        disk.has_partitions ? 1 : 0,
+        disk.in_use ? 1 : 0
+      );
+    }
+  },
+
+  getAvailableDisks: function(nodeId) {
+    return getDb().prepare('SELECT * FROM node_available_disks WHERE node_id = ? AND in_use = 0 ORDER BY device_path').all(nodeId);
+  },
+
+  getAllDisks: function(nodeId) {
+    return getDb().prepare('SELECT * FROM node_available_disks WHERE node_id = ? ORDER BY device_path').all(nodeId);
+  },
+
+  // === Summary ===
+  getSummary: function(nodeId) {
+    var vgs = this.getVGs(nodeId);
+    var thinPools = this.getThinPools(nodeId);
+    var availableDisks = this.getAvailableDisks(nodeId);
+
+    var totalVgSize = 0;
+    var totalVgFree = 0;
+    var registeredCount = 0;
+
+    for (var i = 0; i < vgs.length; i++) {
+      var vg = vgs[i];
+      totalVgSize += vg.vg_size_bytes || 0;
+      totalVgFree += vg.vg_free_bytes || 0;
+      if (vg.registered_storage_id) registeredCount++;
+    }
+
+    return {
+      vg_count: vgs.length,
+      thin_pool_count: thinPools.length,
+      available_disk_count: availableDisks.length,
+      total_vg_size_bytes: totalVgSize,
+      total_vg_free_bytes: totalVgFree,
+      registered_count: registeredCount
+    };
+  },
+
+  // === Delete all LVM data for a node ===
+  deleteForNode: function(nodeId) {
+    getDb().prepare('DELETE FROM node_lvm_pvs WHERE node_id = ?').run(nodeId);
+    getDb().prepare('DELETE FROM node_lvm_vgs WHERE node_id = ?').run(nodeId);
+    getDb().prepare('DELETE FROM node_lvm_lvs WHERE node_id = ?').run(nodeId);
+    getDb().prepare('DELETE FROM node_available_disks WHERE node_id = ?').run(nodeId);
+  },
+};
+
 module.exports = {
   init,
   getDb,
@@ -1963,4 +2161,5 @@ module.exports = {
   commands,
   health,
   capabilities,
+  lvm,
 };

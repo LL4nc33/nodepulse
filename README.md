@@ -2,7 +2,7 @@
 
 Ein leichtgewichtiges Homelab Dashboard und CLI-Tool zur Verwaltung von Servern, Proxmox-Hosts und Docker-Containern.
 
-![Version](https://img.shields.io/badge/version-0.4.3-green)
+![Version](https://img.shields.io/badge/version-0.4.4-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![TOON](https://img.shields.io/badge/TOON-v1.0-blue)
@@ -55,6 +55,16 @@ Ein leichtgewichtiges Homelab Dashboard und CLI-Tool zur Verwaltung von Servern,
 - **Repository Management** (Enterprise <-> No-Subscription Switch)
 - **System Upgrade** (apt dist-upgrade mit Proxmox-Config)
 - **VM/CT Erstellung** direkt aus dem UI
+
+### LVM Storage Management (NEU in v0.4.4)
+- **Volume Groups** erstellen, anzeigen, loeschen
+- **Thin Pools** erstellen, anzeigen, loeschen
+- **Physical Volumes** und **Logical Volumes** Uebersicht
+- **Verfuegbare Disks** erkennen (nicht-partitionierte Disks)
+- **Proxmox-Registrierung** - VGs/Thin Pools direkt in Proxmox registrieren
+- Storage-Auslastung mit Progress-Bars und Farbcodierung
+- Collapsible Sections fuer bessere Uebersicht
+- Sichere Loeschung mit Namensbestaetigung
 
 ### Docker Management
 - **Container auflisten** (running/all) mit Filter

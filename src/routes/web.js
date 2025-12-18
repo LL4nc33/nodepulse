@@ -240,6 +240,19 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
   const currentStats = db.stats.getCurrent(node.id);
   const health = db.health.get(node.id);
 
+  // LVM data for Proxmox hosts
+  let lvmData = null;
+  if (discovery && discovery.is_proxmox_host) {
+    lvmData = {
+      pvs: db.lvm.getPVs(node.id),
+      vgs: db.lvm.getVGs(node.id),
+      lvs: db.lvm.getLVs(node.id),
+      thin_pools: db.lvm.getThinPools(node.id),
+      available_disks: db.lvm.getAvailableDisks(node.id),
+      summary: db.lvm.getSummary(node.id)
+    };
+  }
+
   // Sidebar data comes from middleware
   res.render('nodes/detail', {
     title: node.name,
@@ -252,6 +265,7 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     proxmox,
     currentStats,
     health,
+    lvmData,
     formatBytes
   });
 }));

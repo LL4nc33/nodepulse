@@ -21,6 +21,7 @@ const modules = [
   'docker.css',
   'proxmox.css',
   'services.css',
+  'storage.css',
   'network.css',
   'charts.css',
   'responsive.css'

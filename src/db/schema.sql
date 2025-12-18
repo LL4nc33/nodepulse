@@ -351,6 +351,89 @@ CREATE TABLE IF NOT EXISTS proxmox_snapshots (
 );
 
 -- =====================================================
+-- LVM STORAGE MANAGEMENT
+-- =====================================================
+
+-- Physical Volumes
+CREATE TABLE IF NOT EXISTS node_lvm_pvs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id INTEGER NOT NULL,
+    pv_name TEXT NOT NULL,           -- /dev/sda1
+    vg_name TEXT,                    -- NULL wenn nicht zugewiesen
+    pv_size_bytes INTEGER,
+    pv_free_bytes INTEGER,
+    pv_used_bytes INTEGER,
+    pv_uuid TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE,
+    UNIQUE(node_id, pv_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_lvm_pvs_node ON node_lvm_pvs(node_id);
+
+-- Volume Groups
+CREATE TABLE IF NOT EXISTS node_lvm_vgs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id INTEGER NOT NULL,
+    vg_name TEXT NOT NULL,
+    vg_size_bytes INTEGER,
+    vg_free_bytes INTEGER,
+    vg_used_bytes INTEGER,
+    pv_count INTEGER,
+    lv_count INTEGER,
+    vg_uuid TEXT,
+    -- Proxmox Registration
+    registered_storage_id TEXT,      -- NULL wenn nicht in Proxmox
+    registered_storage_type TEXT,    -- 'lvm' oder NULL
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE,
+    UNIQUE(node_id, vg_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_lvm_vgs_node ON node_lvm_vgs(node_id);
+
+-- Logical Volumes (inkl. Thin Pools)
+CREATE TABLE IF NOT EXISTS node_lvm_lvs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id INTEGER NOT NULL,
+    lv_name TEXT NOT NULL,
+    vg_name TEXT NOT NULL,
+    lv_size_bytes INTEGER,
+    lv_path TEXT,                    -- /dev/vg/lv
+    lv_attr TEXT,                    -- z.B. "-wi-a-----" oder "twi-a-t---"
+    is_thin_pool INTEGER DEFAULT 0,
+    thin_pool_name TEXT,             -- Parent Thin Pool wenn Thin LV
+    data_percent REAL,               -- Nur fuer Thin Pools
+    -- Proxmox Registration
+    registered_storage_id TEXT,
+    registered_storage_type TEXT,    -- 'lvmthin' oder NULL
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE,
+    UNIQUE(node_id, vg_name, lv_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_lvm_lvs_node ON node_lvm_lvs(node_id);
+CREATE INDEX IF NOT EXISTS idx_lvm_lvs_vg ON node_lvm_lvs(node_id, vg_name);
+
+-- Unformatierte Disks (fuer VG-Erstellung)
+CREATE TABLE IF NOT EXISTS node_available_disks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id INTEGER NOT NULL,
+    device_path TEXT NOT NULL,       -- /dev/sdb
+    size_bytes INTEGER,
+    model TEXT,
+    serial TEXT,
+    rotational INTEGER,              -- 1=HDD, 0=SSD/NVMe
+    has_partitions INTEGER DEFAULT 0,
+    in_use INTEGER DEFAULT 0,        -- Teil einer VG oder gemountet
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE,
+    UNIQUE(node_id, device_path)
+);
+
+CREATE INDEX IF NOT EXISTS idx_available_disks_node ON node_available_disks(node_id);
+
+-- =====================================================
 -- SYSTEMD SERVICES
 -- =====================================================
 

@@ -4,6 +4,122 @@ Alle bemerkenswerten Aenderungen an diesem Projekt werden in dieser Datei dokume
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [0.4.4] - 2025-12-18 (LVM Storage Management)
+
+### Added
+
+#### LVM Storage Management (Sprint 1: Proxmox Advanced Features)
+
+- **Neue Datenbank-Tabellen** (`src/db/schema.sql`)
+  - `node_lvm_pvs` - Physical Volumes
+  - `node_lvm_vgs` - Volume Groups mit Proxmox-Registrierung
+  - `node_lvm_lvs` - Logical Volumes inkl. Thin Pools
+  - `node_available_disks` - Freie Disks fuer VG-Erstellung
+  - Indizes fuer Performance
+
+- **DB Module fuer LVM** (`src/db/index.js`)
+  - CRUD-Funktionen fuer PVs, VGs, LVs, Disks
+  - `savePVs()`, `saveVGs()`, `saveLVs()`, `saveAvailableDisks()`
+  - `getThinPools()`, `setVGRegistration()`, `setLVRegistration()`
+  - `getSummary()` - Aggregierte Storage-Statistiken
+  - `deleteForNode()` - Cleanup bei Node-Loeschung
+
+- **LVM Discovery Script** (`scripts/lvm-discovery.sh`)
+  - Sammelt PVs, VGs, LVs, Thin Pools via SSH
+  - Erkennt Proxmox-registrierte Storages
+  - Findet freie Disks (nicht in VG, nicht gemountet)
+  - Parst `/etc/pve/storage.cfg` fuer Storage-Zuordnung
+  - JSON-Output fuer API
+
+- **Storage API Router** (`src/routes/api/storage.js`)
+  - `GET /api/nodes/:id/storage/lvm` - Alle LVM-Daten
+  - `GET /api/nodes/:id/storage/lvm/vgs` - Volume Groups
+  - `GET /api/nodes/:id/storage/lvm/thinpools` - Thin Pools
+  - `GET /api/nodes/:id/storage/lvm/available` - Nicht-registrierte VGs/Pools
+  - `POST /api/nodes/:id/storage/lvm/refresh` - LVM Discovery neu ausfuehren
+  - `POST /api/nodes/:id/storage/lvm/vg` - VG erstellen
+  - `POST /api/nodes/:id/storage/lvm/thinpool` - Thin Pool erstellen
+  - `POST /api/nodes/:id/storage/lvm/register` - In Proxmox registrieren
+  - `DELETE /api/nodes/:id/storage/lvm/vg/:name` - VG loeschen
+  - `DELETE /api/nodes/:id/storage/lvm/thinpool/:vg/:pool` - Thin Pool loeschen
+  - `DELETE /api/nodes/:id/storage/lvm/unregister/:id` - Aus Proxmox entfernen
+  - Input-Validierung mit Regex (VG-Namen, Device-Pfade, Storage-IDs)
+  - Shell-Escape fuer sichere Befehlsausfuehrung
+
+- **Collector Integration** (`src/collector/index.js`)
+  - `runLvmDiscovery(node)` - LVM-Daten sammeln
+  - `runCommand(node, cmd, timeout)` - Generische SSH-Befehlsausfuehrung
+  - Automatische DB-Speicherung der LVM-Daten
+  - Proxmox-Storage-Zuordnung aus Config
+
+- **Storage Tab Frontend** (`src/views/partials/node-detail/storage-tab.ejs`)
+  - Summary-Cards: VG-Count, Thin Pool-Count, Freie Disks, Proxmox-Registrierungen
+  - Volume Groups Tabelle mit PV/LV-Count, Groesse, Auslastung
+  - Thin Pools Tabelle mit Data-Percent und VG-Zuordnung
+  - Physical Volumes Liste (collapsible)
+  - Verfuegbare Disks Liste mit Modell, Groesse, Typ (HDD/SSD)
+  - Logical Volumes Liste (collapsible)
+  - Modals fuer VG/Thin Pool Erstellung
+  - Register-Modal fuer Proxmox-Integration
+  - Delete-Modal mit Namensbestaetigung
+
+- **Storage CSS** (`src/public/css/modules/storage.css`)
+  - Summary-Cards mit Highlight-Variante
+  - Storage-Tables mit Progress-Bars
+  - Collapsible Sections
+  - Device-Checklist fuer VG-Erstellung
+  - Modal-Danger-Variante fuer Loeschungen
+  - Responsive Design (4 -> 2 -> 1 Spalten)
+
+- **Storage JavaScript** (`src/public/js/detail/storage.js`)
+  - Modal-Funktionen (Open, Close, Submit)
+  - API-Calls mit XHR (ES5-kompatibel)
+  - Toggle-Funktionen fuer Collapsible Sections
+  - Refresh, Create, Register, Delete Aktionen
+  - Keyboard-Shortcuts (ESC schliessen Modals)
+
+### Changed
+
+- **web.js**: LVM-Daten werden fuer Proxmox-Hosts geladen
+- **tabs-navigation.ejs**: Storage-Tab hinzugefuegt (nur Proxmox-Hosts)
+- **detail.ejs**: Storage-Tab eingebunden
+- **build-css.js**: storage.css zum Build hinzugefuegt
+- **build-detail-js.js**: storage.js zum Build hinzugefuegt
+- CSS-Version auf 8.2 erhoeht
+- JS-Version auf 5.1 erhoeht
+
+### Technical
+
+- 4 neue DB-Tabellen mit Indizes
+- ~400 Zeilen neuer Backend-Code
+- ~350 Zeilen neuer EJS-Template
+- ~315 Zeilen neuer CSS
+- ~375 Zeilen neuer JavaScript (ES5-kompatibel)
+- Build-Scripts aktualisiert (12 CSS-Module, 8 JS-Module)
+
+### Files
+
+**Neue Dateien:**
+- `scripts/lvm-discovery.sh`
+- `src/routes/api/storage.js`
+- `src/views/partials/node-detail/storage-tab.ejs`
+- `src/public/css/modules/storage.css`
+- `src/public/js/detail/storage.js`
+
+**Geaenderte Dateien:**
+- `src/db/schema.sql` - LVM-Tabellen
+- `src/db/index.js` - LVM-Module
+- `src/routes/api/index.js` - Storage-Router
+- `src/routes/web.js` - LVM-Daten laden
+- `src/collector/index.js` - runLvmDiscovery, runCommand
+- `src/views/nodes/detail.ejs` - Storage-Tab einbinden
+- `src/views/partials/node-detail/tabs-navigation.ejs` - Storage-Tab
+- `src/views/partials/header.ejs` - CSS v8.2
+- `scripts/build-css.js` - storage.css
+- `scripts/build-detail-js.js` - storage.js
+
+---
+
 ## [0.4.2] - 2025-12-18 (Design System Foundations)
 
 ### Added

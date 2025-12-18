@@ -915,6 +915,92 @@ function getMonitoringStatus() {
   return status;
 }
 
+/**
+ * Run LVM discovery on a node
+ * Collects PVs, VGs, LVs, Thin Pools, Proxmox storages, and available disks
+ * @param {Object} node - Node object from database (must have credentials)
+ * @returns {Promise<Object>} LVM data
+ */
+async function runLvmDiscovery(node) {
+  const script = getScript('lvm-discovery.sh');
+  const result = await ssh.executeScript(node, script, 60000);
+
+  if (result.exitCode !== 0 && !result.stdout) {
+    const errMsg = result.stderr || 'LVM discovery script failed';
+    throw new Error(errMsg);
+  }
+
+  let data;
+  try {
+    data = parseScriptOutput(result.stdout, node.name);
+  } catch (err) {
+    throw new Error('LVM Discovery: Invalid JSON response - ' + err.message);
+  }
+
+  // Save PVs to database
+  if (data.pvs && data.pvs.report && data.pvs.report[0]) {
+    db.lvm.savePVs(node.id, data.pvs.report[0].pv || []);
+  } else {
+    db.lvm.savePVs(node.id, []);
+  }
+
+  // Save VGs to database
+  if (data.vgs && data.vgs.report && data.vgs.report[0]) {
+    db.lvm.saveVGs(node.id, data.vgs.report[0].vg || []);
+  } else {
+    db.lvm.saveVGs(node.id, []);
+  }
+
+  // Save LVs to database
+  if (data.lvs && data.lvs.report && data.lvs.report[0]) {
+    db.lvm.saveLVs(node.id, data.lvs.report[0].lv || []);
+  } else {
+    db.lvm.saveLVs(node.id, []);
+  }
+
+  // Save available disks to database
+  if (data.available_disks && Array.isArray(data.available_disks)) {
+    db.lvm.saveAvailableDisks(node.id, data.available_disks);
+  } else {
+    db.lvm.saveAvailableDisks(node.id, []);
+  }
+
+  // Match Proxmox storage config to VGs/Pools
+  if (data.proxmox_storage_config && Array.isArray(data.proxmox_storage_config)) {
+    data.proxmox_storage_config.forEach(function(storage) {
+      if (storage.type === 'lvm' && storage.vgname) {
+        db.lvm.setVGRegistration(node.id, storage.vgname, storage.storage, 'lvm');
+      } else if (storage.type === 'lvmthin' && storage.vgname && storage.thinpool) {
+        db.lvm.setLVRegistration(node.id, storage.vgname, storage.thinpool, storage.storage, 'lvmthin');
+      }
+    });
+  }
+
+  // Update node online status
+  db.nodes.setOnline(node.id, true);
+
+  return data;
+}
+
+/**
+ * Run a generic command on a node via SSH
+ * Used for LVM and other storage operations
+ * SECURITY: Only call this from API routes that have validated the command!
+ * @param {Object} node - Node object from database (must have credentials)
+ * @param {string} command - Command to execute
+ * @param {number} timeout - Timeout in ms (default: 60000)
+ * @returns {Promise<{stdout: string, stderr: string, exitCode: number}>}
+ */
+async function runCommand(node, command, timeout = 60000) {
+  // Basic safety check - block obvious shell injection
+  if (/[;&|`$()><\n\r]/.test(command)) {
+    throw new Error('Command contains forbidden characters');
+  }
+
+  const result = await ssh.execute(node, command, timeout);
+  return result;
+}
+
 module.exports = {
   runDiscovery,
   runHardware,
@@ -933,6 +1019,9 @@ module.exports = {
   determineNodeType,
   getTagsFromDiscovery,
   applyAutoTags,
+  // LVM Storage
+  runLvmDiscovery,
+  runCommand,
   // Tiered monitoring
   startTieredMonitoring,
   stopTieredMonitoring,

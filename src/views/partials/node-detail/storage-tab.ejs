@@ -1,0 +1,537 @@
+<%
+  // Default values
+  var lvm = typeof lvmData !== 'undefined' && lvmData ? lvmData : {
+    pvs: [],
+    vgs: [],
+    lvs: [],
+    thin_pools: [],
+    available_disks: [],
+    summary: { vg_count: 0, thin_pool_count: 0, available_disk_count: 0, registered_count: 0, total_vg_size_bytes: 0, total_vg_free_bytes: 0 }
+  };
+
+  // Helper function for progress class
+  function getStorageProgressClass(percent) {
+    if (percent >= 90) return 'critical';
+    if (percent >= 75) return 'warning';
+    return 'ok';
+  }
+%>
+
+<div class="tab-content" id="storage" style="display: none;">
+  <!-- Summary Cards -->
+  <div class="storage-summary">
+    <div class="summary-card">
+      <div class="summary-value"><%= lvm.summary.vg_count || 0 %></div>
+      <div class="summary-label">Volume Groups</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value"><%= lvm.summary.thin_pool_count || 0 %></div>
+      <div class="summary-label">Thin Pools</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value"><%= lvm.summary.available_disk_count || 0 %></div>
+      <div class="summary-label">Freie Disks</div>
+    </div>
+    <div class="summary-card highlight">
+      <div class="summary-value"><%= lvm.summary.registered_count || 0 %></div>
+      <div class="summary-label">In Proxmox</div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="storage-actions">
+    <button type="button" class="btn btn-primary" onclick="openCreateVgModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      VG erstellen
+    </button>
+    <button type="button" class="btn btn-primary" onclick="openCreateThinPoolModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Thin Pool
+    </button>
+    <button type="button" class="btn" onclick="refreshLvmData()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+      Aktualisieren
+    </button>
+  </div>
+
+  <!-- Volume Groups Section -->
+  <div class="storage-section">
+    <h2 class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="2" width="20" height="8" rx="2"/>
+        <rect x="2" y="14" width="20" height="8" rx="2"/>
+        <line x1="6" y1="6" x2="6.01" y2="6"/>
+        <line x1="6" y1="18" x2="6.01" y2="18"/>
+      </svg>
+      Volume Groups
+    </h2>
+
+    <% if (lvm.vgs && lvm.vgs.length > 0) { %>
+    <div class="storage-table-wrapper">
+      <table class="storage-table">
+        <thead>
+          <tr>
+            <th>VG Name</th>
+            <th>PVs</th>
+            <th>LVs</th>
+            <th>Gesamt</th>
+            <th>Frei</th>
+            <th>Auslastung</th>
+            <th>Status</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% lvm.vgs.forEach(function(vg) {
+            var usedBytes = (vg.vg_size_bytes || 0) - (vg.vg_free_bytes || 0);
+            var usedPercent = vg.vg_size_bytes > 0 ? (usedBytes / vg.vg_size_bytes * 100) : 0;
+            var progressClass = getStorageProgressClass(usedPercent);
+          %>
+          <tr data-vg="<%= vg.vg_name %>">
+            <td><strong><%= vg.vg_name %></strong></td>
+            <td><%= vg.pv_count || 0 %></td>
+            <td><%= vg.lv_count || 0 %></td>
+            <td><%= formatBytes(vg.vg_size_bytes || 0) %></td>
+            <td><%= formatBytes(vg.vg_free_bytes || 0) %></td>
+            <td>
+              <div class="progress-bar-container">
+                <div class="progress-bar-mini">
+                  <div class="progress-bar-fill <%= progressClass %>" style="width: <%= usedPercent.toFixed(1) %>%"></div>
+                </div>
+                <span class="progress-text"><%= usedPercent.toFixed(1) %>%</span>
+              </div>
+            </td>
+            <td>
+              <% if (vg.registered_storage_id) { %>
+                <span class="badge badge-success">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <%= vg.registered_storage_id %>
+                </span>
+              <% } else { %>
+                <span class="badge badge-neutral">Nicht registriert</span>
+              <% } %>
+            </td>
+            <td class="actions-cell">
+              <% if (!vg.registered_storage_id) { %>
+                <button type="button" class="btn btn-sm btn-primary" onclick="openRegisterModal('lvm', '<%= vg.vg_name %>')" title="In Proxmox registrieren">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                </button>
+              <% } else { %>
+                <button type="button" class="btn btn-sm" onclick="unregisterStorage('<%= vg.registered_storage_id %>')" title="Aus Proxmox entfernen">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                </button>
+              <% } %>
+              <button type="button" class="btn btn-sm btn-danger" onclick="deleteVg('<%= vg.vg_name %>')" title="VG loeschen">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <div class="empty-state compact">
+      <p>Keine Volume Groups gefunden.</p>
+      <p class="text-muted">Erstellen Sie eine VG mit freien Disks.</p>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- Thin Pools Section -->
+  <div class="storage-section">
+    <h2 class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <path d="M2 17l10 5 10-5"/>
+        <path d="M2 12l10 5 10-5"/>
+      </svg>
+      Thin Pools
+    </h2>
+
+    <% if (lvm.thin_pools && lvm.thin_pools.length > 0) { %>
+    <div class="storage-table-wrapper">
+      <table class="storage-table">
+        <thead>
+          <tr>
+            <th>Pool Name</th>
+            <th>VG</th>
+            <th>Groesse</th>
+            <th>Daten %</th>
+            <th>Status</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% lvm.thin_pools.forEach(function(pool) {
+            var dataPercent = pool.data_percent || 0;
+            var progressClass = getStorageProgressClass(dataPercent);
+          %>
+          <tr data-pool="<%= pool.lv_name %>" data-vg="<%= pool.vg_name %>">
+            <td><strong><%= pool.lv_name %></strong></td>
+            <td><%= pool.vg_name %></td>
+            <td><%= formatBytes(pool.lv_size_bytes || 0) %></td>
+            <td>
+              <div class="progress-bar-container">
+                <div class="progress-bar-mini">
+                  <div class="progress-bar-fill <%= progressClass %>" style="width: <%= dataPercent.toFixed(1) %>%"></div>
+                </div>
+                <span class="progress-text"><%= dataPercent.toFixed(1) %>%</span>
+              </div>
+            </td>
+            <td>
+              <% if (pool.registered_storage_id) { %>
+                <span class="badge badge-success">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <%= pool.registered_storage_id %>
+                </span>
+              <% } else { %>
+                <span class="badge badge-neutral">Nicht registriert</span>
+              <% } %>
+            </td>
+            <td class="actions-cell">
+              <% if (!pool.registered_storage_id) { %>
+                <button type="button" class="btn btn-sm btn-primary" onclick="openRegisterModal('lvmthin', '<%= pool.vg_name %>', '<%= pool.lv_name %>')" title="In Proxmox registrieren">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                </button>
+              <% } else { %>
+                <button type="button" class="btn btn-sm" onclick="unregisterStorage('<%= pool.registered_storage_id %>')" title="Aus Proxmox entfernen">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                </button>
+              <% } %>
+              <button type="button" class="btn btn-sm btn-danger" onclick="deleteThinPool('<%= pool.vg_name %>', '<%= pool.lv_name %>')" title="Thin Pool loeschen">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <div class="empty-state compact">
+      <p>Keine Thin Pools gefunden.</p>
+      <p class="text-muted">Erstellen Sie einen Thin Pool in einer vorhandenen VG.</p>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- Physical Volumes Section -->
+  <div class="storage-section collapsible">
+    <h2 class="section-title" onclick="toggleStorageSection(this)">
+      <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+      Physical Volumes
+      <span class="count-badge"><%= lvm.pvs ? lvm.pvs.length : 0 %></span>
+    </h2>
+
+    <div class="section-content">
+      <% if (lvm.pvs && lvm.pvs.length > 0) { %>
+      <div class="storage-table-wrapper">
+        <table class="storage-table compact">
+          <thead>
+            <tr>
+              <th>PV Name</th>
+              <th>VG</th>
+              <th>Groesse</th>
+              <th>Frei</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% lvm.pvs.forEach(function(pv) { %>
+            <tr>
+              <td><code><%= pv.pv_name %></code></td>
+              <td><%= pv.vg_name || '-' %></td>
+              <td><%= formatBytes(pv.pv_size_bytes || 0) %></td>
+              <td><%= formatBytes(pv.pv_free_bytes || 0) %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% } else { %>
+      <div class="empty-state compact">
+        <p>Keine Physical Volumes gefunden.</p>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Available Disks Section -->
+  <div class="storage-section collapsible">
+    <h2 class="section-title" onclick="toggleStorageSection(this)">
+      <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+      Verfuegbare Disks
+      <span class="count-badge"><%= lvm.available_disks ? lvm.available_disks.length : 0 %></span>
+    </h2>
+
+    <div class="section-content">
+      <% if (lvm.available_disks && lvm.available_disks.length > 0) { %>
+      <div class="storage-table-wrapper">
+        <table class="storage-table compact">
+          <thead>
+            <tr>
+              <th>Device</th>
+              <th>Groesse</th>
+              <th>Modell</th>
+              <th>Typ</th>
+              <th>Partitionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% lvm.available_disks.forEach(function(disk) { %>
+            <tr>
+              <td><code><%= disk.device_path %></code></td>
+              <td><%= formatBytes(disk.size_bytes || 0) %></td>
+              <td><%= disk.model || '-' %></td>
+              <td>
+                <span class="badge badge-<%= disk.rotational ? 'hdd' : 'ssd' %>">
+                  <%= disk.rotational ? 'HDD' : 'SSD' %>
+                </span>
+              </td>
+              <td><%= disk.has_partitions ? 'Ja' : 'Nein' %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% } else { %>
+      <div class="empty-state compact">
+        <p>Keine freien Disks gefunden.</p>
+        <p class="text-muted">Alle Disks sind bereits in Verwendung.</p>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Logical Volumes Section (collapsible) -->
+  <div class="storage-section collapsible collapsed">
+    <h2 class="section-title" onclick="toggleStorageSection(this)">
+      <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+      Alle Logical Volumes
+      <span class="count-badge"><%= lvm.lvs ? lvm.lvs.length : 0 %></span>
+    </h2>
+
+    <div class="section-content">
+      <% if (lvm.lvs && lvm.lvs.length > 0) { %>
+      <div class="storage-table-wrapper">
+        <table class="storage-table compact">
+          <thead>
+            <tr>
+              <th>LV Name</th>
+              <th>VG</th>
+              <th>Groesse</th>
+              <th>Pfad</th>
+              <th>Typ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% lvm.lvs.forEach(function(lv) { %>
+            <tr>
+              <td><strong><%= lv.lv_name %></strong></td>
+              <td><%= lv.vg_name %></td>
+              <td><%= formatBytes(lv.lv_size_bytes || 0) %></td>
+              <td><code class="text-muted"><%= lv.lv_path %></code></td>
+              <td>
+                <% if (lv.is_thin_pool) { %>
+                  <span class="badge badge-thin">Thin Pool</span>
+                <% } else if (lv.thin_pool_name) { %>
+                  <span class="badge badge-thin-lv">Thin LV</span>
+                <% } else { %>
+                  <span class="badge badge-lv">LV</span>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% } else { %>
+      <div class="empty-state compact">
+        <p>Keine Logical Volumes gefunden.</p>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Create VG Modal -->
+<div id="createVgModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Volume Group erstellen</h3>
+      <button type="button" class="modal-close" onclick="closeModal('createVgModal')">&times;</button>
+    </div>
+    <form id="createVgForm" onsubmit="submitCreateVg(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="vgName">VG Name</label>
+          <input type="text" id="vgName" name="vg_name" required pattern="^[a-zA-Z][a-zA-Z0-9_-]{0,62}$"
+                 placeholder="z.B. data-vg" class="form-input">
+          <small class="form-hint">Muss mit Buchstabe beginnen. Erlaubt: a-z, 0-9, _, -</small>
+        </div>
+        <div class="form-group">
+          <label>Devices auswaehlen</label>
+          <div id="vgDeviceList" class="device-checklist">
+            <% if (lvm.available_disks && lvm.available_disks.length > 0) { %>
+              <% lvm.available_disks.forEach(function(disk) { %>
+                <label class="checkbox-item">
+                  <input type="checkbox" name="devices" value="<%= disk.device_path %>">
+                  <span class="checkbox-label">
+                    <code><%= disk.device_path %></code>
+                    <span class="device-info"><%= formatBytes(disk.size_bytes || 0) %> - <%= disk.model || 'Unbekannt' %></span>
+                  </span>
+                </label>
+              <% }); %>
+            <% } else { %>
+              <p class="text-muted">Keine freien Disks verfuegbar.</p>
+            <% } %>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('createVgModal')">Abbrechen</button>
+        <button type="submit" class="btn btn-primary" <%= lvm.available_disks && lvm.available_disks.length > 0 ? '' : 'disabled' %>>VG erstellen</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Create Thin Pool Modal -->
+<div id="createThinPoolModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Thin Pool erstellen</h3>
+      <button type="button" class="modal-close" onclick="closeModal('createThinPoolModal')">&times;</button>
+    </div>
+    <form id="createThinPoolForm" onsubmit="submitCreateThinPool(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="thinPoolVg">Volume Group</label>
+          <select id="thinPoolVg" name="vg_name" required class="form-input">
+            <option value="">-- VG auswaehlen --</option>
+            <% if (lvm.vgs) { lvm.vgs.forEach(function(vg) { %>
+              <option value="<%= vg.vg_name %>"><%= vg.vg_name %> (<%= formatBytes(vg.vg_free_bytes || 0) %> frei)</option>
+            <% }); } %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="thinPoolName">Pool Name</label>
+          <input type="text" id="thinPoolName" name="pool_name" required pattern="^[a-zA-Z][a-zA-Z0-9_-]{0,62}$"
+                 placeholder="z.B. thinpool" class="form-input">
+          <small class="form-hint">Muss mit Buchstabe beginnen.</small>
+        </div>
+        <div class="form-group">
+          <label for="thinPoolSize">Groesse (% der VG)</label>
+          <input type="number" id="thinPoolSize" name="size_percent" value="90" min="10" max="100" class="form-input">
+          <small class="form-hint">10-100% des freien VG-Speicherplatzes</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('createThinPoolModal')">Abbrechen</button>
+        <button type="submit" class="btn btn-primary" <%= lvm.vgs && lvm.vgs.length > 0 ? '' : 'disabled' %>>Thin Pool erstellen</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Register Storage Modal -->
+<div id="registerStorageModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>In Proxmox registrieren</h3>
+      <button type="button" class="modal-close" onclick="closeModal('registerStorageModal')">&times;</button>
+    </div>
+    <form id="registerStorageForm" onsubmit="submitRegisterStorage(event)">
+      <div class="modal-body">
+        <input type="hidden" id="registerType" name="type">
+        <input type="hidden" id="registerVgName" name="vg_name">
+        <input type="hidden" id="registerPoolName" name="pool_name">
+
+        <div class="form-group">
+          <label for="storageId">Storage ID</label>
+          <input type="text" id="storageId" name="storage_id" required pattern="^[a-zA-Z][a-zA-Z0-9_-]{0,31}$"
+                 placeholder="z.B. local-lvm" class="form-input">
+          <small class="form-hint">Name in Proxmox (max 32 Zeichen)</small>
+        </div>
+        <div class="form-group">
+          <label for="storageContent">Content</label>
+          <select id="storageContent" name="content" class="form-input">
+            <option value="images,rootdir">Images + Root (Standard)</option>
+            <option value="images">Nur Disk Images</option>
+            <option value="rootdir">Nur Container Roots</option>
+            <option value="backup">Backup</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('registerStorageModal')">Abbrechen</button>
+        <button type="submit" class="btn btn-primary">Registrieren</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteStorageModal" class="modal" style="display: none;">
+  <div class="modal-content modal-danger">
+    <div class="modal-header">
+      <h3>Loeschen bestaetigen</h3>
+      <button type="button" class="modal-close" onclick="closeModal('deleteStorageModal')">&times;</button>
+    </div>
+    <form id="deleteStorageForm" onsubmit="submitDeleteStorage(event)">
+      <div class="modal-body">
+        <input type="hidden" id="deleteType" name="type">
+        <input type="hidden" id="deleteVgName" name="vg_name">
+        <input type="hidden" id="deletePoolName" name="pool_name">
+
+        <div class="alert alert-danger">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span id="deleteWarningText">Diese Aktion kann nicht rueckgaengig gemacht werden!</span>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmName">Namen zur Bestaetigung eingeben</label>
+          <input type="text" id="confirmName" name="confirm_name" required class="form-input"
+                 placeholder="Namen eingeben">
+          <small class="form-hint" id="confirmHint">Geben Sie den Namen ein um zu bestaetigen.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('deleteStorageModal')">Abbrechen</button>
+        <button type="submit" class="btn btn-danger">Endgueltig loeschen</button>
+      </div>
+    </form>
+  </div>
+</div>
