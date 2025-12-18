@@ -20,7 +20,13 @@
 %>
 <aside class="side-panel" id="sidePanel">
   <div class="side-panel-section">
-    <div class="side-panel-section-header">Nodes (<%= sidebarStats.total %>)</div>
+    <div class="side-panel-section-header">
+      <span class="side-panel-section-title">Nodes (<%= sidebarStats.total %>)</span>
+      <span class="side-panel-stats">
+        <span class="stat-online"><%= sidebarStats.online %></span>
+        <span class="stat-offline"><%= sidebarStats.offline %></span>
+      </span>
+    </div>
     <div class="side-panel-section-content">
       <ul class="node-tree">
         <%
