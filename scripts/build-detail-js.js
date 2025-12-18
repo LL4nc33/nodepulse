@@ -20,7 +20,8 @@ const modules = [
   'backup.js',
   'tasks.js',
   'network.js',
-  'health.js'
+  'health.js',
+  'live-metrics.js'
 ];
 
 console.log('🔨 Building detail-page.js from modules...\n');

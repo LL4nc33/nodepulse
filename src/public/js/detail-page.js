@@ -75,7 +75,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-18T14:05:43.961Z
+   Generated: 2025-12-18T16:16:52.889Z
 */
 
 
@@ -4959,171 +4959,212 @@ function switchProxmoxRepo(nodeId, mode, evt) {
   xhr.send(JSON.stringify({ mode: mode }));
 }
 
-// =============================================================================
-// EDIT SIDEPANEL
-// =============================================================================
+
+// ============================================================
+// FROM: live-metrics.js (204 lines)
+// ============================================================
+
+// ============================================================
+// Live Metrics Update (Auto-Refresh Hero Cards)
+// ============================================================
+
+var liveMetricsInterval = null;
+var LIVE_METRICS_INTERVAL_MS = 5000; // 5 Sekunden
 
 /**
- * Open edit panel
+ * Format bytes to human-readable string (ES5)
  */
-function openEditPanel() {
-  var overlay = document.getElementById('editPanelOverlay');
-  var panel = document.getElementById('editPanel');
-  if (overlay && panel) {
-    overlay.classList.add('open');
-    panel.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
+function formatBytesLive(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  var i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
 }
 
 /**
- * Close edit panel
+ * Update CSS class for metric level
  */
-function closeEditPanel() {
-  var overlay = document.getElementById('editPanelOverlay');
-  var panel = document.getElementById('editPanel');
-  if (overlay && panel) {
-    overlay.classList.remove('open');
-    panel.classList.remove('open');
-    document.body.style.overflow = '';
-  }
+function getMetricLevel(value, warningThreshold, criticalThreshold) {
+  if (value >= criticalThreshold) return 'critical';
+  if (value >= warningThreshold) return 'warning';
+  return 'ok';
 }
 
 /**
- * Save node via AJAX
+ * Update a hero metric card with new data
  */
-function saveNode(e) {
-  e.preventDefault();
+function updateHeroCard(selector, value, warningThreshold, criticalThreshold, formatFn) {
+  var card = document.querySelector(selector);
+  if (!card) return;
 
-  var form = document.getElementById('editNodeForm');
-  var btn = document.getElementById('editSaveBtn');
+  var valueEl = card.querySelector('.value-large');
+  var fillEl = card.querySelector('.hero-metric-fill');
 
-  if (!form || !btn) return;
-
-  // Set loading state
-  btn.classList.add('loading');
-  btn.disabled = true;
-
-  // Collect form data
-  var formData = {
-    name: document.getElementById('edit-name').value,
-    host: document.getElementById('edit-host').value,
-    ssh_user: document.getElementById('edit-ssh_user').value,
-    ssh_port: parseInt(document.getElementById('edit-ssh_port').value, 10) || 22,
-    ssh_password: document.getElementById('edit-ssh_password').value,
-    ssh_key_path: document.getElementById('edit-ssh_key_path').value,
-    monitoring_enabled: document.getElementById('edit-monitoring_enabled').checked,
-    monitoring_interval: parseInt(document.getElementById('edit-monitoring_interval').value, 10) || 30,
-    notes: document.getElementById('edit-notes').value
-  };
-
-  // AJAX request
-  var xhr = new XMLHttpRequest();
-  xhr.open('PUT', '/api/nodes/' + nodeId, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 10000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-
-      if (xhr.status === 200) {
-        try {
-          var data = JSON.parse(xhr.responseText);
-          if (data.success) {
-            if (window.NP && window.NP.Toast) {
-              window.NP.Toast.show('Node gespeichert', 'success');
-            }
-            closeEditPanel();
-            // Reload to show updated data
-            setTimeout(function() {
-              window.location.reload();
-            }, 500);
-          } else {
-            var errMsg = (data.error && data.error.message) || 'Fehler beim Speichern';
-            if (window.NP && window.NP.Toast) {
-              window.NP.Toast.show(errMsg, 'error');
-            }
-          }
-        } catch (e) {
-          if (window.NP && window.NP.Toast) {
-            window.NP.Toast.show('Ungueltige Server-Antwort', 'error');
-          }
-        }
-      } else {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Fehler: HTTP ' + xhr.status, 'error');
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Netzwerkfehler', 'error');
-    }
-  };
-
-  xhr.ontimeout = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Timeout', 'error');
-    }
-  };
-
-  xhr.send(JSON.stringify(formData));
-}
-
-/**
- * Delete node
- */
-function deleteNode(id, name) {
-  if (!confirm('Bist du sicher, dass du den Node "' + name + '" loeschen moechtest?\n\nAlle zugehoerigen Daten werden ebenfalls geloescht.')) {
+  if (value === null || value === undefined) {
+    if (valueEl) valueEl.textContent = '-';
+    if (fillEl) fillEl.style.width = '0%';
     return;
   }
 
+  var level = getMetricLevel(value, warningThreshold, criticalThreshold);
+  var displayValue = formatFn ? formatFn(value) : Math.round(value) + '%';
+
+  // Update value
+  if (valueEl) {
+    valueEl.textContent = displayValue;
+    valueEl.className = 'value-large';
+    if (level === 'warning') valueEl.classList.add('warning');
+    if (level === 'critical') valueEl.classList.add('critical');
+  }
+
+  // Update bar
+  if (fillEl) {
+    fillEl.style.width = Math.min(value, 100) + '%';
+    fillEl.className = 'hero-metric-fill ' + level;
+  }
+
+  // Update card state
+  card.classList.remove('warning', 'critical', 'offline');
+  if (level !== 'ok') {
+    card.classList.add(level);
+  }
+}
+
+/**
+ * Fetch and update live metrics
+ */
+function updateLiveMetrics() {
+  var id = (typeof nodeId !== 'undefined') ? nodeId : null;
+  if (!id) return;
+
   var xhr = new XMLHttpRequest();
-  xhr.open('DELETE', '/api/nodes/' + id, true);
-  xhr.timeout = 10000;
+  xhr.open('GET', '/api/nodes/' + id + '/stats', true);
+  xhr.timeout = 4000;
 
   xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (xhr.status === 200) {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Node geloescht', 'success');
+    if (xhr.readyState !== 4) return;
+
+    if (xhr.status === 200) {
+      try {
+        var response = JSON.parse(xhr.responseText);
+        var stats = response.data;
+
+        if (!stats) return;
+
+        // Update CPU
+        updateHeroCard(
+          '.hero-metric-card:nth-child(1)',
+          stats.cpu_percent,
+          70, 90
+        );
+
+        // Update Memory
+        updateHeroCard(
+          '.hero-metric-card:nth-child(2)',
+          stats.ram_percent,
+          75, 90
+        );
+
+        // Update Memory details (used / total)
+        var memCard = document.querySelector('.hero-metric-card:nth-child(2)');
+        if (memCard && stats.ram_used_bytes) {
+          var memDetails = memCard.querySelector('.hero-metric-details span');
+          if (memDetails && stats.ram_total_bytes) {
+            memDetails.textContent = formatBytesLive(stats.ram_used_bytes) + ' / ' + formatBytesLive(stats.ram_total_bytes);
+          }
         }
-        // Redirect to nodes list
-        setTimeout(function() {
-          window.location.href = '/nodes';
-        }, 500);
-      } else {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Fehler beim Loeschen: HTTP ' + xhr.status, 'error');
+
+        // Update Storage
+        updateHeroCard(
+          '.hero-metric-card:nth-child(3)',
+          stats.disk_percent,
+          80, 90
+        );
+
+        // Update Storage details
+        var diskCard = document.querySelector('.hero-metric-card:nth-child(3)');
+        if (diskCard && stats.disk_used_bytes && stats.disk_total_bytes) {
+          var diskDetails = diskCard.querySelector('.hero-metric-details span');
+          if (diskDetails) {
+            diskDetails.textContent = formatBytesLive(stats.disk_used_bytes) + ' / ' + formatBytesLive(stats.disk_total_bytes);
+          }
         }
+
+        // Update Network card
+        var netCard = document.querySelector('.hero-metric-card:nth-child(4)');
+        if (netCard) {
+          var netStats = netCard.querySelector('.network-stats');
+          if (netStats) {
+            var rxEl = netStats.querySelector('.net-rx');
+            var txEl = netStats.querySelector('.net-tx');
+            if (rxEl && stats.net_rx_bytes !== undefined) {
+              rxEl.innerHTML = '<span class="net-arrow">↓</span> ' + formatBytesLive(stats.net_rx_bytes || 0);
+            }
+            if (txEl && stats.net_tx_bytes !== undefined) {
+              txEl.innerHTML = '<span class="net-arrow">↑</span> ' + formatBytesLive(stats.net_tx_bytes || 0);
+            }
+          }
+
+          // Update Load
+          var loadEl = netCard.querySelector('.hero-metric-details span');
+          if (loadEl && stats.load_1m !== undefined) {
+            loadEl.textContent = 'Load: ' + stats.load_1m.toFixed(2);
+          }
+        }
+
+      } catch (e) {
+        console.warn('[LiveMetrics] Parse error:', e);
       }
     }
   };
 
   xhr.onerror = function() {
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Netzwerkfehler', 'error');
-    }
+    console.warn('[LiveMetrics] Network error');
   };
 
   xhr.send();
 }
 
-// Close edit panel with Escape key
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' || e.keyCode === 27) {
-    var panel = document.getElementById('editPanel');
-    if (panel && panel.classList.contains('open')) {
-      closeEditPanel();
-    }
+/**
+ * Start live metrics auto-refresh
+ */
+function startLiveMetrics() {
+  if (liveMetricsInterval) return;
+
+  // Initial update
+  updateLiveMetrics();
+
+  // Start interval
+  liveMetricsInterval = setInterval(updateLiveMetrics, LIVE_METRICS_INTERVAL_MS);
+  console.log('[LiveMetrics] Started (interval: ' + LIVE_METRICS_INTERVAL_MS + 'ms)');
+}
+
+/**
+ * Stop live metrics auto-refresh
+ */
+function stopLiveMetrics() {
+  if (liveMetricsInterval) {
+    clearInterval(liveMetricsInterval);
+    liveMetricsInterval = null;
+    console.log('[LiveMetrics] Stopped');
   }
-});
+}
+
+// Auto-start live metrics when page loads
+(function initLiveMetrics() {
+  // Only start if we're on a node detail page
+  if (typeof nodeId !== 'undefined' && nodeId) {
+    // Start immediately
+    startLiveMetrics();
+
+    // Pause when browser tab is hidden, resume when visible (save resources)
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        stopLiveMetrics();
+      } else {
+        startLiveMetrics();
+      }
+    });
+  }
+})();
 
