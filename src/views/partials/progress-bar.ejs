@@ -1,23 +1,34 @@
 <%
-// Progress Bar Partial
+// Progress Bar Partial - Unified Component
+//
 // Parameters:
 //   - progressValue: Number (0-100)
 //   - thresholdWarning: Number (default: 80)
 //   - thresholdCritical: Number (default: 95)
 //   - offline: Boolean (optional, default: false)
-//   - showAbsolute: Boolean (optional, default: false) - Show absolute values
-//   - usedValue: Number|String (optional) - Used value (e.g., 10 GB)
-//   - totalValue: Number|String (optional) - Total value (e.g., 55 GB)
-//   - unit: String (optional) - Unit for display (e.g., "cores", "GB")
+//   - variant: String (optional) - 'mini' (default), 'standard', 'large'
+//   - label: String (optional) - Label for large variant (e.g., "CPU", "Memory")
+//   - showAbsolute: Boolean (optional) - Show absolute values
+//   - usedValue: Number|String (optional) - Used value (e.g., 10)
+//   - totalValue: Number|String (optional) - Total value (e.g., 55)
+//   - unit: String (optional) - Unit for display (e.g., "GB", "cores")
 //   - timestamp: Number (optional) - Unix timestamp for age display
+//
+// Variants:
+//   - 'mini': 6px height, percentage only (Dashboard list view)
+//   - 'standard': 8px height, percentage + optional absolute (Cards view)
+//   - 'large': 12px height, label + percentage + absolute (Detail pages)
 
 const value = typeof progressValue !== 'undefined' ? progressValue : 0;
 const warningThreshold = typeof thresholdWarning !== 'undefined' ? thresholdWarning : 80;
 const criticalThreshold = typeof thresholdCritical !== 'undefined' ? thresholdCritical : 95;
 const isOffline = typeof offline !== 'undefined' && offline;
+const barVariant = typeof variant !== 'undefined' ? variant : 'mini';
+const barLabel = typeof label !== 'undefined' ? label : '';
 const displayAbsolute = typeof showAbsolute !== 'undefined' && showAbsolute;
 const hasTimestamp = typeof timestamp !== 'undefined' && timestamp;
 
+// Determine status class based on thresholds
 let barClass = 'ok';
 if (value >= criticalThreshold) {
   barClass = 'critical';
@@ -38,23 +49,62 @@ if (hasTimestamp) {
     timestampDisplay = '(' + Math.floor(age / 3600) + 'h ago)';
   }
 }
+
+// Build absolute value string
+let absoluteStr = '';
+if (displayAbsolute && typeof usedValue !== 'undefined' && typeof totalValue !== 'undefined') {
+  absoluteStr = usedValue + (unit ? ' ' + unit : '') + ' / ' + totalValue + (unit ? ' ' + unit : '');
+}
 %>
 
 <% if (isOffline) { %>
-  <span class="mini-bar-na">-</span>
-<% } else { %>
-  <div class="mini-bar-container">
-    <div class="mini-bar">
-      <div class="mini-bar-fill <%= barClass %>" style="width: <%= Math.min(value, 100) %>%"></div>
+  <span class="progress-bar-na">-</span>
+<% } else if (barVariant === 'large') { %>
+  <%/* Large variant: Label + Progress Bar + Percentage + Absolute */%>
+  <div class="progress-bar-large">
+    <% if (barLabel) { %>
+      <div class="progress-bar-header">
+        <span class="progress-bar-label"><%= barLabel %></span>
+        <span class="progress-bar-value <%= barClass %>"><%= Math.round(value) %>%</span>
+      </div>
+    <% } %>
+    <div class="progress-bar-track large">
+      <div class="progress-bar-fill <%= barClass %>" style="width: <%= Math.min(value, 100) %>%"></div>
     </div>
-    <span class="mini-bar-value <%= barClass %>"><%= Math.round(value) %>%</span>
-    <% if (displayAbsolute && typeof usedValue !== 'undefined' && typeof totalValue !== 'undefined') { %>
-      <span class="mini-bar-absolute">
-        (<%= usedValue %><% if (unit) { %> <%= unit %><% } %> / <%= totalValue %><% if (unit) { %> <%= unit %><% } %>)
-      </span>
+    <% if (absoluteStr) { %>
+      <div class="progress-bar-meta">
+        <span class="progress-bar-absolute"><%= absoluteStr %></span>
+        <% if (timestampDisplay) { %>
+          <span class="progress-bar-timestamp"><%= timestampDisplay %></span>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+<% } else if (barVariant === 'standard') { %>
+  <%/* Standard variant: Progress Bar + Percentage inline, absolute below */%>
+  <div class="progress-bar-standard">
+    <div class="progress-bar-row">
+      <div class="progress-bar-track standard">
+        <div class="progress-bar-fill <%= barClass %>" style="width: <%= Math.min(value, 100) %>%"></div>
+      </div>
+      <span class="progress-bar-value <%= barClass %>"><%= Math.round(value) %>%</span>
+    </div>
+    <% if (absoluteStr) { %>
+      <span class="progress-bar-absolute small"><%= absoluteStr %></span>
+    <% } %>
+  </div>
+<% } else { %>
+  <%/* Mini variant (default): Compact inline bar + percentage */%>
+  <div class="progress-bar-mini">
+    <div class="progress-bar-track mini">
+      <div class="progress-bar-fill <%= barClass %>" style="width: <%= Math.min(value, 100) %>%"></div>
+    </div>
+    <span class="progress-bar-value <%= barClass %>"><%= Math.round(value) %>%</span>
+    <% if (displayAbsolute && absoluteStr) { %>
+      <span class="progress-bar-absolute">(<%= absoluteStr %>)</span>
     <% } %>
     <% if (timestampDisplay) { %>
-      <span class="mini-bar-timestamp"><%= timestampDisplay %></span>
+      <span class="progress-bar-timestamp"><%= timestampDisplay %></span>
     <% } %>
   </div>
 <% } %>

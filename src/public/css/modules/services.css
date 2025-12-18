@@ -156,23 +156,7 @@
   min-height: 44px;
 }
 
-.btn-success {
-  background-color: var(--color-accent-hover);
-  color: var(--color-bg);
-}
-
-.btn-success:hover {
-  background-color: var(--color-accent-dark);
-}
-
-.btn-warning {
-  background-color: var(--color-warning);
-  color: var(--color-bg);
-}
-
-.btn-warning:hover {
-  background-color: var(--color-warning);
-}
+/* .btn-success and .btn-warning are now in base.css */
 
 .services-summary {
   padding: 0.75rem 0;
