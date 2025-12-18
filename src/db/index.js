@@ -1098,14 +1098,23 @@ const stats = {
 const alerts = {
   /**
    * Create a new alert
+   * @param {Object} data - { node_id, alert_type, alert_level, value, threshold, message }
    */
-  create(nodeId, alertType, alertLevel, value, threshold, message) {
+  create(data) {
     const stmt = getDb().prepare(`
       INSERT INTO alerts_history (node_id, alert_type, alert_level, value, threshold, message, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const now = Math.floor(Date.now() / 1000);
-    const result = stmt.run(nodeId, alertType, alertLevel, value, threshold, message, now);
+    const result = stmt.run(
+      data.node_id,
+      data.alert_type,
+      data.alert_level,
+      data.value,
+      data.threshold,
+      data.message,
+      now
+    );
     return result.lastInsertRowid;
   },
 
@@ -1213,15 +1222,16 @@ const alerts = {
   },
 
   /**
-   * Check if an active alert exists for a node/type/level combination
+   * Get active alert for a node/type combination (returns full alert object or null)
    */
-  hasActiveAlert(nodeId, alertType, alertLevel) {
+  hasActiveAlert(nodeId, alertType) {
     const stmt = getDb().prepare(`
-      SELECT id FROM alerts_history
-      WHERE node_id = ? AND alert_type = ? AND alert_level = ? AND resolved_at IS NULL
+      SELECT * FROM alerts_history
+      WHERE node_id = ? AND alert_type = ? AND resolved_at IS NULL
+      ORDER BY created_at DESC
       LIMIT 1
     `);
-    return stmt.get(nodeId, alertType, alertLevel) !== undefined;
+    return stmt.get(nodeId, alertType) || null;
   },
 
   /**

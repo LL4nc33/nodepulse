@@ -184,7 +184,13 @@ async function runStats(node, saveHistory = true) {
   const maxDate = now + 3600000; // +1h future tolerance
 
   if (data.timestamp) {
-    const ts = data.timestamp;
+    let ts = data.timestamp;
+    // Convert seconds to milliseconds if needed (timestamps before year 2001 in ms are > 10^12)
+    if (ts < 10000000000) {
+      ts = ts * 1000;
+    }
+    data.timestamp = ts;
+
     if (ts < minDate || ts > maxDate) {
       console.warn(`[Collector] Invalid timestamp for ${node.name}: ${ts}, using current time`);
       data.timestamp = now;
