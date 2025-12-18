@@ -19,6 +19,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
   - Ersetzt große Cluster-Summary Cards
   - Inline-Anzeige: Nodes (total/online/offline) + CPU/RAM/Disk Balken
   - Weniger Platzbedarf, mehr Information
+  - Mobile-optimiert: Vertikales Layout auf kleinen Screens
 
 - **Proxmox Table Sortierung**
   - Sortier-Icons in Tabellen-Headern
@@ -30,21 +31,39 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
   - Echtzeit-Filterung der Node-Liste
   - Escape zum Leeren und Schließen
 
+- **Header Alert Badge**
+  - Premium Notification Counter mit Pop-Animation
+  - Pulsierender Effekt bei kritischen Alerts
+  - Warning/Critical Farbvarianten
+
+- **Terminal Verbesserungen**
+  - Tab Close-Button immer sichtbar
+  - Quick Commands Dropdown mit Animationen
+  - Verbesserte Light Mode Kontraste (WCAG-konform)
+  - Focus-within Styling für Input
+
+- **Docker Container Cards**
+  - Modern Card Layout als Alternative zu Tabellen
+  - Status Border-Left (running/exited/paused)
+  - Kompakte Stats-Anzeige
+
 - **Design System Erweiterungen**
   - `pulse-components.css` - Wiederverwendbare UI-Komponenten
   - Progress Bars, Status Indicators, Alert Cards
 
 ### Changed
 
-- CSS Build auf 15 Module erweitert (~11.100 Zeilen)
+- CSS Build auf 15 Module erweitert (~11.500 Zeilen)
 - Dashboard verwendet kompakte Cluster-Bar statt großer Cards
 - Node-Liste mit allen Spalten (Status, Name, Host, Uptime, CPU, RAM, Disk, VMs, Container, Typ)
+- Light Mode Terminal: Bessere Farben für höheren Kontrast
 
 ### Technical
 
 - ES5-Kompatibilität beibehalten (Fire HD 10 2017)
 - Webkit-Prefixe für ältere Browser
 - `nodesWithStats` wird an Sidebar durchgereicht
+- CSS Variables für Terminal Light Mode erweitert
 
 ---
 
