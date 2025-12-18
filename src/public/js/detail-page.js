@@ -1,3 +1,9 @@
+// Escape string for use in JavaScript string literals (ES5)
+function escapeForJsString(str) {
+  if (!str) return '';
+  return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
 // Toggle collapsible section (ES5)
 function toggleSection(headerEl) {
   var section = headerEl.parentElement;
@@ -69,7 +75,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-18T05:39:11.365Z
+   Generated: 2025-12-18T05:43:15.702Z
 */
 
 
