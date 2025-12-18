@@ -284,6 +284,9 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     };
   }
 
+  // Load stats for all nodes (for sidebar mini-bars)
+  const nodesWithStats = db.stats.getAllNodesWithStats();
+
   // Sidebar data comes from middleware
   res.render('nodes/detail', {
     title: node.name,
@@ -299,6 +302,7 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     lvmData,
     backupData,
     tasksData,
+    nodesWithStats,
     formatBytes
   });
 }));

@@ -1,9 +1,22 @@
 // ============================================================
-// Live Metrics Update (Auto-Refresh Hero Cards)
+// Live Metrics Update (Auto-Refresh Hero Cards + Sparklines)
 // ============================================================
 
 var liveMetricsInterval = null;
 var LIVE_METRICS_INTERVAL_MS = 5000; // 5 Sekunden
+var SPARKLINE_HISTORY_HOURS = 1; // 1 Stunde History fuer Sparklines
+
+// Sparkline instances
+var sparklineCpu = null;
+var sparklineRam = null;
+var sparklineDisk = null;
+
+// Stats history buffer for sparklines
+var statsHistory = {
+  cpu: [],
+  ram: [],
+  disk: []
+};
 
 /**
  * Format bytes to human-readable string (ES5)
@@ -184,11 +197,169 @@ function stopLiveMetrics() {
   }
 }
 
+/**
+ * Merge objects (ES5 compatible Object.assign alternative)
+ */
+function mergeSparklineOptions(base, custom) {
+  var result = {};
+  var key;
+  for (key in base) {
+    if (base.hasOwnProperty(key)) {
+      result[key] = base[key];
+    }
+  }
+  for (key in custom) {
+    if (custom.hasOwnProperty(key)) {
+      result[key] = custom[key];
+    }
+  }
+  return result;
+}
+
+/**
+ * Initialize sparkline charts
+ */
+function initSparklines() {
+  // Check if Sparkline class is available
+  if (typeof Sparkline === 'undefined') {
+    console.warn('[LiveMetrics] Sparkline class not available');
+    return;
+  }
+
+  var cpuCanvas = document.getElementById('sparkline-cpu');
+  var ramCanvas = document.getElementById('sparkline-ram');
+  var diskCanvas = document.getElementById('sparkline-disk');
+
+  var baseOptions = {
+    lineWidth: 1.5,
+    pointRadius: 0,
+    showArea: true,
+    padding: { top: 2, right: 2, bottom: 2, left: 2 },
+    animate: false
+  };
+
+  if (cpuCanvas) {
+    sparklineCpu = new Sparkline(cpuCanvas, [], mergeSparklineOptions(baseOptions, {
+      lineColor: '#5fa332',
+      fillColor: 'rgba(95, 163, 50, 0.3)',
+      warningThreshold: 70,
+      criticalThreshold: 90
+    }));
+  }
+
+  if (ramCanvas) {
+    sparklineRam = new Sparkline(ramCanvas, [], mergeSparklineOptions(baseOptions, {
+      lineColor: '#3b82f6',
+      fillColor: 'rgba(59, 130, 246, 0.3)',
+      warningThreshold: 75,
+      criticalThreshold: 90
+    }));
+  }
+
+  if (diskCanvas) {
+    sparklineDisk = new Sparkline(diskCanvas, [], mergeSparklineOptions(baseOptions, {
+      lineColor: '#A47D5B',
+      fillColor: 'rgba(164, 125, 91, 0.3)',
+      warningThreshold: 80,
+      criticalThreshold: 90
+    }));
+  }
+}
+
+/**
+ * Load initial stats history for sparklines
+ */
+function loadStatsHistory() {
+  var id = (typeof nodeId !== 'undefined') ? nodeId : null;
+  if (!id) return;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/nodes/' + id + '/stats/history?hours=' + SPARKLINE_HISTORY_HOURS, true);
+  xhr.timeout = 10000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState !== 4) return;
+
+    if (xhr.status === 200) {
+      try {
+        var response = JSON.parse(xhr.responseText);
+        var data = response.data;
+
+        if (data && data.length > 0) {
+          // Extract values and store in history buffer
+          statsHistory.cpu = data.map(function(item) { return item.cpu_percent; }).filter(function(v) { return v !== null; });
+          statsHistory.ram = data.map(function(item) { return item.ram_percent; }).filter(function(v) { return v !== null; });
+          statsHistory.disk = data.map(function(item) { return item.disk_percent; }).filter(function(v) { return v !== null; });
+
+          // Update sparklines
+          updateSparklines();
+        }
+      } catch (e) {
+        console.warn('[LiveMetrics] History parse error:', e);
+      }
+    }
+  };
+
+  xhr.send();
+}
+
+/**
+ * Update sparklines with current history data
+ */
+function updateSparklines() {
+  // Limit to last 60 data points (1 hour at 1 min intervals)
+  var maxPoints = 60;
+
+  if (sparklineCpu && statsHistory.cpu.length > 0) {
+    sparklineCpu.update(statsHistory.cpu.slice(-maxPoints));
+  }
+
+  if (sparklineRam && statsHistory.ram.length > 0) {
+    sparklineRam.update(statsHistory.ram.slice(-maxPoints));
+  }
+
+  if (sparklineDisk && statsHistory.disk.length > 0) {
+    sparklineDisk.update(statsHistory.disk.slice(-maxPoints));
+  }
+}
+
+/**
+ * Add new data point to sparkline history
+ */
+function addSparklineDataPoint(stats) {
+  if (!stats) return;
+
+  // Add new values to history
+  if (stats.cpu_percent !== null && stats.cpu_percent !== undefined) {
+    statsHistory.cpu.push(stats.cpu_percent);
+    if (statsHistory.cpu.length > 120) statsHistory.cpu.shift(); // Keep max 2 hours
+  }
+
+  if (stats.ram_percent !== null && stats.ram_percent !== undefined) {
+    statsHistory.ram.push(stats.ram_percent);
+    if (statsHistory.ram.length > 120) statsHistory.ram.shift();
+  }
+
+  if (stats.disk_percent !== null && stats.disk_percent !== undefined) {
+    statsHistory.disk.push(stats.disk_percent);
+    if (statsHistory.disk.length > 120) statsHistory.disk.shift();
+  }
+
+  // Update sparklines
+  updateSparklines();
+}
+
 // Auto-start live metrics when page loads
 (function initLiveMetrics() {
   // Only start if we're on a node detail page
   if (typeof nodeId !== 'undefined' && nodeId) {
-    // Start immediately
+    // Initialize sparklines
+    initSparklines();
+
+    // Load initial history
+    loadStatsHistory();
+
+    // Start live updates
     startLiveMetrics();
 
     // Pause when browser tab is hidden, resume when visible (save resources)

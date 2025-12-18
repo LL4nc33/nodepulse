@@ -43,19 +43,24 @@
         </svg>
         <span class="hero-metric-title">CPU</span>
         <% if (cpuTemps.length > 0 && cpuTemps[0].temp_c) { %>
-          <span class="hero-metric-temp <%= cpuTemps[0].temp_c >= 80 ? 'critical' : (cpuTemps[0].temp_c >= 60 ? 'warning' : '') %>">
+          <span class="hero-metric-temp <%= cpuTemps[0].temp_c >= 80 ? 'critical' : (cpuTemps[0].temp_c >= 60 ? 'warning' : '') %>" id="cpu-temp">
             <%= cpuTemps[0].temp_c.toFixed(0) %>&deg;C
           </span>
         <% } %>
       </div>
-      <div class="hero-metric-value">
-        <% if (isOffline) { %>
-          <span class="offline-text">Offline</span>
-        <% } else if (cpuPercent !== null) { %>
-          <span class="value-large <%= cpuPercent >= 90 ? 'critical' : (cpuPercent >= 70 ? 'warning' : '') %>"><%= Math.round(cpuPercent) %>%</span>
-        <% } else { %>
-          <span class="no-data">-</span>
-        <% } %>
+      <div class="hero-metric-body">
+        <div class="hero-metric-value">
+          <% if (isOffline) { %>
+            <span class="offline-text">Offline</span>
+          <% } else if (cpuPercent !== null) { %>
+            <span class="value-large <%= cpuPercent >= 90 ? 'critical' : (cpuPercent >= 70 ? 'warning' : '') %>"><%= Math.round(cpuPercent) %>%</span>
+          <% } else { %>
+            <span class="no-data">-</span>
+          <% } %>
+        </div>
+        <div class="hero-metric-sparkline">
+          <canvas id="sparkline-cpu" width="80" height="32"></canvas>
+        </div>
       </div>
       <div class="hero-metric-bar">
         <div class="hero-metric-fill <%= cpuPercent >= 90 ? 'critical' : (cpuPercent >= 70 ? 'warning' : 'ok') %>"
@@ -83,14 +88,19 @@
         </svg>
         <span class="hero-metric-title">Memory</span>
       </div>
-      <div class="hero-metric-value">
-        <% if (isOffline) { %>
-          <span class="offline-text">Offline</span>
-        <% } else if (ramPercent !== null) { %>
-          <span class="value-large <%= ramPercent >= 90 ? 'critical' : (ramPercent >= 75 ? 'warning' : '') %>"><%= Math.round(ramPercent) %>%</span>
-        <% } else { %>
-          <span class="no-data">-</span>
-        <% } %>
+      <div class="hero-metric-body">
+        <div class="hero-metric-value">
+          <% if (isOffline) { %>
+            <span class="offline-text">Offline</span>
+          <% } else if (ramPercent !== null) { %>
+            <span class="value-large <%= ramPercent >= 90 ? 'critical' : (ramPercent >= 75 ? 'warning' : '') %>"><%= Math.round(ramPercent) %>%</span>
+          <% } else { %>
+            <span class="no-data">-</span>
+          <% } %>
+        </div>
+        <div class="hero-metric-sparkline">
+          <canvas id="sparkline-ram" width="80" height="32"></canvas>
+        </div>
       </div>
       <div class="hero-metric-bar">
         <div class="hero-metric-fill <%= ramPercent >= 90 ? 'critical' : (ramPercent >= 75 ? 'warning' : 'ok') %>"
@@ -115,14 +125,19 @@
         </svg>
         <span class="hero-metric-title">Storage</span>
       </div>
-      <div class="hero-metric-value">
-        <% if (isOffline) { %>
-          <span class="offline-text">Offline</span>
-        <% } else if (diskPercent !== null) { %>
-          <span class="value-large <%= diskPercent >= 90 ? 'critical' : (diskPercent >= 80 ? 'warning' : '') %>"><%= Math.round(diskPercent) %>%</span>
-        <% } else { %>
-          <span class="no-data">-</span>
-        <% } %>
+      <div class="hero-metric-body">
+        <div class="hero-metric-value">
+          <% if (isOffline) { %>
+            <span class="offline-text">Offline</span>
+          <% } else if (diskPercent !== null) { %>
+            <span class="value-large <%= diskPercent >= 90 ? 'critical' : (diskPercent >= 80 ? 'warning' : '') %>"><%= Math.round(diskPercent) %>%</span>
+          <% } else { %>
+            <span class="no-data">-</span>
+          <% } %>
+        </div>
+        <div class="hero-metric-sparkline">
+          <canvas id="sparkline-disk" width="80" height="32"></canvas>
+        </div>
       </div>
       <div class="hero-metric-bar">
         <div class="hero-metric-fill <%= diskPercent >= 90 ? 'critical' : (diskPercent >= 80 ? 'warning' : 'ok') %>"

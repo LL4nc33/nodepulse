@@ -578,6 +578,38 @@
   color: var(--color-text-muted);
 }
 
+/* Hero Metric Body - Value + Sparkline side by side */
+.hero-metric-body {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.hero-metric-body .hero-metric-value {
+  margin-bottom: 0;
+}
+
+/* Sparkline Mini Chart */
+.hero-metric-sparkline {
+  width: 80px;
+  height: 32px;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.hero-metric-sparkline canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .hero-metric-bar {
   height: 6px;
   background: var(--color-bg-elevated);
