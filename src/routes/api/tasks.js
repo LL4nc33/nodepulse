@@ -12,7 +12,7 @@ var { asyncHandler, apiResponse } = require('./helpers');
 // GET Endpoints
 // =====================================================
 
-// Get all tasks for a node (with filters)
+// Get all tasks for a node (with filters, filtered by pve_node name)
 router.get('/', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
@@ -24,17 +24,21 @@ router.get('/', asyncHandler(async function(req, res) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
+  // Use node.name as pve_node filter (shows only tasks that ran on THIS node)
+  var pveNode = node.name;
+
   var options = {
     limit: parseInt(req.query.limit, 10) || 100,
     offset: parseInt(req.query.offset, 10) || 0,
     type: req.query.type || null,
     status: req.query.status || null,
-    vmid: req.query.vmid ? parseInt(req.query.vmid, 10) : null
+    vmid: req.query.vmid ? parseInt(req.query.vmid, 10) : null,
+    pveNode: pveNode
   };
 
   var tasks = db.tasks.getTasks(nodeId, options);
-  var counts = db.tasks.getTaskCounts(nodeId);
-  var types = db.tasks.getTaskTypes(nodeId);
+  var counts = db.tasks.getTaskCounts(nodeId, pveNode);
+  var types = db.tasks.getTaskTypes(nodeId, pveNode);
 
   apiResponse(res, 200, {
     tasks: tasks,
@@ -213,7 +217,9 @@ router.post('/refresh', asyncHandler(async function(req, res) {
     var collector = require('../../collector');
     await collector.runTaskDiscovery(node);
 
-    var counts = db.tasks.getTaskCounts(nodeId);
+    // Return counts filtered by this node's name
+    var pveNode = node.name;
+    var counts = db.tasks.getTaskCounts(nodeId, pveNode);
     apiResponse(res, 200, {
       message: 'Task Discovery abgeschlossen',
       counts: counts

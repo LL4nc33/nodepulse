@@ -2346,7 +2346,7 @@ var tasks = {
     }
   },
 
-  // === Get Tasks ===
+  // === Get Tasks (filtered by pve_node name, not node_id) ===
   getTasks: function(nodeId, options) {
     options = options || {};
     var limit = options.limit || 100;
@@ -2354,9 +2354,11 @@ var tasks = {
     var taskType = options.type || null;
     var status = options.status || null;
     var vmid = options.vmid || null;
+    var pveNode = options.pveNode || null;
 
-    var sql = 'SELECT * FROM node_tasks WHERE node_id = ?';
-    var params = [nodeId];
+    // Filter by pve_node (cluster-wide tasks filtered to this node)
+    var sql = 'SELECT * FROM node_tasks WHERE pve_node = ?';
+    var params = [pveNode];
 
     if (taskType) {
       sql += ' AND task_type = ?';
@@ -2395,8 +2397,8 @@ var tasks = {
     return getDb().prepare('SELECT * FROM node_tasks WHERE node_id = ? AND status = ? ORDER BY starttime DESC').all(nodeId, 'running');
   },
 
-  // === Get task count by status ===
-  getTaskCounts: function(nodeId) {
+  // === Get task count by status (filtered by pve_node) ===
+  getTaskCounts: function(nodeId, pveNode) {
     var result = getDb().prepare(`
       SELECT
         COUNT(*) as total,
@@ -2405,14 +2407,14 @@ var tasks = {
         SUM(CASE WHEN status NOT IN ('running', 'OK', '') AND status IS NOT NULL THEN 1
             WHEN exitstatus IS NOT NULL AND exitstatus != 'OK' AND exitstatus != '' THEN 1
             ELSE 0 END) as error
-      FROM node_tasks WHERE node_id = ?
-    `).get(nodeId);
+      FROM node_tasks WHERE pve_node = ?
+    `).get(pveNode);
     return result || { total: 0, running: 0, ok: 0, error: 0 };
   },
 
-  // === Get task types for filter ===
-  getTaskTypes: function(nodeId) {
-    return getDb().prepare('SELECT DISTINCT task_type FROM node_tasks WHERE node_id = ? ORDER BY task_type').all(nodeId);
+  // === Get task types for filter (filtered by pve_node) ===
+  getTaskTypes: function(nodeId, pveNode) {
+    return getDb().prepare('SELECT DISTINCT task_type FROM node_tasks WHERE pve_node = ? ORDER BY task_type').all(pveNode);
   },
 
   // === Cleanup old tasks (keep last N days) ===

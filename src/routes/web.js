@@ -265,12 +265,14 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
   }
 
   // Tasks data for Proxmox hosts (only counts, tasks loaded on-demand via API)
+  // Filtered by node.name (pve_node) to show only tasks that ran on THIS node
   let tasksData = null;
   if (discovery && discovery.is_proxmox_host) {
+    const pveNode = node.name;
     tasksData = {
       tasks: [], // Loaded on-demand via API with pagination
-      counts: db.tasks.getTaskCounts(node.id),
-      types: db.tasks.getTaskTypes(node.id).map(t => t.task_type)
+      counts: db.tasks.getTaskCounts(node.id, pveNode),
+      types: db.tasks.getTaskTypes(node.id, pveNode).map(t => t.task_type)
     };
   }
 
