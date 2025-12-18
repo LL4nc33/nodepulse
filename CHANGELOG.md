@@ -4,6 +4,76 @@ Alle bemerkenswerten Aenderungen an diesem Projekt werden in dieser Datei dokume
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [0.4.2] - 2025-12-18 (Design System Foundations)
+
+### Added
+
+#### Sprint 1: Design System Foundations
+
+- **CSS Design-System Variablen** (`src/public/css/modules/base.css`)
+  - Spacing Scale: `--space-xs` (4px) bis `--space-2xl` (48px)
+  - Typography Scale: `--font-size-xs` (11px) bis `--font-size-2xl` (32px)
+  - Font Weights: `--font-weight-normal/medium/semibold/bold`
+  - Line Heights: `--line-height-tight/normal/relaxed`
+  - Border Radius: `--radius-sm` (4px) bis `--radius-full` (9999px)
+  - Transitions: `--transition-fast` (150ms) bis `--transition-slow` (300ms)
+
+- **Vereinheitlichte Progress-Bar-Komponente** (`src/views/partials/progress-bar.ejs`)
+  - 3 Varianten: `mini` (6px), `standard` (8px), `large` (12px)
+  - Mini: Dashboard Listen-View, kompakt
+  - Standard: Cards-View, mit optionalen absoluten Werten
+  - Large: Detail-Pages, mit Label und absoluten Werten
+  - Threshold-basierte Farbcodierung (ok/warning/critical)
+  - Offline-State Support
+  - Timestamp-Anzeige (Alter der Daten)
+
+- **Button-Varianten konsolidiert**
+  - `.btn-success` und `.btn-warning` in base.css
+  - Einheitliches Styling ueber alle Module
+
+- **Utility-Klassen** (`src/public/css/modules/base.css`)
+  - `.text-muted`, `.text-danger`, `.text-success`, `.text-warning`
+  - Wiederverwendbar in allen Views
+
+- **Frontend-Design-Dokumentation** (`docs/frontend-design.md`)
+  - Design-System Variablen dokumentiert
+  - Progress-Bar Komponente mit allen Parametern
+  - CSS-Modul-Architektur beschrieben
+  - Sprint-Roadmap
+
+### Changed
+
+- **CSS-Module aktualisiert auf Design-System Variablen**
+  - base.css: +~200 Zeilen (Design-System Variablen)
+  - components.css: +189 Zeilen (Progress-Bar CSS)
+  - Bestehende Komponenten nutzen jetzt CSS-Variablen
+
+### Removed
+
+- **CSS-Duplikate eliminiert** (-117 Zeilen)
+  - `.form-row`, `.form-actions`, `.checkbox-label` aus components.css entfernt
+  - `.btn-success`, `.btn-warning`, `.text-*` aus docker.css entfernt
+  - `.btn-success`, `.btn-warning` aus services.css entfernt
+  - Alles konsolidiert in base.css
+
+### Technical
+
+- CSS-Version auf 6.0 erhoeht (Cache-Bust)
+- Alle bestehenden Komponenten auf CSS-Variablen umgestellt
+- 11 CSS-Module bleiben separat, Build-System unveraendert
+
+### Files
+
+- `src/public/css/modules/base.css` - Design-System erweitert
+- `src/public/css/modules/components.css` - Progress-Bar CSS + Deduplizierung
+- `src/public/css/modules/docker.css` - Duplikate entfernt
+- `src/public/css/modules/services.css` - Duplikate entfernt
+- `src/views/partials/progress-bar.ejs` - 3 Varianten implementiert
+- `src/views/partials/header.ejs` - CSS-Version 6.0
+- `docs/frontend-design.md` - NEU
+
+---
+
 ## [0.4.1] - 2025-12-18 (Security & Stability Fixes)
 
 ### Fixed

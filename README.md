@@ -2,7 +2,7 @@
 
 Ein leichtgewichtiges Homelab Dashboard und CLI-Tool zur Verwaltung von Servern, Proxmox-Hosts und Docker-Containern.
 
-![Version](https://img.shields.io/badge/version-0.4.1-green)
+![Version](https://img.shields.io/badge/version-0.4.2-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![TOON](https://img.shields.io/badge/TOON-v1.0-blue)
@@ -99,6 +99,8 @@ Ein leichtgewichtiges Homelab Dashboard und CLI-Tool zur Verwaltung von Servern,
 - **Keyboard-Shortcuts** (/ fokussiert Suche, Ctrl+` toggle Terminal)
 - **Skip-Link** fuer Accessibility
 - **Auto-Refresh** ohne Page-Reload (AJAX-basiert)
+- **Design-System** (CSS-Variablen fuer Spacing, Typography, Radius, Transitions)
+- **Vereinheitlichte Progress-Bars** (3 Varianten: mini, standard, large)
 
 ---
 
@@ -279,6 +281,14 @@ sudo systemctl start nodepulse
 - ✅ Hardware-Discovery erweitert (Thermal, Power, SMART, Network)
 - ✅ System Health-Check & Proxmox Repository Management
 
+### ✅ v0.4.2 - Design System Foundations (ABGESCHLOSSEN)
+- ✅ CSS-Variablen: Spacing Scale (--space-xs bis --space-2xl)
+- ✅ CSS-Variablen: Typography Scale (--font-size-xs bis --font-size-2xl)
+- ✅ CSS-Variablen: Font Weights, Line Heights, Border Radius, Transitions
+- ✅ CSS Deduplizierung (-117 Zeilen)
+- ✅ Progress-Bar vereinheitlicht (3 Varianten: mini, standard, large)
+- ✅ docs/frontend-design.md Dokumentation
+
 ### ✅ v0.4.1 - Security & Stability Fixes (ABGESCHLOSSEN)
 - ✅ **9 kritische Bugs behoben** aus Code-Review Sprint 1-3
 - ✅ Command Injection Prevention (Whitelist-Ansatz)
@@ -434,6 +444,7 @@ nodepulse/
 │   ├── adr/            # Architecture Decision Records
 │   │   └── 001-toon-format-integration.md
 │   ├── code-review-sprint-1-3.md
+│   ├── frontend-design.md      # Design-System Dokumentation
 │   └── TOON-IMPLEMENTATION-SUMMARY.md
 └── package.json
 ```
