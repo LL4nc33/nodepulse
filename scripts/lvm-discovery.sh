@@ -101,7 +101,7 @@ echo '"available_disks": ['
 first=true
 
 # Alle Block-Devices durchgehen
-for disk in /sys/block/sd* /sys/block/nvme*n[0-9]* /sys/block/vd* 2>/dev/null; do
+for disk in /sys/block/sd* /sys/block/nvme* /sys/block/vd*; do
   [ -d "$disk" ] || continue
   devname=$(basename "$disk")
   devpath="/dev/$devname"
