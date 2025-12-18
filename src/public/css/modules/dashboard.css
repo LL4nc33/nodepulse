@@ -1515,12 +1515,21 @@
   -webkit-flex: 1 1 calc(25% - 1rem);
   flex: 1 1 calc(25% - 1rem);
   max-width: calc(25% - 0.75rem);
-  -webkit-transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-transition: border-color var(--transition-base), box-shadow var(--transition-base), -webkit-transform var(--transition-base);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
+  cursor: pointer;
 }
 
 .monitoring-card:hover {
   border-color: var(--color-accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  -webkit-transform: translateY(-2px);
+  transform: translateY(-2px);
+}
+
+.monitoring-card:active {
+  -webkit-transform: translateY(0);
+  transform: translateY(0);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
