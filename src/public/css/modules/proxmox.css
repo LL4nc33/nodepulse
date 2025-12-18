@@ -72,13 +72,14 @@
 
 .proxmox-summary .summary-card:hover {
   border-color: var(--color-accent);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Running counts highlighted */
+/* Running counts highlighted (VMs Running, CTs Running) */
 .proxmox-summary .summary-card:nth-child(1),
 .proxmox-summary .summary-card:nth-child(3) {
-  border-left: 3px solid var(--color-success);
+  border-left: 4px solid var(--color-success);
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.08) 0%, var(--color-bg-surface) 20%);
 }
 
 .proxmox-summary .summary-card:nth-child(1) .summary-value,
@@ -237,7 +238,8 @@
 
 .proxmox-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--font-size-base, 0.875rem);
 }
 
@@ -273,25 +275,28 @@
 }
 
 /* VM/CT Row States - PVE Style Status Indicators */
-.vm-row,
-.ct-row {
-  border-left: 3px solid transparent;
+/* Using inset box-shadow to avoid border-radius clipping */
+.vm-row.running td:first-child,
+.ct-row.running td:first-child {
+  box-shadow: inset 5px 0 0 var(--color-success);
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.08) 0%, transparent 30%);
 }
 
-.vm-row.running,
-.ct-row.running {
-  border-left-color: var(--color-success);
+.vm-row.stopped td:first-child,
+.ct-row.stopped td:first-child {
+  box-shadow: inset 5px 0 0 var(--color-error);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.08) 0%, transparent 30%);
 }
 
 .vm-row.stopped,
 .ct-row.stopped {
-  border-left-color: var(--color-error);
-  opacity: 0.75;
+  opacity: 0.7;
 }
 
-.vm-row.paused,
-.ct-row.paused {
-  border-left-color: var(--color-warning);
+.vm-row.paused td:first-child,
+.ct-row.paused td:first-child {
+  box-shadow: inset 5px 0 0 var(--color-warning);
+  background: linear-gradient(90deg, rgba(234, 179, 8, 0.08) 0%, transparent 30%);
 }
 
 .storage-row,

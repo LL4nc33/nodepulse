@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-18T02:59:03.729Z
+   Generated: 2025-12-18T03:17:56.798Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -6350,7 +6350,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: docker.css (893 lines)
+   FROM: docker.css (899 lines)
    ============================================================ */
 
    Docker Management
@@ -6427,11 +6427,13 @@ a:focus {
 
 .summary-card:hover {
   border-color: var(--color-accent);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.summary-card:first-child {
-  border-left: 3px solid var(--color-success);
+/* First card (Running) highlighted with green border */
+.docker-summary .summary-card:first-child {
+  border-left: 4px solid var(--color-success);
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.08) 0%, var(--color-bg-surface) 20%);
 }
 
 .summary-value {
@@ -6479,7 +6481,8 @@ a:focus {
 
 .docker-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--font-size-base, 0.875rem);
 }
 
@@ -6515,25 +6518,28 @@ a:focus {
 }
 
 /* Container Row States - Docker Desktop Style */
-.container-row {
-  border-left: 3px solid transparent;
+/* Using inset box-shadow to avoid border-radius clipping */
+.container-row.running td:first-child {
+  box-shadow: inset 5px 0 0 var(--color-success);
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.08) 0%, transparent 30%);
 }
 
-.container-row.running {
-  border-left-color: var(--color-success);
+.container-row.exited td:first-child {
+  box-shadow: inset 5px 0 0 var(--color-error);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.08) 0%, transparent 30%);
 }
 
 .container-row.exited {
-  border-left-color: var(--color-error);
-  opacity: 0.8;
+  opacity: 0.7;
 }
 
-.container-row.paused {
-  border-left-color: var(--color-warning);
+.container-row.paused td:first-child {
+  box-shadow: inset 5px 0 0 var(--color-warning);
+  background: linear-gradient(90deg, rgba(234, 179, 8, 0.08) 0%, transparent 30%);
 }
 
-.container-row.created {
-  border-left-color: var(--color-text-muted);
+.container-row.created td:first-child {
+  box-shadow: inset 5px 0 0 var(--color-text-muted);
 }
 
 /* State Badges - Docker Desktop Style Pills */
@@ -7248,7 +7254,7 @@ a:focus {
 /* =====================================================
 
 /* ============================================================
-   FROM: proxmox.css (659 lines)
+   FROM: proxmox.css (664 lines)
    ============================================================ */
 
    Proxmox Management
@@ -7325,13 +7331,14 @@ a:focus {
 
 .proxmox-summary .summary-card:hover {
   border-color: var(--color-accent);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Running counts highlighted */
+/* Running counts highlighted (VMs Running, CTs Running) */
 .proxmox-summary .summary-card:nth-child(1),
 .proxmox-summary .summary-card:nth-child(3) {
-  border-left: 3px solid var(--color-success);
+  border-left: 4px solid var(--color-success);
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.08) 0%, var(--color-bg-surface) 20%);
 }
 
 .proxmox-summary .summary-card:nth-child(1) .summary-value,
@@ -7490,7 +7497,8 @@ a:focus {
 
 .proxmox-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--font-size-base, 0.875rem);
 }
 
@@ -7526,25 +7534,28 @@ a:focus {
 }
 
 /* VM/CT Row States - PVE Style Status Indicators */
-.vm-row,
-.ct-row {
-  border-left: 3px solid transparent;
+/* Using inset box-shadow to avoid border-radius clipping */
+.vm-row.running td:first-child,
+.ct-row.running td:first-child {
+  box-shadow: inset 5px 0 0 var(--color-success);
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.08) 0%, transparent 30%);
 }
 
-.vm-row.running,
-.ct-row.running {
-  border-left-color: var(--color-success);
+.vm-row.stopped td:first-child,
+.ct-row.stopped td:first-child {
+  box-shadow: inset 5px 0 0 var(--color-error);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.08) 0%, transparent 30%);
 }
 
 .vm-row.stopped,
 .ct-row.stopped {
-  border-left-color: var(--color-error);
-  opacity: 0.75;
+  opacity: 0.7;
 }
 
-.vm-row.paused,
-.ct-row.paused {
-  border-left-color: var(--color-warning);
+.vm-row.paused td:first-child,
+.ct-row.paused td:first-child {
+  box-shadow: inset 5px 0 0 var(--color-warning);
+  background: linear-gradient(90deg, rgba(234, 179, 8, 0.08) 0%, transparent 30%);
 }
 
 .storage-row,
