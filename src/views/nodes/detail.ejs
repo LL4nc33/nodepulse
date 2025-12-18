@@ -44,7 +44,13 @@
       </span>
       <span class="btn-loading"><span class="spinner"></span></span>
     </button>
-    <a href="/nodes/<%= node.id %>/edit" class="btn">Bearbeiten</a>
+    <button class="btn" onclick="openEditPanel()" title="Node bearbeiten">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      Bearbeiten
+    </button>
   </div>
 </div>
 
@@ -101,6 +107,121 @@
 <!-- Modals -->
 <%- include('../partials/node-detail/modals') %>
 
+<!-- Edit Sidepanel -->
+<div class="edit-panel-overlay" id="editPanelOverlay" onclick="closeEditPanel()"></div>
+<aside class="edit-panel" id="editPanel">
+  <div class="edit-panel-header">
+    <h2>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      Node bearbeiten
+    </h2>
+    <button class="edit-panel-close" onclick="closeEditPanel()" title="Schliessen">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <form class="edit-panel-form" id="editNodeForm" onsubmit="saveNode(event)">
+    <div class="edit-panel-body">
+      <!-- Basic Info -->
+      <div class="form-section">
+        <h3>Grundeinstellungen</h3>
+        <div class="form-group">
+          <label for="edit-name">Name</label>
+          <input type="text" id="edit-name" name="name" value="<%= node.name %>" required maxlength="255">
+        </div>
+        <div class="form-group">
+          <label for="edit-host">Host / IP</label>
+          <input type="text" id="edit-host" name="host" value="<%= node.host %>" required maxlength="255">
+        </div>
+      </div>
+
+      <!-- SSH Settings -->
+      <div class="form-section">
+        <h3>SSH Verbindung</h3>
+        <div class="form-row-compact">
+          <div class="form-group">
+            <label for="edit-ssh_user">User</label>
+            <input type="text" id="edit-ssh_user" name="ssh_user" value="<%= node.ssh_user %>" required maxlength="64">
+          </div>
+          <div class="form-group form-group-small">
+            <label for="edit-ssh_port">Port</label>
+            <input type="number" id="edit-ssh_port" name="ssh_port" value="<%= node.ssh_port %>" min="1" max="65535">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="edit-ssh_password">Passwort</label>
+          <input type="password" id="edit-ssh_password" name="ssh_password" autocomplete="new-password"
+                 placeholder="<%= node.ssh_password ? 'Gesetzt - leer lassen zum Behalten' : 'Nicht gesetzt' %>">
+        </div>
+        <div class="form-group">
+          <label for="edit-ssh_key_path">SSH Key Pfad</label>
+          <input type="text" id="edit-ssh_key_path" name="ssh_key_path" value="<%= node.ssh_key_path || '' %>"
+                 placeholder="z.B. ~/.ssh/id_rsa">
+        </div>
+      </div>
+
+      <!-- Monitoring -->
+      <div class="form-section">
+        <h3>Monitoring</h3>
+        <div class="form-row-compact">
+          <div class="form-group">
+            <label class="checkbox-inline">
+              <input type="checkbox" id="edit-monitoring_enabled" name="monitoring_enabled" <%= node.monitoring_enabled ? 'checked' : '' %>>
+              <span>Monitoring aktiv</span>
+            </label>
+          </div>
+          <div class="form-group form-group-small">
+            <label for="edit-monitoring_interval">Interval (s)</label>
+            <input type="number" id="edit-monitoring_interval" name="monitoring_interval"
+                   value="<%= node.monitoring_interval %>" min="5" max="3600">
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-section">
+        <h3>Notizen</h3>
+        <div class="form-group">
+          <textarea id="edit-notes" name="notes" rows="3" placeholder="Optionale Notizen..."><%= node.notes || '' %></textarea>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <details class="danger-zone-collapsible">
+        <summary>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          Gefahrenzone
+        </summary>
+        <div class="danger-zone-content">
+          <p>Node und alle zugehoerigen Daten unwiderruflich loeschen.</p>
+          <button type="button" class="btn btn-danger btn-sm" onclick="deleteNode(<%= node.id %>, '<%= node.name %>')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Node loeschen
+          </button>
+        </div>
+      </details>
+    </div>
+
+    <div class="edit-panel-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeEditPanel()">Abbrechen</button>
+      <button type="submit" class="btn btn-primary" id="editSaveBtn">
+        <span class="btn-text">Speichern</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+  </form>
+</aside>
+
   </main>
 
   <!-- Terminal Bottom Panel (außerhalb main-panel) -->
@@ -121,6 +242,6 @@
 <!-- External JavaScript -->
 <!-- Terminal Tab Manager (must load before detail-page.js) -->
 <script src="/static/js/detail/terminal-tabs.js?v=5.1"></script>
-<script src="/static/js/detail-page.js?v=5.2"></script>
+<script src="/static/js/detail-page.js?v=5.3"></script>
 
 <%- include('../partials/footer') %>

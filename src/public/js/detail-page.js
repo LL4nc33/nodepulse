@@ -4959,3 +4959,171 @@ function switchProxmoxRepo(nodeId, mode, evt) {
   xhr.send(JSON.stringify({ mode: mode }));
 }
 
+// =============================================================================
+// EDIT SIDEPANEL
+// =============================================================================
+
+/**
+ * Open edit panel
+ */
+function openEditPanel() {
+  var overlay = document.getElementById('editPanelOverlay');
+  var panel = document.getElementById('editPanel');
+  if (overlay && panel) {
+    overlay.classList.add('open');
+    panel.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+/**
+ * Close edit panel
+ */
+function closeEditPanel() {
+  var overlay = document.getElementById('editPanelOverlay');
+  var panel = document.getElementById('editPanel');
+  if (overlay && panel) {
+    overlay.classList.remove('open');
+    panel.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+/**
+ * Save node via AJAX
+ */
+function saveNode(e) {
+  e.preventDefault();
+
+  var form = document.getElementById('editNodeForm');
+  var btn = document.getElementById('editSaveBtn');
+
+  if (!form || !btn) return;
+
+  // Set loading state
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  // Collect form data
+  var formData = {
+    name: document.getElementById('edit-name').value,
+    host: document.getElementById('edit-host').value,
+    ssh_user: document.getElementById('edit-ssh_user').value,
+    ssh_port: parseInt(document.getElementById('edit-ssh_port').value, 10) || 22,
+    ssh_password: document.getElementById('edit-ssh_password').value,
+    ssh_key_path: document.getElementById('edit-ssh_key_path').value,
+    monitoring_enabled: document.getElementById('edit-monitoring_enabled').checked,
+    monitoring_interval: parseInt(document.getElementById('edit-monitoring_interval').value, 10) || 30,
+    notes: document.getElementById('edit-notes').value
+  };
+
+  // AJAX request
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', '/api/nodes/' + nodeId, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.timeout = 10000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+
+      if (xhr.status === 200) {
+        try {
+          var data = JSON.parse(xhr.responseText);
+          if (data.success) {
+            if (window.NP && window.NP.Toast) {
+              window.NP.Toast.show('Node gespeichert', 'success');
+            }
+            closeEditPanel();
+            // Reload to show updated data
+            setTimeout(function() {
+              window.location.reload();
+            }, 500);
+          } else {
+            var errMsg = (data.error && data.error.message) || 'Fehler beim Speichern';
+            if (window.NP && window.NP.Toast) {
+              window.NP.Toast.show(errMsg, 'error');
+            }
+          }
+        } catch (e) {
+          if (window.NP && window.NP.Toast) {
+            window.NP.Toast.show('Ungueltige Server-Antwort', 'error');
+          }
+        }
+      } else {
+        if (window.NP && window.NP.Toast) {
+          window.NP.Toast.show('Fehler: HTTP ' + xhr.status, 'error');
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    if (window.NP && window.NP.Toast) {
+      window.NP.Toast.show('Netzwerkfehler', 'error');
+    }
+  };
+
+  xhr.ontimeout = function() {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    if (window.NP && window.NP.Toast) {
+      window.NP.Toast.show('Timeout', 'error');
+    }
+  };
+
+  xhr.send(JSON.stringify(formData));
+}
+
+/**
+ * Delete node
+ */
+function deleteNode(id, name) {
+  if (!confirm('Bist du sicher, dass du den Node "' + name + '" loeschen moechtest?\n\nAlle zugehoerigen Daten werden ebenfalls geloescht.')) {
+    return;
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('DELETE', '/api/nodes/' + id, true);
+  xhr.timeout = 10000;
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        if (window.NP && window.NP.Toast) {
+          window.NP.Toast.show('Node geloescht', 'success');
+        }
+        // Redirect to nodes list
+        setTimeout(function() {
+          window.location.href = '/nodes';
+        }, 500);
+      } else {
+        if (window.NP && window.NP.Toast) {
+          window.NP.Toast.show('Fehler beim Loeschen: HTTP ' + xhr.status, 'error');
+        }
+      }
+    }
+  };
+
+  xhr.onerror = function() {
+    if (window.NP && window.NP.Toast) {
+      window.NP.Toast.show('Netzwerkfehler', 'error');
+    }
+  };
+
+  xhr.send();
+}
+
+// Close edit panel with Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' || e.keyCode === 27) {
+    var panel = document.getElementById('editPanel');
+    if (panel && panel.classList.contains('open')) {
+      closeEditPanel();
+    }
+  }
+});
+

@@ -94,7 +94,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  const { name, host, ssh_port, ssh_user, ssh_key_path, notes, monitoring_enabled, monitoring_interval } = req.body;
+  const { name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes, monitoring_enabled, monitoring_interval } = req.body;
 
   // Build update data with existing values as fallback
   const updateData = {
@@ -106,6 +106,8 @@ router.put('/:id', asyncHandler(async (req, res) => {
     notes: notes !== undefined ? notes : node.notes,
     monitoring_enabled: monitoring_enabled !== undefined ? (monitoring_enabled ? 1 : 0) : node.monitoring_enabled,
     monitoring_interval: monitoring_interval !== undefined ? parseIntParam(monitoring_interval, node.monitoring_interval) : node.monitoring_interval,
+    // Only update password if a new one is provided (non-empty)
+    ssh_password: (ssh_password && ssh_password.trim()) ? ssh_password.trim() : node.ssh_password,
   };
 
   // Validation
@@ -128,6 +130,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
       host: updateData.host.trim(),
       ssh_port: updateData.ssh_port,
       ssh_user: updateData.ssh_user.trim(),
+      ssh_password: updateData.ssh_password || null,
       ssh_key_path: updateData.ssh_key_path ? updateData.ssh_key_path.trim() : null,
       notes: updateData.notes ? updateData.notes.trim() : null,
       monitoring_enabled: updateData.monitoring_enabled,
