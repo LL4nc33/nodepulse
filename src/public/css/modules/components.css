@@ -1,15 +1,15 @@
 /* =====================================================
-   Tabs
+   Tabs (Enhanced for Phase 3.2)
    ===================================================== */
 
 .tabs {
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 0;
+  border-bottom: 2px solid var(--color-border);
+  padding: 0.5rem 0.5rem 0;
   position: -webkit-sticky;
   position: sticky;
   top: 60px;
@@ -35,30 +35,46 @@
   -webkit-align-items: center;
   align-items: center;
   gap: 0.5rem;
-  background: none;
-  border: none;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-bottom: none;
   color: var(--color-text-muted);
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+  padding: 0.875rem 1.25rem;
+  font-size: var(--font-size-sm, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  -webkit-transition: all 0.2s ease;
-  transition: all 0.2s ease;
+  margin-bottom: -2px;
+  -webkit-transition: all var(--transition-fast, 150ms ease);
+  transition: all var(--transition-fast, 150ms ease);
   white-space: nowrap;
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--radius-md, 6px) var(--radius-md, 6px) 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .tab-btn:hover {
   color: var(--color-text);
   background: var(--color-bg-elevated);
+  border-color: var(--color-border-light);
 }
 
 .tab-btn.active {
   color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
-  background: var(--color-bg-elevated);
+  background: var(--color-bg);
+  border-color: var(--color-border);
+  border-bottom: 2px solid var(--color-bg);
+  position: relative;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 3px 3px 0 0;
 }
 
 .tab-btn:focus {
@@ -72,21 +88,25 @@
   flex-shrink: 0;
   width: 18px;
   height: 18px;
-  opacity: 0.7;
-  -webkit-transition: opacity 0.2s;
-  transition: opacity 0.2s;
+  opacity: 0.6;
+  -webkit-transition: opacity var(--transition-fast, 150ms ease);
+  transition: opacity var(--transition-fast, 150ms ease);
 }
 
-.tab-btn:hover .tab-icon,
+.tab-btn:hover .tab-icon {
+  opacity: 0.8;
+}
+
 .tab-btn.active .tab-icon {
   opacity: 1;
+  color: var(--color-accent);
 }
 
 .tab-label {
-  font-weight: 500;
+  font-weight: var(--font-weight-semibold, 600);
 }
 
-/* Tab Badges (for counts) */
+/* Tab Badges (for counts) - Enhanced */
 .tab-badge {
   display: -webkit-inline-box;
   display: -webkit-inline-flex;
@@ -97,15 +117,27 @@
   -webkit-box-pack: center;
   -webkit-justify-content: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--font-size-xs, 0.6875rem);
+  font-weight: var(--font-weight-bold, 700);
+  line-height: 1;
+  -webkit-transition: all var(--transition-fast, 150ms ease);
+  transition: all var(--transition-fast, 150ms ease);
+}
+
+.tab-btn:hover .tab-badge {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+}
+
+.tab-btn.active .tab-badge {
   background: var(--color-accent);
   color: #fff;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1;
 }
 
 .tab-content {
@@ -116,15 +148,27 @@
   display: block;
 }
 
-/* Mobile: Icons ausblenden */
+/* Mobile: Kompaktere Tabs */
 @media (max-width: 640px) {
+  .tabs {
+    padding: 0.25rem 0.25rem 0;
+    gap: 0.125rem;
+  }
+
   .tab-icon {
     display: none;
   }
 
   .tab-btn {
-    padding: 0.75rem;
-    font-size: 0.8125rem;
+    padding: 0.625rem 0.75rem;
+    font-size: var(--font-size-xs, 0.6875rem);
+  }
+
+  .tab-badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 0.625rem;
   }
 }
 
