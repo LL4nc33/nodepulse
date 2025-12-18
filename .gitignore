@@ -28,10 +28,8 @@ Thumbs.db
 dist/
 build/
 
-# Built files (generated on server via npm run build)
-src/public/css/style.css
+# Backup files (not needed in repo)
 src/public/css/style-backup.css
-src/public/js/detail-page.js
 src/public/js/detail-page-backup.js
 
 # Claude Code
