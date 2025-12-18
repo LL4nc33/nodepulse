@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-18T16:25:16.807Z
+   Generated: 2025-12-18T16:35:01.619Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -3209,11 +3209,11 @@ a:focus {
 }
 
 .mini-bar-fill.cpu {
-  background: var(--color-accent);
+  background: #5fa332;
 }
 
 .mini-bar-fill.ram {
-  background: var(--color-info);
+  background: #3b82f6;
 }
 
 .mini-bar-fill.warning {

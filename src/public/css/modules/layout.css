@@ -2129,11 +2129,11 @@
 }
 
 .mini-bar-fill.cpu {
-  background: var(--color-accent);
+  background: #5fa332;
 }
 
 .mini-bar-fill.ram {
-  background: var(--color-info);
+  background: #3b82f6;
 }
 
 .mini-bar-fill.warning {
