@@ -1951,6 +1951,19 @@ var capabilities = {
 // LVM Storage Operations
 // =====================================================
 
+// Parse LVM byte values (e.g., "1024207093760B" -> 1024207093760)
+function parseLvmBytes(value) {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  var str = String(value).trim();
+  // Remove trailing 'B' if present
+  if (str.endsWith('B')) {
+    str = str.slice(0, -1);
+  }
+  var num = parseInt(str, 10);
+  return isNaN(num) ? 0 : num;
+}
+
 var lvm = {
   // === Physical Volumes ===
   savePVs: function(nodeId, pvs) {
@@ -1966,13 +1979,15 @@ var lvm = {
 
     for (var i = 0; i < pvs.length; i++) {
       var pv = pvs[i];
+      var pvSize = parseLvmBytes(pv.pv_size);
+      var pvFree = parseLvmBytes(pv.pv_free);
       insertStmt.run(
         nodeId,
         pv.pv_name,
         pv.vg_name || null,
-        pv.pv_size || 0,
-        pv.pv_free || 0,
-        (pv.pv_size || 0) - (pv.pv_free || 0),
+        pvSize,
+        pvFree,
+        pvSize - pvFree,
         pv.pv_uuid || null
       );
     }
@@ -2000,14 +2015,16 @@ var lvm = {
 
     for (var i = 0; i < vgs.length; i++) {
       var vg = vgs[i];
+      var vgSize = parseLvmBytes(vg.vg_size);
+      var vgFree = parseLvmBytes(vg.vg_free);
       upsertStmt.run(
         nodeId,
         vg.vg_name,
-        vg.vg_size || 0,
-        vg.vg_free || 0,
-        (vg.vg_size || 0) - (vg.vg_free || 0),
-        vg.pv_count || 0,
-        vg.lv_count || 0,
+        vgSize,
+        vgFree,
+        vgSize - vgFree,
+        parseInt(vg.pv_count, 10) || 0,
+        parseInt(vg.lv_count, 10) || 0,
         vg.vg_uuid || null
       );
     }
@@ -2044,17 +2061,18 @@ var lvm = {
       var lv = lvs[i];
       // Thin Pool Detection: lv_attr beginnt mit 't' oder 'T'
       var isThinPool = lv.lv_attr && lv.lv_attr.charAt(0).toLowerCase() === 't' ? 1 : 0;
+      var lvSize = parseLvmBytes(lv.lv_size);
 
       insertStmt.run(
         nodeId,
         lv.lv_name,
         lv.vg_name,
-        lv.lv_size || 0,
+        lvSize,
         lv.lv_path || '/dev/' + lv.vg_name + '/' + lv.lv_name,
         lv.lv_attr || '',
         isThinPool,
         lv.pool_lv || null,
-        lv.data_percent || null
+        lv.data_percent ? parseFloat(lv.data_percent) : null
       );
     }
   },
