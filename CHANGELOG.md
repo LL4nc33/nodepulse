@@ -6,6 +6,48 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
 ---
 
+## [0.6.0] - 2025-12-18
+
+### Added - UI/UX Overhaul
+
+- **Design System Erweiterungen**
+  - Neue CSS-Variablen: z-index Scale, Gray Palette
+  - `pulse-components.css` - Wiederverwendbare UI-Komponenten (453 Zeilen)
+  - Progress Bars, Status Indicators, Alert Cards, Collapsible Headers
+
+- **Sidebar Verbesserungen**
+  - Quick-Search mit "/" Keyboard-Shortcut
+  - Echtzeit-Filterung der Node-Liste
+  - Escape zum Leeren und Schließen
+
+- **Dashboard Polish**
+  - Node-Liste mit allen Spalten (Status, Name, Host, Uptime, CPU, RAM, Disk, VMs, Container, Typ)
+  - Verbesserte Tabellen-Struktur
+  - Responsive Breakpoints
+
+- **Detail-Seiten**
+  - Tab-Navigation mit Underline-Style (Proxmox VE inspiriert)
+  - Hero Metrics mit Warning/Critical Border-Indikator
+  - Terminal Tab-Close Button immer sichtbar
+
+- **Animationen**
+  - `fadeInUp` für sanfte Einblendungen
+  - Hover-Effekte auf Status-Dots
+  - Smooth Transitions überall
+
+### Changed
+
+- CSS Build auf 15 Module erweitert (~11.000 Zeilen)
+- Konsistentere Spacing und Typography
+
+### Technical
+
+- ES5-Kompatibilität beibehalten (Fire HD 10 2017)
+- Webkit-Prefixe für ältere Browser
+- Modulares CSS-Build-System
+
+---
+
 ## [0.5.0] - 2025-12-18
 
 ### Added - Task History & Logs

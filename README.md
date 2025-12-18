@@ -2,7 +2,7 @@
 
 Ein leichtgewichtiges Homelab Dashboard zur Verwaltung von Servern, Proxmox-Hosts und Docker-Containern.
 
-![Version](https://img.shields.io/badge/version-0.5.0-green)
+![Version](https://img.shields.io/badge/version-0.6.0-green)
 ![Status](https://img.shields.io/badge/status-beta-blue)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
@@ -94,6 +94,7 @@ np exec <node> "uptime"      # Befehl ausführen
 
 ### Abgeschlossen
 
+- **v0.6.0** - UI/UX Overhaul (Sidebar Search, Design System, Animationen)
 - **v0.5.0** - Task History & Logs, Storage-Tab Fixes
 - **v0.4.5** - Backup & Restore (vzdump erstellen, löschen, wiederherstellen)
 - **v0.4.4** - LVM Storage Management (VGs, Thin Pools, Proxmox-Registrierung)
@@ -102,12 +103,12 @@ np exec <node> "uptime"      # Befehl ausführen
 
 ### Geplant
 
-**v0.6.0 - Console & Compose**
+**v0.7.0 - Console & Compose**
 - VNC/SPICE Console für VMs
 - Docker Compose Support
 - Live Migration
 
-**v0.7.0 - Advanced Features**
+**v0.8.0 - Advanced Features**
 - Backup-Scheduling
 - Firewall Management
 - Multi-User mit Rollen
