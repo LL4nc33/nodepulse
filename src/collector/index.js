@@ -18,7 +18,8 @@ const activePollers = new Map();
  */
 function getScript(name) {
   const scriptPath = path.join(scriptsDir, name);
-  return fs.readFileSync(scriptPath, 'utf8');
+  // Convert CRLF to LF for Linux compatibility
+  return fs.readFileSync(scriptPath, 'utf8').replace(/\r\n/g, '\n');
 }
 
 /**
