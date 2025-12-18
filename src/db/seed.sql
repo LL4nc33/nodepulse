@@ -25,21 +25,13 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
 -- TOON Integration (Phase 3)
 ('use_toon_format', 'false');
 
--- System Tags (auto-generated)
+-- System Tags (consolidated to main categories)
 INSERT OR IGNORE INTO tags (name, tag_type, color, description) VALUES
 ('bare-metal', 'system', '#4a5568', 'Physical server, no virtualization'),
 ('vm', 'system', '#805ad5', 'Virtual machine'),
-('container', 'system', '#38a169', 'LXC container'),
-('proxmox', 'system', '#e6522c', 'Proxmox VE host'),
-('cluster-node', 'system', '#dd6b20', 'Part of Proxmox cluster'),
-('standalone', 'system', '#718096', 'Standalone Proxmox (no cluster)'),
-('proxmox-vm', 'system', '#9f7aea', 'VM running on Proxmox'),
-('proxmox-ct', 'system', '#48bb78', 'LXC container on Proxmox'),
+('proxmox', 'system', '#e6522c', 'Proxmox VE host or guest'),
 ('docker', 'system', '#2496ed', 'Docker installed'),
-('podman', 'system', '#892ca0', 'Podman installed'),
-('raspberry-pi', 'system', '#c51a4a', 'Raspberry Pi hardware'),
-('x86', 'system', '#3182ce', 'x86_64 architecture'),
-('arm', 'system', '#d69e2e', 'ARM architecture');
+('raspberry-pi', 'system', '#c51a4a', 'Raspberry Pi hardware');
 
 -- Command Templates
 INSERT OR IGNORE INTO command_templates (name, description, category, node_types, template, requires_param, dangerous, sort_order) VALUES

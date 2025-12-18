@@ -1,0 +1,171 @@
+<!-- Settings Sidepanel -->
+<div class="right-panel-overlay" id="settingsPanelOverlay" onclick="closeSettingsPanel()"></div>
+<aside class="right-panel right-panel-wide" id="settingsPanel">
+  <div class="right-panel-header">
+    <h2>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      Einstellungen
+    </h2>
+    <button class="right-panel-close" onclick="closeSettingsPanel()" title="Schliessen">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <form id="settingsPanelForm" onsubmit="saveSettingsPanel(event)">
+    <div class="right-panel-body">
+      <!-- Settings Tabs -->
+      <div class="right-panel-tabs" id="settingsPanelTabs">
+        <button type="button" class="right-panel-tab active" data-tab="discovery" onclick="switchSettingsPanelTab('discovery', this)">
+          Discovery
+        </button>
+        <button type="button" class="right-panel-tab" data-tab="monitoring" onclick="switchSettingsPanelTab('monitoring', this)">
+          Monitoring
+        </button>
+        <button type="button" class="right-panel-tab" data-tab="alerts" onclick="switchSettingsPanelTab('alerts', this)">
+          Thresholds
+        </button>
+      </div>
+
+      <!-- Discovery Tab -->
+      <div class="right-panel-tab-pane active" id="settings-tab-discovery">
+        <div class="right-panel-section">
+          <h3>Auto-Discovery</h3>
+          <div class="form-group">
+            <div class="checkbox-row">
+              <label>
+                <input type="checkbox" id="sp-auto_discovery_enabled" name="auto_discovery_enabled">
+                <span>Auto-Discovery aktiv</span>
+              </label>
+            </div>
+            <small>Automatische Erkennung von Node-Typ und Features beim Hinzufuegen</small>
+          </div>
+          <div class="form-group">
+            <div class="checkbox-row">
+              <label>
+                <input type="checkbox" id="sp-rediscovery_on_connect" name="rediscovery_on_connect">
+                <span>Re-Discovery bei Connect</span>
+              </label>
+            </div>
+            <small>Discovery erneut ausfuehren wenn Node online geht</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monitoring Tab -->
+      <div class="right-panel-tab-pane" id="settings-tab-monitoring">
+        <div class="right-panel-section">
+          <h3>Stats-Sammlung</h3>
+          <div class="form-group">
+            <label for="sp-monitoring_default_interval">Standard-Interval (Sek)</label>
+            <input type="number" id="sp-monitoring_default_interval" name="monitoring_default_interval" min="5" max="3600">
+          </div>
+          <div class="form-group">
+            <label for="sp-dashboard_refresh_interval">Dashboard-Refresh (Sek)</label>
+            <input type="number" id="sp-dashboard_refresh_interval" name="dashboard_refresh_interval" min="5" max="300">
+          </div>
+        </div>
+
+        <div class="right-panel-section">
+          <h3>Daten-Aufbewahrung</h3>
+          <div class="form-group">
+            <label for="sp-stats_retention_hours">Stats-History (Stunden)</label>
+            <input type="number" id="sp-stats_retention_hours" name="stats_retention_hours" min="1" max="8760">
+          </div>
+          <div class="form-group">
+            <label for="sp-alert_retention_days">Alert-History (Tage)</label>
+            <input type="number" id="sp-alert_retention_days" name="alert_retention_days" min="1" max="365">
+          </div>
+        </div>
+
+        <div class="right-panel-section">
+          <h3>Benachrichtigungen</h3>
+          <div class="form-group">
+            <div class="checkbox-row">
+              <label>
+                <input type="checkbox" id="sp-toast_notifications_enabled" name="toast_notifications_enabled">
+                <span>Toast-Benachrichtigungen</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts/Thresholds Tab -->
+      <div class="right-panel-tab-pane" id="settings-tab-alerts">
+        <div class="right-panel-section">
+          <h3>CPU Thresholds</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sp-alert_cpu_warning">Warning %</label>
+              <input type="number" id="sp-alert_cpu_warning" name="alert_cpu_warning" min="1" max="100">
+            </div>
+            <div class="form-group">
+              <label for="sp-alert_cpu_critical">Critical %</label>
+              <input type="number" id="sp-alert_cpu_critical" name="alert_cpu_critical" min="1" max="100">
+            </div>
+          </div>
+        </div>
+
+        <div class="right-panel-section">
+          <h3>RAM Thresholds</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sp-alert_ram_warning">Warning %</label>
+              <input type="number" id="sp-alert_ram_warning" name="alert_ram_warning" min="1" max="100">
+            </div>
+            <div class="form-group">
+              <label for="sp-alert_ram_critical">Critical %</label>
+              <input type="number" id="sp-alert_ram_critical" name="alert_ram_critical" min="1" max="100">
+            </div>
+          </div>
+        </div>
+
+        <div class="right-panel-section">
+          <h3>Disk Thresholds</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sp-alert_disk_warning">Warning %</label>
+              <input type="number" id="sp-alert_disk_warning" name="alert_disk_warning" min="1" max="100">
+            </div>
+            <div class="form-group">
+              <label for="sp-alert_disk_critical">Critical %</label>
+              <input type="number" id="sp-alert_disk_critical" name="alert_disk_critical" min="1" max="100">
+            </div>
+          </div>
+        </div>
+
+        <div class="right-panel-section">
+          <h3>Temperatur Thresholds</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sp-alert_temp_warning">Warning &deg;C</label>
+              <input type="number" id="sp-alert_temp_warning" name="alert_temp_warning" min="30" max="100">
+            </div>
+            <div class="form-group">
+              <label for="sp-alert_temp_critical">Critical &deg;C</label>
+              <input type="number" id="sp-alert_temp_critical" name="alert_temp_critical" min="30" max="100">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="settings-loading" id="settingsLoading" style="display: none;">
+        <span class="spinner"></span> Lade Einstellungen...
+      </div>
+    </div>
+
+    <div class="right-panel-footer">
+      <a href="/settings" class="btn btn-secondary">Erweiterte Einstellungen</a>
+      <button type="submit" class="btn btn-primary" id="settingsSaveBtn">
+        <span class="btn-text">Speichern</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+  </form>
+</aside>

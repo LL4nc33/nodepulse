@@ -263,114 +263,60 @@
           </button>
         </div>
       <% } else { %>
-        <div class="detail-grid compact-grid">
-          <!-- CPU Details -->
-          <div class="detail-card compact">
-            <h3>CPU</h3>
-            <dl>
-              <dt>Modell</dt>
-              <dd><%= hardware.cpu_model || '-' %></dd>
-              <dt>Kerne / Threads</dt>
-              <dd><%= hardware.cpu_cores || '-' %> / <%= hardware.cpu_threads || '-' %></dd>
-              <dt>Architektur</dt>
-              <dd><%= hardware.cpu_arch || '-' %></dd>
-              <dt>Virtualisierung</dt>
-              <dd><%= hardware.cpu_virt_support || '-' %></dd>
-            </dl>
+        <%
+          var disks = [];
+          try { disks = JSON.parse(hardware.disks_json || '[]'); } catch(e) {}
+          var thermalSensors = [];
+          try { thermalSensors = JSON.parse(hardware.thermal_json || '[]'); } catch(e) {}
+          var powerSensors = [];
+          try { powerSensors = JSON.parse(hardware.power_json || '[]'); } catch(e) {}
+        %>
+        <div class="hardware-strip">
+          <!-- CPU -->
+          <div class="hardware-strip-item">
+            <span class="hardware-strip-label">CPU</span>
+            <span class="hardware-strip-value"><%= hardware.cpu_model || '-' %></span>
+            <span class="hardware-strip-sub"><%= hardware.cpu_cores || '-' %>/<%= hardware.cpu_threads || '-' %> Cores · <%= hardware.cpu_arch || '-' %></span>
           </div>
-
-          <!-- RAM Details -->
-          <div class="detail-card compact">
-            <h3>Arbeitsspeicher</h3>
-            <dl>
-              <dt>RAM Total</dt>
-              <dd><%= hardware.ram_total_bytes ? formatBytesLocal(hardware.ram_total_bytes) : '-' %></dd>
-              <dt>RAM Typ</dt>
-              <dd><%= hardware.ram_type || '-' %></dd>
-            </dl>
+          <!-- RAM -->
+          <div class="hardware-strip-item">
+            <span class="hardware-strip-label">RAM</span>
+            <span class="hardware-strip-value"><%= hardware.ram_total_bytes ? formatBytesLocal(hardware.ram_total_bytes) : '-' %></span>
+            <span class="hardware-strip-sub"><%= hardware.ram_type || 'DDR' %></span>
           </div>
-
           <!-- Disks -->
-          <div class="detail-card compact">
-            <h3>Festplatten</h3>
-            <%
-              var disks = [];
-              try { disks = JSON.parse(hardware.disks_json || '[]'); } catch(e) {}
-            %>
-            <% if (disks.length > 0) { %>
-              <div class="disk-list-compact">
-                <% disks.slice(0, 4).forEach(function(disk) { %>
-                  <div class="disk-item-compact">
-                    <strong><%= disk.name || disk.NAME || '-' %></strong>
-                    <span class="disk-info">
-                      <% var size = disk.size || disk.SIZE; %>
-                      <%= size ? formatBytesLocal(size) : '-' %>
-                      <span class="disk-type-badge"><%= (disk.rota || disk.ROTA) === 1 ? 'HDD' : 'SSD' %></span>
-                    </span>
-                  </div>
-                <% }); %>
-                <% if (disks.length > 4) { %>
-                  <small class="text-muted">+<%= disks.length - 4 %> weitere</small>
-                <% } %>
-              </div>
-            <% } else { %>
-              <span class="text-muted">Keine Disks</span>
-            <% } %>
+          <div class="hardware-strip-item">
+            <span class="hardware-strip-label">Storage</span>
+            <span class="hardware-strip-value"><%= disks.length %> Disk<%= disks.length !== 1 ? 's' : '' %></span>
+            <span class="hardware-strip-sub"><% if (disks.length > 0) { %><%= disks.slice(0, 3).map(function(d) { return d.name || d.NAME; }).join(', ') %><% if (disks.length > 3) { %>, …<% } %><% } else { %>-<% } %></span>
           </div>
-
           <!-- System -->
-          <div class="detail-card compact">
-            <h3>System</h3>
-            <dl>
-              <dt>Hersteller</dt>
-              <dd><%= hardware.system_manufacturer || '-' %></dd>
-              <dt>Produkt</dt>
-              <dd><%= hardware.system_product || '-' %></dd>
-              <dt>BIOS</dt>
-              <dd><%= hardware.bios_version || '-' %></dd>
-            </dl>
+          <div class="hardware-strip-item">
+            <span class="hardware-strip-label">System</span>
+            <span class="hardware-strip-value"><%= hardware.system_manufacturer || '-' %></span>
+            <span class="hardware-strip-sub"><%= hardware.system_product || '-' %></span>
           </div>
-
-          <!-- Thermal Sensors (wenn vorhanden) -->
-          <%
-            var thermalSensors = [];
-            try { thermalSensors = JSON.parse(hardware.thermal_json || '[]'); } catch(e) {}
-          %>
           <% if (thermalSensors.length > 0) { %>
-            <div class="detail-card compact">
-              <h3>Temperaturen</h3>
-              <div class="thermal-grid">
-                <% thermalSensors.slice(0, 6).forEach(function(sensor) { %>
-                  <% if (sensor.temp_c !== null && sensor.temp_c !== undefined) { %>
-                    <div class="thermal-chip <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : 'ok') %>">
-                      <span class="thermal-chip-label"><%= (sensor.label || sensor.name || 'Temp').substring(0, 10) %></span>
-                      <span class="thermal-chip-value"><%= sensor.temp_c.toFixed(0) %>&deg;C</span>
-                    </div>
-                  <% } %>
-                <% }); %>
-              </div>
-            </div>
+          <!-- Temps -->
+          <div class="hardware-strip-item">
+            <span class="hardware-strip-label">Temps</span>
+            <span class="hardware-strip-value hardware-strip-temps">
+              <% thermalSensors.slice(0, 3).forEach(function(sensor) { %>
+                <% if (sensor.temp_c !== null && sensor.temp_c !== undefined) { %>
+                  <span class="temp-chip <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : 'ok') %>" title="<%= sensor.label || sensor.name %>"><%= sensor.temp_c.toFixed(0) %>&deg;</span>
+                <% } %>
+              <% }); %>
+            </span>
+            <span class="hardware-strip-sub"><%= thermalSensors.slice(0, 3).map(function(s) { return (s.label || s.name || '').substring(0, 6); }).join(' · ') %></span>
+          </div>
           <% } %>
-
-          <!-- Power Sensors (wenn vorhanden) -->
-          <%
-            var powerSensors = [];
-            try { powerSensors = JSON.parse(hardware.power_json || '[]'); } catch(e) {}
-          %>
           <% if (powerSensors.length > 0) { %>
-            <div class="detail-card compact">
-              <h3>Stromverbrauch</h3>
-              <div class="power-grid">
-                <% powerSensors.slice(0, 4).forEach(function(sensor) { %>
-                  <% if (sensor.power_w !== null && sensor.power_w !== undefined) { %>
-                    <div class="power-chip">
-                      <span class="power-chip-label"><%= (sensor.label || sensor.name || 'Power').substring(0, 10) %></span>
-                      <span class="power-chip-value"><%= sensor.power_w.toFixed(1) %> W</span>
-                    </div>
-                  <% } %>
-                <% }); %>
-              </div>
-            </div>
+          <!-- Power -->
+          <div class="hardware-strip-item">
+            <span class="hardware-strip-label">Power</span>
+            <span class="hardware-strip-value"><%= powerSensors[0].power_w ? powerSensors[0].power_w.toFixed(0) + ' W' : '-' %></span>
+            <span class="hardware-strip-sub"><%= (powerSensors[0].label || powerSensors[0].name || 'Total').substring(0, 10) %></span>
+          </div>
           <% } %>
         </div>
       <% } %>

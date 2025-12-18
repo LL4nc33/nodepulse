@@ -270,6 +270,8 @@ const NODE_SAFE_COLUMNS = `
   n.monitoring_enabled, n.monitoring_interval,
   n.online, n.last_seen, n.last_error, n.notes,
   n.parent_id, n.auto_discovered_from,
+  (n.ssh_password IS NOT NULL AND n.ssh_password != '') as has_ssh_password,
+  (n.ssh_key_path IS NOT NULL AND n.ssh_key_path != '') as has_ssh_key,
   n.created_at, n.updated_at
 `;
 
@@ -1088,6 +1090,32 @@ const stats = {
     const stmt2 = getDb().prepare('DELETE FROM node_stats_history WHERE node_id = ?');
     stmt1.run(nodeId);
     stmt2.run(nodeId);
+  },
+
+  /**
+   * Get aggregated cluster history (all nodes averaged per time bucket)
+   * @param {number} hours - Hours of history to fetch
+   * @param {number} bucketMinutes - Time bucket size in minutes (default 5)
+   * @returns {Array} - Array of {timestamp, cpu_percent, ram_percent, disk_percent}
+   */
+  getClusterHistory(hours, bucketMinutes) {
+    hours = hours || 1;
+    bucketMinutes = bucketMinutes || 5;
+    var cutoff = Math.floor(Date.now() / 1000) - (hours * 3600);
+    var bucketSeconds = bucketMinutes * 60;
+
+    // Group by time bucket and average across all nodes
+    var stmt = getDb().prepare('\n      SELECT \n        (timestamp / ' + bucketSeconds + ') * ' + bucketSeconds + ' as bucket,\n        AVG(cpu_percent) as cpu_percent,\n        AVG(ram_percent) as ram_percent,\n        AVG(disk_percent) as disk_percent,\n        COUNT(DISTINCT node_id) as node_count\n      FROM node_stats_history\n      WHERE timestamp > ?\n      GROUP BY bucket\n      ORDER BY bucket ASC\n    ');
+
+    return stmt.all(cutoff).map(function(row) {
+      return {
+        timestamp: row.bucket,
+        cpu_percent: row.cpu_percent !== null ? Math.round(row.cpu_percent * 10) / 10 : null,
+        ram_percent: row.ram_percent !== null ? Math.round(row.ram_percent * 10) / 10 : null,
+        disk_percent: row.disk_percent !== null ? Math.round(row.disk_percent * 10) / 10 : null,
+        node_count: row.node_count
+      };
+    });
   },
 };
 

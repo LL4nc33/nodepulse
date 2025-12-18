@@ -19,8 +19,9 @@
           <span class="label">CPU</span>
           <div class="metric-bar-compact">
             <div class="fill <%= clusterResources.cpu > 80 ? 'critical' : (clusterResources.cpu > 60 ? 'warning' : 'ok') %>" style="width:<%= clusterResources.cpu %>%"></div>
-            <span class="value"><%= clusterResources.cpu %>%</span>
+            <span class="value" id="cluster-cpu-value"><%= clusterResources.cpu %>%</span>
           </div>
+          <canvas id="cluster-sparkline-cpu" class="cluster-sparkline" width="60" height="20"></canvas>
         </div>
         <% } %>
         <% if (clusterResources.memory) { %>
@@ -28,8 +29,9 @@
           <span class="label">RAM</span>
           <div class="metric-bar-compact">
             <div class="fill <%= clusterResources.memory > 80 ? 'critical' : (clusterResources.memory > 60 ? 'warning' : 'ok') %>" style="width:<%= clusterResources.memory %>%"></div>
-            <span class="value"><%= clusterResources.memory %>%</span>
+            <span class="value" id="cluster-ram-value"><%= clusterResources.memory %>%</span>
           </div>
+          <canvas id="cluster-sparkline-ram" class="cluster-sparkline" width="60" height="20"></canvas>
         </div>
         <% } %>
         <% if (clusterResources.storage) { %>
@@ -37,8 +39,9 @@
           <span class="label">Disk</span>
           <div class="metric-bar-compact">
             <div class="fill <%= clusterResources.storage > 80 ? 'critical' : (clusterResources.storage > 60 ? 'warning' : 'ok') %>" style="width:<%= clusterResources.storage %>%"></div>
-            <span class="value"><%= clusterResources.storage %>%</span>
+            <span class="value" id="cluster-disk-value"><%= clusterResources.storage %>%</span>
           </div>
+          <canvas id="cluster-sparkline-disk" class="cluster-sparkline" width="60" height="20"></canvas>
         </div>
         <% } %>
       </div>
@@ -1402,3 +1405,102 @@ function initGroupedViewState() {
 </div>
 
 <%- include('partials/footer') %>
+
+<!-- Cluster Sparklines -->
+<script>
+(function initClusterSparklines() {
+  // Wait for Sparkline class to be available
+  if (typeof Sparkline === 'undefined') {
+    setTimeout(initClusterSparklines, 100);
+    return;
+  }
+
+  var cpuCanvas = document.getElementById('cluster-sparkline-cpu');
+  var ramCanvas = document.getElementById('cluster-sparkline-ram');
+  var diskCanvas = document.getElementById('cluster-sparkline-disk');
+
+  if (!cpuCanvas && !ramCanvas && !diskCanvas) return;
+
+  var baseOptions = {
+    lineWidth: 1.5,
+    pointRadius: 0,
+    showArea: true,
+    padding: { top: 2, right: 2, bottom: 2, left: 2 },
+    animate: false
+  };
+
+  var sparklineCpu = cpuCanvas ? new Sparkline(cpuCanvas, [], {
+    lineWidth: baseOptions.lineWidth,
+    pointRadius: baseOptions.pointRadius,
+    showArea: baseOptions.showArea,
+    padding: baseOptions.padding,
+    animate: baseOptions.animate,
+    lineColor: '#5fa332',
+    fillColor: 'rgba(95, 163, 50, 0.3)'
+  }) : null;
+
+  var sparklineRam = ramCanvas ? new Sparkline(ramCanvas, [], {
+    lineWidth: baseOptions.lineWidth,
+    pointRadius: baseOptions.pointRadius,
+    showArea: baseOptions.showArea,
+    padding: baseOptions.padding,
+    animate: baseOptions.animate,
+    lineColor: '#3b82f6',
+    fillColor: 'rgba(59, 130, 246, 0.3)'
+  }) : null;
+
+  var sparklineDisk = diskCanvas ? new Sparkline(diskCanvas, [], {
+    lineWidth: baseOptions.lineWidth,
+    pointRadius: baseOptions.pointRadius,
+    showArea: baseOptions.showArea,
+    padding: baseOptions.padding,
+    animate: baseOptions.animate,
+    lineColor: '#A47D5B',
+    fillColor: 'rgba(164, 125, 91, 0.3)'
+  }) : null;
+
+  // Load cluster history
+  function loadClusterHistory() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/stats/cluster/history?hours=1&bucket=5', true);
+    xhr.timeout = 10000;
+
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState !== 4) return;
+
+      if (xhr.status === 200) {
+        try {
+          var response = JSON.parse(xhr.responseText);
+          var data = response.data;
+
+          if (data && data.length > 0) {
+            var cpuData = [];
+            var ramData = [];
+            var diskData = [];
+
+            for (var i = 0; i < data.length; i++) {
+              if (data[i].cpu_percent !== null) cpuData.push(data[i].cpu_percent);
+              if (data[i].ram_percent !== null) ramData.push(data[i].ram_percent);
+              if (data[i].disk_percent !== null) diskData.push(data[i].disk_percent);
+            }
+
+            if (sparklineCpu && cpuData.length > 0) sparklineCpu.update(cpuData);
+            if (sparklineRam && ramData.length > 0) sparklineRam.update(ramData);
+            if (sparklineDisk && diskData.length > 0) sparklineDisk.update(diskData);
+          }
+        } catch (e) {
+          console.warn('[ClusterSparklines] Parse error:', e);
+        }
+      }
+    };
+
+    xhr.send();
+  }
+
+  // Initial load
+  loadClusterHistory();
+
+  // Refresh every 30 seconds
+  setInterval(loadClusterHistory, 30000);
+})();
+</script>

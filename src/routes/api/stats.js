@@ -388,6 +388,15 @@ router.post('/node/:id/collect', asyncHandler(async (req, res) => {
   }
 }));
 
+// Get aggregated cluster stats history (all nodes averaged)
+router.get('/cluster/history', asyncHandler(async (req, res) => {
+  const hours = parseInt(req.query.hours, 10) || 1;
+  const bucketMinutes = parseInt(req.query.bucket, 10) || 5;
+
+  const history = db.stats.getClusterHistory(hours, bucketMinutes);
+  apiResponse(res, 200, history);
+}));
+
 // Get hierarchical stats tree with aggregation
 router.get('/hierarchy', asyncHandler(async (req, res) => {
   const tree = getHierarchicalStats();

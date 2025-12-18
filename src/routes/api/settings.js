@@ -30,4 +30,27 @@ router.put('/:key', asyncHandler(async (req, res) => {
   apiResponse(res, 200, { key, value: String(value) });
 }));
 
+// Bulk update settings (POST /api/settings)
+router.post('/', asyncHandler(async (req, res) => {
+  var settings = req.body;
+  var updated = [];
+  var errors = [];
+
+  Object.keys(settings).forEach(function(key) {
+    if (VALID_SETTINGS_KEYS.includes(key)) {
+      var value = settings[key];
+      db.settings.set(key, String(value));
+      updated.push(key);
+    } else {
+      errors.push(key);
+    }
+  });
+
+  if (errors.length > 0) {
+    apiResponse(res, 207, { updated: updated, invalid: errors });
+  } else {
+    apiResponse(res, 200, { updated: updated });
+  }
+}));
+
 module.exports = router;

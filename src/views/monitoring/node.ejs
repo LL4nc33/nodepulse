@@ -156,7 +156,12 @@
     <h3>Letzte Aktualisierung</h3>
     <p class="stats-timestamp">
       <% if (stats.timestamp) { %>
-        <%= new Date(stats.timestamp * 1000).toLocaleString('de-DE') %>
+        <%
+          // Timestamp ist in Millisekunden wenn > 10 Ziffern, sonst in Sekunden
+          var ts = stats.timestamp;
+          if (ts < 10000000000) ts = ts * 1000; // Sekunden zu Millisekunden
+        %>
+        <%= new Date(ts).toLocaleString('de-DE') %>
       <% } else { %>
         Unbekannt
       <% } %>

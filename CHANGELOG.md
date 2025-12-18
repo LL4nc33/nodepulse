@@ -10,6 +10,23 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
 ### Added - UI/UX Overhaul
 
+- **Sidebar Panels**
+  - Add Node Panel (von links einfahrend)
+  - Alerts Panel (von rechts einfahrend)
+  - Settings Panel (von rechts einfahrend)
+  - Edit Node Panel (von rechts, ersetzt separate Seite)
+  - Smooth Slide-Animationen, Escape zum Schließen
+
+- **Health Check Button**
+  - Im Header neben SSH Test und Discovery
+  - Badge zeigt Anzahl verfügbarer Updates
+  - Erweitertes Health-Check Script mit 12 System-Checks
+  - Health Grid im Overview Tab (ProxMenux-Style)
+
+- **Konsolidierte Tags**
+  - Reduziert auf 5 Hauptkategorien: proxmox, docker, raspberry-pi, vm, bare-metal
+  - Cleaner Look in Sidebar
+
 - **Live-Metriken Auto-Refresh**
   - Hero Cards (CPU, RAM, Disk, Network) aktualisieren alle 5 Sekunden
   - Pausiert automatisch wenn Browser-Tab nicht sichtbar (spart Ressourcen)

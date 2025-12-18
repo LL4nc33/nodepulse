@@ -156,7 +156,7 @@
         <div class="form-group">
           <label for="edit-ssh_password">Passwort</label>
           <input type="password" id="edit-ssh_password" name="ssh_password" autocomplete="new-password"
-                 placeholder="<%= node.ssh_password ? 'Gesetzt - leer lassen zum Behalten' : 'Nicht gesetzt' %>">
+                 placeholder="<%= node.has_ssh_password ? 'Gesetzt - leer lassen zum Behalten' : 'Nicht gesetzt' %>">
         </div>
         <div class="form-group">
           <label for="edit-ssh_key_path">SSH Key Pfad</label>
@@ -170,15 +170,22 @@
         <h3>Monitoring</h3>
         <div class="form-row">
           <div class="form-group">
-            <div class="checkbox-row">
-              <label>
-                <input type="checkbox" id="edit-monitoring_enabled" name="monitoring_enabled" <%= node.monitoring_enabled ? 'checked' : '' %>>
-                <span>Monitoring aktiv</span>
-              </label>
-            </div>
+            <label>Status</label>
+            <input type="hidden" id="edit-monitoring_enabled" name="monitoring_enabled" value="<%= node.monitoring_enabled ? '1' : '0' %>">
+            <button type="button" class="toggle-btn <%= node.monitoring_enabled ? 'active' : '' %>" id="monitoring-toggle" onclick="toggleMonitoring()">
+              <svg class="toggle-icon-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                <line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
+              <svg class="toggle-icon-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+              </svg>
+              <span class="toggle-text"><%= node.monitoring_enabled ? 'AN' : 'AUS' %></span>
+            </button>
           </div>
           <div class="form-group form-group-small">
-            <label for="edit-monitoring_interval">Interval</label>
+            <label for="edit-monitoring_interval">Interval (Sek)</label>
             <input type="number" id="edit-monitoring_interval" name="monitoring_interval"
                    value="<%= node.monitoring_interval %>" min="5" max="3600">
           </div>
@@ -246,6 +253,6 @@
 <script src="/static/js/charts.js?v=1.1"></script>
 <!-- Terminal Tab Manager (must load before detail-page.js) -->
 <script src="/static/js/detail/terminal-tabs.js?v=5.1"></script>
-<script src="/static/js/detail-page.js?v=5.4"></script>
+<script src="/static/js/detail-page.js?v=5.7"></script>
 
 <%- include('../partials/footer') %>

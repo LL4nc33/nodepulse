@@ -1081,4 +1081,457 @@
     }
   });
 
+  // ==========================================
+  // Right Sidepanels (Alerts, Settings)
+  // ==========================================
+
+  var Panels = {
+    // Current alert filter
+    _alertFilter: 'active',
+
+    // Open Alerts Panel
+    openAlerts: function() {
+      var overlay = document.getElementById('alertsPanelOverlay');
+      var panel = document.getElementById('alertsPanel');
+      if (overlay && panel) {
+        overlay.classList.add('open');
+        panel.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        this.loadAlerts('active');
+      }
+    },
+
+    // Close Alerts Panel
+    closeAlerts: function() {
+      var overlay = document.getElementById('alertsPanelOverlay');
+      var panel = document.getElementById('alertsPanel');
+      if (overlay && panel) {
+        overlay.classList.remove('open');
+        panel.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    },
+
+    // Load Alerts with filter
+    loadAlerts: function(filter) {
+      var self = this;
+      self._alertFilter = filter || 'active';
+      var listEl = document.getElementById('alertsPanelList');
+      if (!listEl) return;
+
+      listEl.innerHTML = '<div class="alerts-loading"><span class="spinner"></span> Lade Alerts...</div>';
+
+      API.get('/api/alerts?filter=' + self._alertFilter)
+        .then(function(data) {
+          self._renderAlerts(data.alerts, data.counts, self._alertFilter);
+        })
+        .catch(function(err) {
+          listEl.innerHTML = '<div class="alerts-panel-empty"><p>Fehler beim Laden: ' + (err.message || 'Unbekannt') + '</p></div>';
+        });
+    },
+
+    // Render alerts list
+    _renderAlerts: function(alerts, counts, filter) {
+      var listEl = document.getElementById('alertsPanelList');
+      var badgeEl = document.getElementById('alertsPanelBadge');
+      var activeCountEl = document.getElementById('alertCountActive');
+      var criticalEl = document.getElementById('alertCountCritical');
+      var warningEl = document.getElementById('alertCountWarning');
+      var okEl = document.getElementById('alertCountOk');
+
+      // Update header badge
+      if (badgeEl) {
+        if (counts.active > 0) {
+          badgeEl.textContent = counts.active;
+          badgeEl.style.display = '';
+        } else {
+          badgeEl.style.display = 'none';
+        }
+      }
+
+      // Update tab counts
+      if (activeCountEl) activeCountEl.textContent = counts.active;
+
+      // Update summary badges
+      if (criticalEl) {
+        if (counts.critical > 0) {
+          criticalEl.textContent = counts.critical + ' Kritisch';
+          criticalEl.style.display = '';
+        } else {
+          criticalEl.style.display = 'none';
+        }
+      }
+      if (warningEl) {
+        if (counts.warning > 0) {
+          warningEl.textContent = counts.warning + ' Warnung';
+          warningEl.style.display = '';
+        } else {
+          warningEl.style.display = 'none';
+        }
+      }
+      if (okEl) {
+        if (counts.active === 0) {
+          okEl.textContent = 'Keine aktiven Alerts';
+          okEl.style.display = '';
+        } else {
+          okEl.style.display = 'none';
+        }
+      }
+
+      // Render alerts or empty state
+      if (!alerts || alerts.length === 0) {
+        var emptyMsg = filter === 'active' ? 'Alles in Ordnung!' : 'Keine Alerts gefunden.';
+        var emptyIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2.5 2.5L16 9"/></svg>';
+        listEl.innerHTML = '<div class="alerts-panel-empty success">' + emptyIcon + '<h4>' + emptyMsg + '</h4><p>Alle Systeme laufen normal.</p></div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < alerts.length; i++) {
+        var alert = alerts[i];
+        html += this._renderAlertItem(alert);
+      }
+      listEl.innerHTML = html;
+    },
+
+    // Render single alert item
+    _renderAlertItem: function(alert) {
+      var isResolved = !!alert.resolved_at;
+      var isCritical = alert.alert_level === 'critical';
+      var itemClass = 'alert-panel-item';
+      if (isCritical) itemClass += ' critical';
+      if (isResolved) itemClass += ' resolved';
+
+      var icon = '';
+      if (isResolved) {
+        icon = '<svg viewBox="0 0 24 24" class="icon-resolved"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+      } else if (isCritical) {
+        icon = '<svg viewBox="0 0 24 24" class="icon-critical"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+      } else {
+        icon = '<svg viewBox="0 0 24 24" class="icon-warning"><path fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
+      }
+
+      var levelText = isCritical ? 'KRITISCH' : 'WARNUNG';
+      var timeAgo = this._formatTimeAgo(alert.created_at);
+
+      var html = '<div class="' + itemClass + '">';
+      html += '<div class="alert-panel-item-icon">' + icon + '</div>';
+      html += '<div class="alert-panel-item-content">';
+      html += '<div class="alert-panel-item-header">';
+      html += '<span class="alert-level-badge ' + alert.alert_level + '">' + levelText + '</span>';
+      html += '<a href="/nodes/' + alert.node_id + '" class="alert-node-link">' + (alert.node_name || 'Node ' + alert.node_id) + '</a>';
+      html += '<span class="alert-type-badge">' + alert.alert_type.toUpperCase() + '</span>';
+      html += '</div>';
+      html += '<div class="alert-panel-item-message">' + alert.message + '</div>';
+      html += '<div class="alert-panel-item-meta"><span>' + timeAgo + '</span>';
+      if (alert.value !== null) {
+        var unit = alert.alert_type === 'temp' ? '°C' : '%';
+        html += '<span>Wert: ' + alert.value.toFixed(1) + unit + '</span>';
+      }
+      html += '</div></div>';
+
+      // Actions
+      if (!isResolved && !alert.acknowledged) {
+        html += '<div class="alert-panel-item-actions">';
+        html += '<button class="btn btn-sm btn-secondary" onclick="NP.Panels.acknowledgeAlert(' + alert.id + ')">OK</button>';
+        html += '</div>';
+      } else if (alert.acknowledged && !isResolved) {
+        html += '<div class="alert-panel-item-actions"><span class="alert-acknowledged-badge">Bestaetigt</span></div>';
+      }
+
+      html += '</div>';
+      return html;
+    },
+
+    // Format time ago
+    _formatTimeAgo: function(timestamp) {
+      var now = Date.now();
+      var created = timestamp * 1000;
+      var diffMs = now - created;
+      var diffMins = Math.floor(diffMs / 60000);
+      var diffHours = Math.floor(diffMs / 3600000);
+      var diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 1) return 'gerade eben';
+      if (diffMins < 60) return 'vor ' + diffMins + ' Min';
+      if (diffHours < 24) return 'vor ' + diffHours + ' Std';
+      return 'vor ' + diffDays + ' Tag' + (diffDays > 1 ? 'en' : '');
+    },
+
+    // Acknowledge an alert
+    acknowledgeAlert: function(alertId) {
+      var self = this;
+      API.post('/api/alerts/' + alertId + '/acknowledge')
+        .then(function() {
+          self.loadAlerts(self._alertFilter);
+          if (UI && UI.toast) UI.toast('Alert bestaetigt', 'success');
+        })
+        .catch(function(err) {
+          if (UI && UI.toast) UI.toast('Fehler: ' + (err.message || 'Unbekannt'), 'error');
+        });
+    },
+
+    // Open Settings Panel
+    openSettings: function() {
+      var overlay = document.getElementById('settingsPanelOverlay');
+      var panel = document.getElementById('settingsPanel');
+      if (overlay && panel) {
+        overlay.classList.add('open');
+        panel.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        this.loadSettings();
+      }
+    },
+
+    // Close Settings Panel
+    closeSettings: function() {
+      var overlay = document.getElementById('settingsPanelOverlay');
+      var panel = document.getElementById('settingsPanel');
+      if (overlay && panel) {
+        overlay.classList.remove('open');
+        panel.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    },
+
+    // Load Settings
+    loadSettings: function() {
+      var loadingEl = document.getElementById('settingsLoading');
+      var tabPanes = document.querySelectorAll('.right-panel-tab-pane');
+
+      // Show loading
+      if (loadingEl) loadingEl.style.display = '';
+      for (var i = 0; i < tabPanes.length; i++) {
+        tabPanes[i].style.display = 'none';
+      }
+
+      API.get('/api/settings')
+        .then(function(settings) {
+          // Hide loading, show first tab
+          if (loadingEl) loadingEl.style.display = 'none';
+          var activePane = document.querySelector('.right-panel-tab-pane.active');
+          if (activePane) activePane.style.display = '';
+
+          // Populate checkboxes
+          var checkboxes = ['auto_discovery_enabled', 'rediscovery_on_connect', 'toast_notifications_enabled'];
+          for (var i = 0; i < checkboxes.length; i++) {
+            var key = checkboxes[i];
+            var el = document.getElementById('sp-' + key);
+            if (el) el.checked = settings[key] === 'true';
+          }
+
+          // Populate number inputs
+          var numbers = [
+            'monitoring_default_interval', 'dashboard_refresh_interval',
+            'stats_retention_hours', 'alert_retention_days',
+            'alert_cpu_warning', 'alert_cpu_critical',
+            'alert_ram_warning', 'alert_ram_critical',
+            'alert_disk_warning', 'alert_disk_critical',
+            'alert_temp_warning', 'alert_temp_critical'
+          ];
+          for (var j = 0; j < numbers.length; j++) {
+            var numKey = numbers[j];
+            var numEl = document.getElementById('sp-' + numKey);
+            if (numEl && settings[numKey]) {
+              numEl.value = settings[numKey];
+            }
+          }
+        })
+        .catch(function(err) {
+          if (loadingEl) loadingEl.innerHTML = '<p>Fehler beim Laden: ' + (err.message || 'Unbekannt') + '</p>';
+        });
+    },
+
+    // Save Settings
+    saveSettings: function(e) {
+      if (e) e.preventDefault();
+      var self = this;
+      var form = document.getElementById('settingsPanelForm');
+      var saveBtn = document.getElementById('settingsSaveBtn');
+      if (!form) return;
+
+      // Show loading state
+      if (saveBtn) saveBtn.classList.add('loading');
+
+      // Collect form data
+      var settings = {};
+
+      // Checkboxes (need special handling for unchecked = false)
+      var checkboxes = ['auto_discovery_enabled', 'rediscovery_on_connect', 'toast_notifications_enabled'];
+      for (var i = 0; i < checkboxes.length; i++) {
+        var key = checkboxes[i];
+        var el = document.getElementById('sp-' + key);
+        settings[key] = el && el.checked ? 'true' : 'false';
+      }
+
+      // Number inputs
+      var numbers = [
+        'monitoring_default_interval', 'dashboard_refresh_interval',
+        'stats_retention_hours', 'alert_retention_days',
+        'alert_cpu_warning', 'alert_cpu_critical',
+        'alert_ram_warning', 'alert_ram_critical',
+        'alert_disk_warning', 'alert_disk_critical',
+        'alert_temp_warning', 'alert_temp_critical'
+      ];
+      for (var j = 0; j < numbers.length; j++) {
+        var numKey = numbers[j];
+        var numEl = document.getElementById('sp-' + numKey);
+        if (numEl && numEl.value) {
+          settings[numKey] = numEl.value;
+        }
+      }
+
+      API.post('/api/settings', settings)
+        .then(function() {
+          if (saveBtn) saveBtn.classList.remove('loading');
+          if (UI && UI.toast) UI.toast('Einstellungen gespeichert!', 'success');
+          self.closeSettings();
+        })
+        .catch(function(err) {
+          if (saveBtn) saveBtn.classList.remove('loading');
+          if (UI && UI.toast) UI.toast('Fehler: ' + (err.message || 'Unbekannt'), 'error');
+        });
+    },
+
+    // Switch settings tab
+    switchSettingsTab: function(tabId, btnEl) {
+      var tabs = document.querySelectorAll('#settingsPanelTabs .right-panel-tab');
+      var panes = document.querySelectorAll('#settingsPanel .right-panel-tab-pane');
+
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove('active');
+      }
+      for (var j = 0; j < panes.length; j++) {
+        panes[j].classList.remove('active');
+        panes[j].style.display = 'none';
+      }
+
+      if (btnEl) btnEl.classList.add('active');
+      var activePane = document.getElementById('settings-tab-' + tabId);
+      if (activePane) {
+        activePane.classList.add('active');
+        activePane.style.display = '';
+      }
+    }
+  };
+
+  // Expose to global namespace
+  window.NP.Panels = Panels;
+
+  // Global functions for onclick handlers
+  window.openAlertsPanel = function() { Panels.openAlerts(); };
+  window.closeAlertsPanel = function() { Panels.closeAlerts(); };
+  window.filterAlerts = function(filter, btn) {
+    // Update tab active state
+    var tabs = document.querySelectorAll('#alertsPanelTabs .right-panel-tab');
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].classList.remove('active');
+    }
+    if (btn) btn.classList.add('active');
+    Panels.loadAlerts(filter);
+  };
+  window.openSettingsPanel = function() { Panels.openSettings(); };
+  window.closeSettingsPanel = function() { Panels.closeSettings(); };
+  window.saveSettingsPanel = function(e) { Panels.saveSettings(e); };
+  window.switchSettingsPanelTab = function(tabId, btn) { Panels.switchSettingsTab(tabId, btn); };
+
+  // ESC key closes panels
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' || e.keyCode === 27) {
+      var alertsPanel = document.getElementById('alertsPanel');
+      var settingsPanel = document.getElementById('settingsPanel');
+      var addNodePanel = document.getElementById('addNodePanel');
+      if (alertsPanel && alertsPanel.classList.contains('open')) {
+        Panels.closeAlerts();
+      } else if (settingsPanel && settingsPanel.classList.contains('open')) {
+        Panels.closeSettings();
+      } else if (addNodePanel && addNodePanel.classList.contains('open')) {
+        Panels.closeAddNode();
+      }
+    }
+  });
+
+  // =====================================================
+  // Add Node Panel
+  // =====================================================
+
+  Panels.openAddNode = function() {
+    var overlay = document.getElementById('addNodePanelOverlay');
+    var panel = document.getElementById('addNodePanel');
+    if (overlay) overlay.classList.add('open');
+    if (panel) {
+      panel.classList.add('open');
+      // Focus first input
+      var firstInput = panel.querySelector('#add-name');
+      if (firstInput) {
+        setTimeout(function() { firstInput.focus(); }, 100);
+      }
+    }
+  };
+
+  Panels.closeAddNode = function() {
+    var overlay = document.getElementById('addNodePanelOverlay');
+    var panel = document.getElementById('addNodePanel');
+    if (overlay) overlay.classList.remove('open');
+    if (panel) panel.classList.remove('open');
+  };
+
+  Panels.submitAddNode = function(e) {
+    if (e) e.preventDefault();
+
+    var form = document.getElementById('addNodeForm');
+    var btn = document.getElementById('addNodeSaveBtn');
+    if (!form) return;
+
+    // Show loading state
+    if (btn) btn.classList.add('loading');
+
+    // Collect form data
+    var data = {
+      name: (document.getElementById('add-name').value || '').trim(),
+      host: (document.getElementById('add-host').value || '').trim(),
+      ssh_user: (document.getElementById('add-ssh_user').value || '').trim(),
+      ssh_port: parseInt(document.getElementById('add-ssh_port').value, 10) || 22,
+      ssh_password: document.getElementById('add-ssh_password').value || '',
+      ssh_key_path: (document.getElementById('add-ssh_key_path').value || '').trim(),
+      notes: (document.getElementById('add-notes').value || '').trim()
+    };
+
+    // Validate required fields
+    if (!data.name || !data.host || !data.ssh_user) {
+      Toast.show('Bitte alle Pflichtfelder ausfuellen', 'error');
+      if (btn) btn.classList.remove('loading');
+      return;
+    }
+
+    API.post('/api/nodes', data)
+      .then(function(result) {
+        if (btn) btn.classList.remove('loading');
+        Toast.show('Node "' + data.name + '" erfolgreich erstellt!', 'success');
+        Panels.closeAddNode();
+
+        // Reset form
+        form.reset();
+        document.getElementById('add-ssh_user').value = 'root';
+        document.getElementById('add-ssh_port').value = '22';
+
+        // Redirect to new node
+        if (result && result.id) {
+          window.location.href = '/nodes/' + result.id;
+        } else {
+          // Reload page to show new node in sidebar
+          window.location.reload();
+        }
+      })
+      .catch(function(err) {
+        if (btn) btn.classList.remove('loading');
+        Toast.show('Fehler: ' + (err.message || 'Node konnte nicht erstellt werden'), 'error');
+      });
+  };
+
+  // Global functions for onclick handlers
+  window.openAddNodePanel = function() { Panels.openAddNode(); };
+  window.closeAddNodePanel = function() { Panels.closeAddNode(); };
+  window.submitAddNode = function(e) { Panels.submitAddNode(e); };
+
 })();

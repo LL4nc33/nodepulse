@@ -1,0 +1,52 @@
+<!-- Alerts Sidepanel -->
+<div class="right-panel-overlay" id="alertsPanelOverlay" onclick="closeAlertsPanel()"></div>
+<aside class="right-panel right-panel-wide" id="alertsPanel">
+  <div class="right-panel-header">
+    <h2>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      Alerts
+      <span class="right-panel-badge" id="alertsPanelBadge" style="display: none;">0</span>
+    </h2>
+    <button class="right-panel-close" onclick="closeAlertsPanel()" title="Schliessen">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="right-panel-body">
+    <!-- Filter Tabs -->
+    <div class="right-panel-tabs" id="alertsPanelTabs">
+      <button type="button" class="right-panel-tab active" data-filter="active" onclick="filterAlerts('active', this)">
+        Aktiv (<span id="alertCountActive">0</span>)
+      </button>
+      <button type="button" class="right-panel-tab" data-filter="all" onclick="filterAlerts('all', this)">
+        Alle
+      </button>
+      <button type="button" class="right-panel-tab" data-filter="archived" onclick="filterAlerts('archived', this)">
+        Archiviert
+      </button>
+    </div>
+
+    <!-- Alert Counts Summary -->
+    <div class="alerts-summary" id="alertsSummary">
+      <span class="alert-count-badge critical" id="alertCountCritical" style="display: none;">0 Kritisch</span>
+      <span class="alert-count-badge warning" id="alertCountWarning" style="display: none;">0 Warnung</span>
+      <span class="alert-count-badge ok" id="alertCountOk" style="display: none;">Keine aktiven Alerts</span>
+    </div>
+
+    <!-- Alerts List -->
+    <div class="alerts-panel-list" id="alertsPanelList">
+      <div class="alerts-loading">
+        <span class="spinner"></span> Lade Alerts...
+      </div>
+    </div>
+  </div>
+
+  <div class="right-panel-footer">
+    <a href="/alerts" class="btn btn-secondary">Alle Alerts anzeigen</a>
+  </div>
+</aside>

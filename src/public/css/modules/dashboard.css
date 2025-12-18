@@ -1982,6 +1982,15 @@
   min-width: 40px;
 }
 
+/* Cluster Sparklines */
+.cluster-sparkline {
+  width: 60px;
+  height: 20px;
+  opacity: 0.8;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
 /* Cluster Bar Responsive */
 @media (max-width: 640px) {
   .cluster-bar {

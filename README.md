@@ -115,7 +115,15 @@ np exec <node> "uptime"      # Befehl ausführen
 
 ### Abgeschlossen
 
-- **v0.6.0** - UI/UX Overhaul (Sidebar Search, Design System, Animationen)
+- **v0.6.0** - UI/UX Overhaul
+  - Sidebar Panels (Add Node, Alerts, Settings als Slide-in)
+  - Edit Node als Side-Panel statt separate Seite
+  - Health Check Button im Header
+  - Live-Metriken mit Sparklines in Hero Cards
+  - Mini Resource Bars in Sidebar pro Node
+  - Konsolidierte Tags (5 Hauptkategorien)
+  - Sidebar Search mit "/" Shortcut
+  - Design System Verbesserungen
 - **v0.5.0** - Task History & Logs, Storage-Tab Fixes
 - **v0.4.5** - Backup & Restore (vzdump erstellen, löschen, wiederherstellen)
 - **v0.4.4** - LVM Storage Management (VGs, Thin Pools, Proxmox-Registrierung)

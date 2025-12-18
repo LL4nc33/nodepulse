@@ -16,10 +16,27 @@ router.get('/count', asyncHandler(async (req, res) => {
   apiResponse(res, 200, counts);
 }));
 
-// Get all active alerts (node_name already included via LEFT JOIN)
+// Get alerts with optional filter (active, all, archived)
 router.get('/', asyncHandler(async (req, res) => {
-  const alerts = db.alerts.getActive();
-  apiResponse(res, 200, alerts);
+  var filter = req.query.filter || 'active';
+  var alerts = [];
+
+  if (filter === 'active') {
+    alerts = db.alerts.getActive();
+  } else if (filter === 'archived') {
+    alerts = db.alerts.getAll().filter(function(a) { return a.resolved_at !== null; });
+  } else {
+    alerts = db.alerts.getAll();
+  }
+
+  // Add counts
+  var counts = {
+    active: db.alerts.getActiveCount(),
+    warning: db.alerts.getActiveCountByLevel('warning'),
+    critical: db.alerts.getActiveCountByLevel('critical')
+  };
+
+  apiResponse(res, 200, { alerts: alerts, counts: counts, filter: filter });
 }));
 
 // Acknowledge an alert

@@ -436,6 +436,7 @@ router.get('/monitoring/:id', asyncHandler(async (req, res) => {
   const currentStats = db.stats.getCurrent(nodeId);
   const history = db.stats.getHistory(nodeId, 24);
   const settings = db.settings.getAll();
+  const nodesWithStats = db.stats.getAllNodesWithStats();
 
   // Get alert thresholds (aus zentralem Modul)
   const thresholds = getThresholds(settings);
@@ -447,6 +448,7 @@ router.get('/monitoring/:id', asyncHandler(async (req, res) => {
     stats: currentStats,
     history,
     thresholds,
+    nodesWithStats,
     chartDefaultHours: parseIntParam(settings.chart_default_hours, 24),
     formatBytes,
   });
