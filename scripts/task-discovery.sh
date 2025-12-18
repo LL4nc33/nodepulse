@@ -1,11 +1,9 @@
 #!/bin/bash
 # Task Discovery Script fuer NodePulse
-# Sammelt: Proxmox Task History
+# Sammelt: Proxmox Task History (cluster-wide)
 # Output: JSON
 
 set -e
-
-hostname=$(hostname)
 
 # Use python for proper JSON handling
 python3 << 'PYTHON_SCRIPT'
@@ -27,16 +25,20 @@ def run_pvesh(cmd):
         pass
     return []
 
-# Get hostname
-import socket
-hostname = socket.gethostname()
+# Get cluster-wide tasks (includes all nodes)
+# /cluster/tasks returns recent tasks from ALL cluster nodes
+cluster_tasks = run_pvesh('pvesh get "/cluster/tasks" --output-format json')
 
-# Get recent tasks (last 200)
-tasks = run_pvesh(f'pvesh get "/nodes/{hostname}/tasks" --limit 200 --output-format json')
+seen_upids = set()
 
-for t in tasks:
+for t in cluster_tasks:
+    upid = t.get("upid", "")
+    if not upid or upid in seen_upids:
+        continue
+    seen_upids.add(upid)
+
     task = {
-        "upid": t.get("upid", ""),
+        "upid": upid,
         "node": t.get("node", ""),
         "type": t.get("type", ""),
         "id": None,
@@ -57,36 +59,12 @@ for t in tasks:
         except:
             pass
 
-    result["tasks"].append(task)
-
-# Get running tasks from cluster
-running = run_pvesh('pvesh get "/cluster/tasks" --output-format json')
-
-for t in running:
-    # Filter only running tasks
-    if t.get("status") != "running" and t.get("endtime"):
-        continue
-
-    task = {
-        "upid": t.get("upid", ""),
-        "node": t.get("node", ""),
-        "type": t.get("type", ""),
-        "id": None,
-        "user": t.get("user", ""),
-        "status": "running",
-        "starttime": t.get("starttime", 0) or 0,
-        "pid": t.get("pid", 0) or 0,
-        "pstart": t.get("pstart", 0) or 0
-    }
-
-    vmid = t.get("id", "")
-    if vmid and vmid != "":
-        try:
-            task["id"] = int(vmid)
-        except:
-            pass
-
-    result["running"].append(task)
+    # Separate running from completed
+    if task["status"] == "running" or not task["endtime"]:
+        task["status"] = "running"
+        result["running"].append(task)
+    else:
+        result["tasks"].append(task)
 
 # Output valid JSON
 print(json.dumps(result))
