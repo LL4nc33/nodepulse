@@ -1,80 +1,4 @@
-// Escape string for use in JavaScript string literals
-function escapeForJsString(str) {
-  if (!str) return '';
-  return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
-}
-
-// Toggle collapsible section (ES5)
-function toggleSection(headerEl) {
-  var section = headerEl.parentElement;
-  var content = section.querySelector('.section-content');
-
-  if (section.classList.contains('collapsed')) {
-    section.classList.remove('collapsed');
-    content.style.display = 'block';
-  } else {
-    section.classList.add('collapsed');
-    content.style.display = 'none';
-  }
-}
-
-// formatBytes is available as window.NP.UI.formatBytes from main.js
-
-// Tab switching with URL hash persistence
-var tabBtns = document.querySelectorAll('.tab-btn');
-var tabContents = document.querySelectorAll('.tab-content');
-
-function selectTab(tabId) {
-  // Update buttons
-  for (var j = 0; j < tabBtns.length; j++) {
-    tabBtns[j].classList.remove('active');
-    if (tabBtns[j].getAttribute('data-tab') === tabId) {
-      tabBtns[j].classList.add('active');
-    }
-  }
-
-  // Update content
-  for (var k = 0; k < tabContents.length; k++) {
-    tabContents[k].classList.remove('active');
-  }
-  var tabContent = document.getElementById('tab-' + tabId);
-  if (tabContent) {
-    tabContent.classList.add('active');
-  }
-
-  // Save to URL hash (preserves state on reload)
-  if (window.history && window.history.replaceState) {
-    window.history.replaceState(null, null, '#' + tabId);
-  } else {
-    window.location.hash = tabId;
-  }
-}
-
-// Attach click handlers
-for (var i = 0; i < tabBtns.length; i++) {
-  tabBtns[i].addEventListener('click', function() {
-    selectTab(this.getAttribute('data-tab'));
-  });
-}
-
-// Restore tab from URL hash on page load
-(function restoreTabState() {
-  var hash = window.location.hash.replace('#', '');
-  if (hash && document.getElementById('tab-' + hash)) {
-    selectTab(hash);
-  }
-})();
-
-// Handle browser back/forward
-window.addEventListener('hashchange', function() {
-  var hash = window.location.hash.replace('#', '');
-  if (hash && document.getElementById('tab-' + hash)) {
-    selectTab(hash);
-  }
-});
-
 // =====================================================
-
 // Services Tab Functions
 // =====================================================
 
@@ -244,15 +168,28 @@ function controlService(nodeId, serviceName, action) {
   xhr.send();
 }
 
-// Load services when services tab is opened
-var servicesTabBtn = document.querySelector('[data-tab="services"]');
-if (servicesTabBtn && !servicesTabBtn.hasAttribute('data-services-listener')) {
-  servicesTabBtn.addEventListener('click', function() {
-    if (servicesData.length === 0) {
-      loadServices(nodeId);
-    }
-  });
-  servicesTabBtn.setAttribute('data-services-listener', 'true');
-}
+// Load services when services tab is clicked
+(function initServicesTab() {
+  var servicesTabBtn = document.querySelector('[data-tab="services"]');
+  if (servicesTabBtn && !servicesTabBtn.hasAttribute('data-services-listener')) {
+    servicesTabBtn.addEventListener('click', function() {
+      if (servicesData.length === 0) {
+        loadServices(nodeId);
+      }
+    });
+    servicesTabBtn.setAttribute('data-services-listener', 'true');
+  }
+
+  // Auto-load if services tab is active on page load (from URL hash)
+  var hash = window.location.hash.replace('#', '');
+  if (hash === 'services' && document.getElementById('tab-services')) {
+    // Small delay to ensure DOM is ready
+    setTimeout(function() {
+      if (servicesData.length === 0) {
+        loadServices(nodeId);
+      }
+    }, 100);
+  }
+})();
 
 // =====================================================
