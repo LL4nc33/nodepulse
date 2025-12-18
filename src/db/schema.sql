@@ -525,6 +525,71 @@ CREATE TABLE IF NOT EXISTS node_health (
 );
 
 -- =====================================================
+-- PROXMOX BACKUPS
+-- =====================================================
+
+-- Backup-fähige Storages
+CREATE TABLE IF NOT EXISTS node_backup_storages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id INTEGER NOT NULL,
+    storage_id TEXT NOT NULL,
+    storage_type TEXT,  -- dir, nfs, cifs, pbs, etc.
+    path TEXT,
+    content_types TEXT,  -- backup,iso,vztmpl etc.
+    total_bytes INTEGER DEFAULT 0,
+    used_bytes INTEGER DEFAULT 0,
+    available_bytes INTEGER DEFAULT 0,
+    enabled INTEGER DEFAULT 1,
+    shared INTEGER DEFAULT 0,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE,
+    UNIQUE(node_id, storage_id)
+);
+
+-- Einzelne Backup-Dateien (vzdump)
+CREATE TABLE IF NOT EXISTS node_backups (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id INTEGER NOT NULL,
+    storage_id TEXT NOT NULL,
+    vmid INTEGER NOT NULL,
+    vm_type TEXT NOT NULL,  -- qemu, lxc
+    vm_name TEXT,
+    filename TEXT NOT NULL,
+    size_bytes INTEGER DEFAULT 0,
+    format TEXT,  -- vma, tar, etc.
+    compression TEXT,  -- zstd, gzip, lzo, none
+    backup_time DATETIME,
+    notes TEXT,
+    protected INTEGER DEFAULT 0,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
+);
+
+-- Backup Jobs (Schedules)
+CREATE TABLE IF NOT EXISTS node_backup_jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id INTEGER NOT NULL,
+    job_id TEXT NOT NULL,  -- Proxmox Job ID
+    schedule TEXT,  -- cron-like: "0 2 * * *"
+    vmids TEXT,  -- comma-separated or "all"
+    storage_id TEXT,
+    mode TEXT DEFAULT 'snapshot',  -- snapshot, suspend, stop
+    compress TEXT DEFAULT 'zstd',
+    mailnotification TEXT DEFAULT 'failure',
+    enabled INTEGER DEFAULT 1,
+    last_run DATETIME,
+    next_run DATETIME,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE,
+    UNIQUE(node_id, job_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_node_backups_node ON node_backups(node_id);
+CREATE INDEX IF NOT EXISTS idx_node_backups_vmid ON node_backups(vmid);
+CREATE INDEX IF NOT EXISTS idx_node_backups_storage ON node_backups(storage_id);
+CREATE INDEX IF NOT EXISTS idx_node_backup_jobs_node ON node_backup_jobs(node_id);
+
+-- =====================================================
 -- SETTINGS
 -- =====================================================
 

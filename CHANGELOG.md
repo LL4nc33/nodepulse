@@ -4,6 +4,117 @@ Alle bemerkenswerten Aenderungen an diesem Projekt werden in dieser Datei dokume
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [0.4.5] - 2025-12-18 (Backup & Restore)
+
+### Added
+
+#### Backup & Restore Management (Sprint 2: Proxmox Advanced Features)
+
+- **Neue Datenbank-Tabellen** (`src/db/schema.sql`)
+  - `node_backup_storages` - Backup-faehige Storages mit Kapazitaet
+  - `node_backups` - vzdump Backups mit VMID, Typ, Groesse, Zeitstempel
+  - `node_backup_jobs` - Geplante Backup-Jobs aus Proxmox Cluster
+  - Indizes fuer Performance
+
+- **DB Module fuer Backups** (`src/db/index.js`)
+  - `saveBackupStorages()` - Speichert Backup-Storages
+  - `saveBackups()` - Speichert Backup-Liste
+  - `saveBackupJobs()` - Speichert Backup-Jobs
+  - `getBackupStorages()`, `getBackups()`, `getBackupJobs()` - Getter
+  - `getBackupsByVmid()`, `getBackupsByStorage()` - Gefilterte Abfragen
+  - `getSummary()` - Aggregierte Backup-Statistiken
+  - `deleteForNode()` - Cleanup bei Node-Loeschung
+
+- **Backup Discovery Script** (`scripts/backup-discovery.sh`)
+  - Sammelt Backup-faehige Storages via `pvesm`
+  - Listet alle vzdump Backups via `pvesh`
+  - Sammelt Backup-Jobs aus Cluster-Konfiguration
+  - Parst Backup-Metadata (VMID, Groesse, Zeitstempel, Notizen)
+  - JSON-Output fuer API
+
+- **Backup API Router** (`src/routes/api/backup.js`)
+  - `GET /api/nodes/:id/backup` - Alle Backup-Daten
+  - `GET /api/nodes/:id/backup/storages` - Backup-Storages
+  - `GET /api/nodes/:id/backup/list` - Backup-Liste (mit vmid/storage Filter)
+  - `GET /api/nodes/:id/backup/jobs` - Backup-Jobs
+  - `POST /api/nodes/:id/backup/refresh` - Backup Discovery neu ausfuehren
+  - `POST /api/nodes/:id/backup/create` - Backup erstellen (vzdump)
+  - `DELETE /api/nodes/:id/backup/:volid` - Backup loeschen
+  - `POST /api/nodes/:id/backup/restore` - VM/CT wiederherstellen
+  - Input-Validierung (VMID, Mode, Compression)
+  - Timeout bis 30 Min fuer Restore
+
+- **Collector Integration** (`src/collector/index.js`)
+  - `runBackupDiscovery(node)` - Backup-Daten sammeln
+  - Automatische DB-Speicherung aller Backup-Daten
+  - CRLF zu LF Konvertierung fuer Bash-Scripts
+
+- **Backup Tab Frontend** (`src/views/partials/node-detail/backup-tab.ejs`)
+  - Summary-Cards: Backup-Count, Gesamt-Groesse, Storage-Count, Job-Count
+  - Backup Storages Tabelle mit Kapazitaet und Auslastung
+  - Backups Tabelle mit VMID, Typ (VM/CT), Groesse, Alter
+  - Filter nach Suchbegriff und VM-Typ
+  - Backup Jobs Liste (collapsible)
+  - Modal fuer Backup-Erstellung (VMID, Storage, Mode, Compression)
+  - Modal fuer Restore (Ziel-VMID, Storage, Start-Option)
+  - Modal fuer Backup-Loeschung mit Bestaetigung
+
+- **Backup CSS** (`src/public/css/modules/backup.css`)
+  - Summary-Cards mit Info-Highlight
+  - Backup-Tables mit Progress-Bars
+  - Filter-Leiste fuer Backups
+  - Backup-Notes Spalte mit Ellipsis
+  - VM/CT Badges
+  - Responsive Design
+
+- **Backup JavaScript** (`src/public/js/detail/backup.js`)
+  - Dynamisches Laden und Rendern der Backup-Daten
+  - Filter-Funktion fuer Backup-Liste
+  - Modal-Funktionen (Create, Restore, Delete)
+  - API-Calls mit XHR (ES5-kompatibel)
+  - Time-ago Formatierung fuer Backup-Alter
+
+### Changed
+
+- **web.js**: Backup-Daten werden fuer Proxmox-Hosts geladen
+- **tabs-navigation.ejs**: Backup-Tab hinzugefuegt (nur Proxmox-Hosts)
+- **detail.ejs**: Backup-Tab eingebunden
+- **api/index.js**: Backup-Router registriert
+- **build-css.js**: backup.css zum Build hinzugefuegt
+- **build-detail-js.js**: backup.js zum Build hinzugefuegt
+- JS-Version auf 5.2 erhoeht
+
+### Technical
+
+- 3 neue DB-Tabellen mit Indizes
+- ~320 Zeilen neuer API-Code
+- ~400 Zeilen neuer EJS-Template
+- ~260 Zeilen neuer CSS
+- ~430 Zeilen neuer JavaScript (ES5-kompatibel)
+- Build-Scripts aktualisiert (13 CSS-Module, 9 JS-Module)
+
+### Files
+
+**Neue Dateien:**
+- `scripts/backup-discovery.sh`
+- `src/routes/api/backup.js`
+- `src/views/partials/node-detail/backup-tab.ejs`
+- `src/public/css/modules/backup.css`
+- `src/public/js/detail/backup.js`
+
+**Geaenderte Dateien:**
+- `src/db/schema.sql` - Backup-Tabellen
+- `src/db/index.js` - Backup-Module
+- `src/routes/api/index.js` - Backup-Router
+- `src/routes/web.js` - Backup-Daten laden
+- `src/collector/index.js` - runBackupDiscovery
+- `src/views/nodes/detail.ejs` - Backup-Tab einbinden
+- `src/views/partials/node-detail/tabs-navigation.ejs` - Backup-Tab
+- `scripts/build-css.js` - backup.css
+- `scripts/build-detail-js.js` - backup.js
+
+---
+
 ## [0.4.4] - 2025-12-18 (LVM Storage Management)
 
 ### Added

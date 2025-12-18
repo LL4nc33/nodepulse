@@ -17,6 +17,7 @@ const modules = [
   'terminal.js',
   'services.js',
   'storage.js',
+  'backup.js',
   'network.js',
   'health.js'
 ];

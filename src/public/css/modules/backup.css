@@ -1,0 +1,259 @@
+/* =====================================================
+   Backup Tab Styles (Backup & Restore)
+   ===================================================== */
+
+/* Summary Cards - Same pattern as storage */
+.backup-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.backup-summary .summary-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  text-align: center;
+  transition: var(--transition-base);
+}
+
+.backup-summary .summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.backup-summary .summary-card.highlight {
+  border-left: 3px solid var(--color-info);
+  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(59, 130, 246, 0.05) 100%);
+}
+
+.backup-summary .summary-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.backup-summary .summary-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Actions Bar */
+.backup-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.backup-actions .btn svg {
+  margin-right: var(--space-xs);
+}
+
+/* Backup Section */
+.backup-section {
+  margin-bottom: var(--space-xl);
+}
+
+.backup-section .section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-md);
+  color: var(--color-text-primary);
+}
+
+.backup-section .section-title svg {
+  color: var(--color-text-secondary);
+}
+
+.backup-section .section-title .count-badge {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: auto;
+}
+
+/* Collapsible Sections */
+.backup-section.collapsible .section-title {
+  cursor: pointer;
+  user-select: none;
+  padding: var(--space-sm);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  transition: var(--transition-fast);
+}
+
+.backup-section.collapsible .section-title:hover {
+  background: var(--color-bg);
+}
+
+.backup-section.collapsible .collapse-icon {
+  transition: transform var(--transition-fast);
+}
+
+.backup-section.collapsible.collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.backup-section.collapsible.collapsed .section-content {
+  display: none;
+}
+
+/* Backup Filter */
+.backup-filter {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.backup-filter .form-input {
+  max-width: 200px;
+}
+
+/* Backup Table */
+.backup-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.backup-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.backup-table th,
+.backup-table td {
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.backup-table th {
+  background: var(--color-surface);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+}
+
+.backup-table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+.backup-table tbody tr:hover {
+  background: var(--color-surface);
+}
+
+.backup-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.backup-table.compact th,
+.backup-table.compact td {
+  padding: var(--space-xs) var(--space-sm);
+  font-size: var(--font-size-sm);
+}
+
+/* Backup Notes Column */
+.backup-notes {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* Backup Type Badges */
+.badge-vm {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.badge-ct {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+/* Empty State */
+.backup-section .empty-state {
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.backup-section .empty-state.compact {
+  padding: var(--space-md);
+}
+
+.backup-section .empty-state p {
+  margin: 0;
+}
+
+.backup-section .empty-state .text-muted {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-sm);
+}
+
+/* Alert in Modal */
+.alert-info {
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info);
+  color: var(--color-info);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .backup-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .backup-filter .form-input {
+    max-width: none;
+    flex: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .backup-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .backup-actions {
+    flex-direction: column;
+  }
+
+  .backup-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .backup-filter {
+    flex-direction: column;
+  }
+
+  .backup-table-wrapper {
+    border-radius: var(--radius-md);
+  }
+}

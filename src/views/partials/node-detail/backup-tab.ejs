@@ -1,0 +1,403 @@
+<%
+  // Default values
+  var backup = typeof backupData !== 'undefined' && backupData ? backupData : {
+    storages: [],
+    backups: [],
+    jobs: [],
+    summary: { total_backups: 0, total_size_bytes: 0, storage_count: 0, job_count: 0 }
+  };
+
+  // Helper function for progress class
+  function getBackupProgressClass(percent) {
+    if (percent >= 90) return 'critical';
+    if (percent >= 75) return 'warning';
+    return 'ok';
+  }
+
+  // Helper function for time ago
+  function timeAgo(timestamp) {
+    if (!timestamp) return '-';
+    var now = Math.floor(Date.now() / 1000);
+    var diff = now - timestamp;
+    if (diff < 60) return 'gerade eben';
+    if (diff < 3600) return Math.floor(diff / 60) + ' Min.';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' Std.';
+    if (diff < 604800) return Math.floor(diff / 86400) + ' Tage';
+    return new Date(timestamp * 1000).toLocaleDateString('de-DE');
+  }
+%>
+
+<div class="tab-content" id="tab-backup">
+  <!-- Summary Cards -->
+  <div class="backup-summary">
+    <div class="summary-card">
+      <div class="summary-value"><%= backup.summary.total_backups || 0 %></div>
+      <div class="summary-label">Backups</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value"><%= formatBytes(backup.summary.total_size_bytes || 0) %></div>
+      <div class="summary-label">Gesamt</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-value"><%= backup.summary.storage_count || 0 %></div>
+      <div class="summary-label">Storages</div>
+    </div>
+    <div class="summary-card highlight">
+      <div class="summary-value"><%= backup.summary.job_count || 0 %></div>
+      <div class="summary-label">Jobs</div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="backup-actions">
+    <button type="button" class="btn btn-primary" onclick="openCreateBackupModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Backup erstellen
+    </button>
+    <button type="button" class="btn" onclick="refreshBackupData()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+      Aktualisieren
+    </button>
+  </div>
+
+  <!-- Backup Storages Section -->
+  <div class="backup-section">
+    <h2 class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+      </svg>
+      Backup Storages
+    </h2>
+
+    <% if (backup.storages && backup.storages.length > 0) { %>
+    <div class="backup-table-wrapper">
+      <table class="backup-table">
+        <thead>
+          <tr>
+            <th>Storage</th>
+            <th>Typ</th>
+            <th>Gesamt</th>
+            <th>Belegt</th>
+            <th>Auslastung</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% backup.storages.forEach(function(storage) {
+            var usedBytes = (storage.total || 0) - (storage.avail || 0);
+            var usedPercent = storage.total > 0 ? (usedBytes / storage.total * 100) : 0;
+            var progressClass = getBackupProgressClass(usedPercent);
+          %>
+          <tr data-storage="<%= storage.storage %>">
+            <td><strong><%= storage.storage %></strong></td>
+            <td><%= storage.type || '-' %></td>
+            <td><%= formatBytes(storage.total || 0) %></td>
+            <td><%= formatBytes(storage.used || 0) %></td>
+            <td>
+              <div class="progress-bar-container">
+                <div class="progress-bar-mini">
+                  <div class="progress-bar-fill <%= progressClass %>" style="width: <%= usedPercent.toFixed(1) %>%"></div>
+                </div>
+                <span class="progress-text"><%= usedPercent.toFixed(1) %>%</span>
+              </div>
+            </td>
+            <td>
+              <% if (storage.enabled) { %>
+                <span class="badge badge-success">Aktiv</span>
+              <% } else { %>
+                <span class="badge badge-neutral">Inaktiv</span>
+              <% } %>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <div class="empty-state compact">
+      <p>Keine Backup Storages gefunden.</p>
+      <p class="text-muted">Konfigurieren Sie einen Storage mit Backup-Content in Proxmox.</p>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- Backups Section -->
+  <div class="backup-section">
+    <h2 class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M3 9h18"/>
+        <path d="M9 21V9"/>
+      </svg>
+      Backups
+      <span class="count-badge"><%= backup.backups ? backup.backups.length : 0 %></span>
+    </h2>
+
+    <!-- Filter -->
+    <div class="backup-filter">
+      <input type="text" id="backup-search" class="form-input" placeholder="Suchen (VMID, Storage...)" onkeyup="filterBackups()">
+      <select id="backup-type-filter" class="form-input" onchange="filterBackups()">
+        <option value="">Alle Typen</option>
+        <option value="qemu">VMs</option>
+        <option value="lxc">Container</option>
+      </select>
+    </div>
+
+    <div id="backups-list">
+      <% if (backup.backups && backup.backups.length > 0) { %>
+      <div class="backup-table-wrapper">
+        <table class="backup-table">
+          <thead>
+            <tr>
+              <th>VMID</th>
+              <th>Typ</th>
+              <th>Storage</th>
+              <th>Groesse</th>
+              <th>Erstellt</th>
+              <th>Notizen</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% backup.backups.forEach(function(bkp) { %>
+            <tr data-vmid="<%= bkp.vmid %>" data-type="<%= bkp.vmtype %>" data-storage="<%= bkp.storage %>">
+              <td><strong><%= bkp.vmid %></strong></td>
+              <td>
+                <span class="badge badge-<%= bkp.vmtype === 'qemu' ? 'vm' : 'ct' %>">
+                  <%= bkp.vmtype === 'qemu' ? 'VM' : 'CT' %>
+                </span>
+              </td>
+              <td><%= bkp.storage %></td>
+              <td><%= formatBytes(bkp.size || 0) %></td>
+              <td title="<%= new Date(bkp.ctime * 1000).toLocaleString('de-DE') %>">
+                <%= timeAgo(bkp.ctime) %>
+              </td>
+              <td class="backup-notes"><%= bkp.notes || '-' %></td>
+              <td class="actions-cell">
+                <button type="button" class="btn btn-sm btn-primary" onclick="openRestoreModal('<%= bkp.volid %>', '<%= bkp.vmtype %>', <%= bkp.vmid %>)" title="Wiederherstellen">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                  </svg>
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="deleteBackup('<%= bkp.volid %>')" title="Loeschen">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% } else { %>
+      <div class="empty-state compact">
+        <p>Keine Backups gefunden.</p>
+        <p class="text-muted">Erstellen Sie ein Backup oder fuehren Sie eine Aktualisierung durch.</p>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Backup Jobs Section -->
+  <div class="backup-section collapsible">
+    <h2 class="section-title" onclick="toggleBackupSection(this)">
+      <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+      Geplante Jobs
+      <span class="count-badge"><%= backup.jobs ? backup.jobs.length : 0 %></span>
+    </h2>
+
+    <div class="section-content">
+      <% if (backup.jobs && backup.jobs.length > 0) { %>
+      <div class="backup-table-wrapper">
+        <table class="backup-table compact">
+          <thead>
+            <tr>
+              <th>Job ID</th>
+              <th>Zeitplan</th>
+              <th>VMIDs</th>
+              <th>Storage</th>
+              <th>Modus</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% backup.jobs.forEach(function(job) { %>
+            <tr>
+              <td><code><%= job.id %></code></td>
+              <td><%= job.schedule || '-' %></td>
+              <td><%= job.all ? 'Alle' : (job.vmid || '-') %></td>
+              <td><%= job.storage || '-' %></td>
+              <td><%= job.mode || 'snapshot' %></td>
+              <td>
+                <% if (job.enabled) { %>
+                  <span class="badge badge-success">Aktiv</span>
+                <% } else { %>
+                  <span class="badge badge-neutral">Deaktiviert</span>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% } else { %>
+      <div class="empty-state compact">
+        <p>Keine Backup Jobs konfiguriert.</p>
+        <p class="text-muted">Erstellen Sie Jobs im Proxmox Datacenter.</p>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Create Backup Modal -->
+<div id="createBackupModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Backup erstellen</h3>
+      <button type="button" class="modal-close" onclick="closeModal('createBackupModal')">&times;</button>
+    </div>
+    <form id="createBackupForm" onsubmit="submitCreateBackup(event)">
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="backupVmid">VMID</label>
+          <input type="number" id="backupVmid" name="vmid" required min="100" class="form-input"
+                 placeholder="z.B. 100">
+        </div>
+        <div class="form-group">
+          <label for="backupStorage">Storage</label>
+          <select id="backupStorage" name="storage" class="form-input">
+            <option value="">-- Storage auswaehlen --</option>
+            <% if (backup.storages) { backup.storages.forEach(function(s) { %>
+              <option value="<%= s.storage %>"><%= s.storage %> (<%= formatBytes(s.avail || 0) %> frei)</option>
+            <% }); } %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="backupMode">Modus</label>
+          <select id="backupMode" name="mode" class="form-input">
+            <option value="snapshot">Snapshot (empfohlen)</option>
+            <option value="suspend">Suspend</option>
+            <option value="stop">Stop</option>
+          </select>
+          <small class="form-hint">Snapshot: Live-Backup ohne Downtime</small>
+        </div>
+        <div class="form-group">
+          <label for="backupCompress">Kompression</label>
+          <select id="backupCompress" name="compress" class="form-input">
+            <option value="zstd">ZSTD (empfohlen)</option>
+            <option value="gzip">GZIP</option>
+            <option value="lzo">LZO (schnell)</option>
+            <option value="0">Keine</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="backupNotes">Notizen (optional)</label>
+          <input type="text" id="backupNotes" name="notes" class="form-input"
+                 placeholder="z.B. Vor Update">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('createBackupModal')">Abbrechen</button>
+        <button type="submit" class="btn btn-primary">Backup starten</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Restore Backup Modal -->
+<div id="restoreBackupModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Backup wiederherstellen</h3>
+      <button type="button" class="modal-close" onclick="closeModal('restoreBackupModal')">&times;</button>
+    </div>
+    <form id="restoreBackupForm" onsubmit="submitRestoreBackup(event)">
+      <div class="modal-body">
+        <input type="hidden" id="restoreVolid" name="volid">
+        <input type="hidden" id="restoreType" name="type">
+
+        <div class="alert alert-info">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>Backup wird als neue VM/CT wiederhergestellt.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="restoreVmid">Ziel-VMID</label>
+          <input type="number" id="restoreVmid" name="target_vmid" required min="100" class="form-input"
+                 placeholder="z.B. 200">
+          <small class="form-hint">VMID muss frei sein</small>
+        </div>
+        <div class="form-group">
+          <label for="restoreStorage">Ziel-Storage (optional)</label>
+          <select id="restoreStorage" name="target_storage" class="form-input">
+            <option value="">Standard</option>
+            <% if (backup.storages) { backup.storages.forEach(function(s) { %>
+              <option value="<%= s.storage %>"><%= s.storage %></option>
+            <% }); } %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-item">
+            <input type="checkbox" id="restoreStart" name="start" value="true">
+            <span class="checkbox-label">Nach Restore starten</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('restoreBackupModal')">Abbrechen</button>
+        <button type="submit" class="btn btn-primary">Wiederherstellen</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete Backup Modal -->
+<div id="deleteBackupModal" class="modal" style="display: none;">
+  <div class="modal-content modal-danger">
+    <div class="modal-header">
+      <h3>Backup loeschen</h3>
+      <button type="button" class="modal-close" onclick="closeModal('deleteBackupModal')">&times;</button>
+    </div>
+    <form id="deleteBackupForm" onsubmit="submitDeleteBackup(event)">
+      <div class="modal-body">
+        <input type="hidden" id="deleteVolid" name="volid">
+
+        <div class="alert alert-danger">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Das Backup wird unwiderruflich geloescht!</span>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmVolid">Volume-ID zur Bestaetigung eingeben</label>
+          <input type="text" id="confirmVolid" name="confirm_volid" required class="form-input"
+                 placeholder="Volume-ID eingeben">
+          <small class="form-hint" id="deleteBackupHint">Geben Sie die Volume-ID ein um zu bestaetigen.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('deleteBackupModal')">Abbrechen</button>
+        <button type="submit" class="btn btn-danger">Endgueltig loeschen</button>
+      </div>
+    </form>
+  </div>
+</div>

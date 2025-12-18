@@ -984,6 +984,55 @@ async function runLvmDiscovery(node) {
 }
 
 /**
+ * Run Backup discovery on a Proxmox node
+ * Collects backup storages, vzdump backups, and backup jobs
+ * @param {Object} node - Node object from database (must have credentials)
+ * @returns {Promise<Object>} Backup data
+ */
+async function runBackupDiscovery(node) {
+  const script = getScript('backup-discovery.sh');
+  const result = await ssh.executeScript(node, script, 120000);
+
+  if (result.exitCode !== 0 && !result.stdout) {
+    const errMsg = result.stderr || 'Backup discovery script failed';
+    throw new Error(errMsg);
+  }
+
+  let data;
+  try {
+    data = parseScriptOutput(result.stdout, node.name);
+  } catch (err) {
+    throw new Error('Backup Discovery: Invalid JSON response - ' + err.message);
+  }
+
+  // Save backup storages to database
+  if (data.storages && Array.isArray(data.storages)) {
+    db.backups.saveBackupStorages(node.id, data.storages);
+  } else {
+    db.backups.saveBackupStorages(node.id, []);
+  }
+
+  // Save backups to database
+  if (data.backups && Array.isArray(data.backups)) {
+    db.backups.saveBackups(node.id, data.backups);
+  } else {
+    db.backups.saveBackups(node.id, []);
+  }
+
+  // Save backup jobs to database
+  if (data.jobs && Array.isArray(data.jobs)) {
+    db.backups.saveBackupJobs(node.id, data.jobs);
+  } else {
+    db.backups.saveBackupJobs(node.id, []);
+  }
+
+  // Update node online status
+  db.nodes.setOnline(node.id, true);
+
+  return data;
+}
+
+/**
  * Run a generic command on a node via SSH
  * Used for LVM and other storage operations
  * SECURITY: Only call this from API routes that have validated the command!
@@ -1023,6 +1072,8 @@ module.exports = {
   // LVM Storage
   runLvmDiscovery,
   runCommand,
+  // Backup Discovery
+  runBackupDiscovery,
   // Tiered monitoring
   startTieredMonitoring,
   stopTieredMonitoring,

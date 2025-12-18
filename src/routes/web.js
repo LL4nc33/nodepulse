@@ -253,6 +253,17 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     };
   }
 
+  // Backup data for Proxmox hosts
+  let backupData = null;
+  if (discovery && discovery.is_proxmox_host) {
+    backupData = {
+      storages: db.backups.getBackupStorages(node.id),
+      backups: db.backups.getBackups(node.id),
+      jobs: db.backups.getBackupJobs(node.id),
+      summary: db.backups.getSummary(node.id)
+    };
+  }
+
   // Sidebar data comes from middleware
   res.render('nodes/detail', {
     title: node.name,
@@ -266,6 +277,7 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     currentStats,
     health,
     lvmData,
+    backupData,
     formatBytes
   });
 }));

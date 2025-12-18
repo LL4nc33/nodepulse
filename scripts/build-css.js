@@ -22,6 +22,7 @@ const modules = [
   'proxmox.css',
   'services.css',
   'storage.css',
+  'backup.css',
   'network.css',
   'charts.css',
   'responsive.css'
