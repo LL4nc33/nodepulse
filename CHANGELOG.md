@@ -10,41 +10,41 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
 ### Added - UI/UX Overhaul
 
-- **Design System Erweiterungen**
-  - Neue CSS-Variablen: z-index Scale, Gray Palette
-  - `pulse-components.css` - Wiederverwendbare UI-Komponenten (453 Zeilen)
-  - Progress Bars, Status Indicators, Alert Cards, Collapsible Headers
+- **Sidebar Mini-Bars**
+  - CPU/RAM Balken neben jedem Node in der Sidebar
+  - Farbcodierung: Grün (ok), Orange (>60%), Rot (>80%)
+  - Tooltips mit genauen Prozentwerten
 
-- **Sidebar Verbesserungen**
-  - Quick-Search mit "/" Keyboard-Shortcut
+- **Kompakte Cluster-Bar**
+  - Ersetzt große Cluster-Summary Cards
+  - Inline-Anzeige: Nodes (total/online/offline) + CPU/RAM/Disk Balken
+  - Weniger Platzbedarf, mehr Information
+
+- **Proxmox Table Sortierung**
+  - Sortier-Icons in Tabellen-Headern
+  - Hover/Active States für bessere UX
+  - Visuelles Feedback beim Sortieren
+
+- **Sidebar Quick-Search**
+  - "/" Keyboard-Shortcut zum Fokussieren
   - Echtzeit-Filterung der Node-Liste
   - Escape zum Leeren und Schließen
 
-- **Dashboard Polish**
-  - Node-Liste mit allen Spalten (Status, Name, Host, Uptime, CPU, RAM, Disk, VMs, Container, Typ)
-  - Verbesserte Tabellen-Struktur
-  - Responsive Breakpoints
-
-- **Detail-Seiten**
-  - Tab-Navigation mit Underline-Style (Proxmox VE inspiriert)
-  - Hero Metrics mit Warning/Critical Border-Indikator
-  - Terminal Tab-Close Button immer sichtbar
-
-- **Animationen**
-  - `fadeInUp` für sanfte Einblendungen
-  - Hover-Effekte auf Status-Dots
-  - Smooth Transitions überall
+- **Design System Erweiterungen**
+  - `pulse-components.css` - Wiederverwendbare UI-Komponenten
+  - Progress Bars, Status Indicators, Alert Cards
 
 ### Changed
 
-- CSS Build auf 15 Module erweitert (~11.000 Zeilen)
-- Konsistentere Spacing und Typography
+- CSS Build auf 15 Module erweitert (~11.100 Zeilen)
+- Dashboard verwendet kompakte Cluster-Bar statt großer Cards
+- Node-Liste mit allen Spalten (Status, Name, Host, Uptime, CPU, RAM, Disk, VMs, Container, Typ)
 
 ### Technical
 
 - ES5-Kompatibilität beibehalten (Fire HD 10 2017)
 - Webkit-Prefixe für ältere Browser
-- Modulares CSS-Build-System
+- `nodesWithStats` wird an Sidebar durchgereicht
 
 ---
 
