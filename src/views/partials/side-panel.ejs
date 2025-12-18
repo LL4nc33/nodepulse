@@ -67,13 +67,13 @@
               <% if (node.child_count > 0) { %>
                 <span class="node-tree-children-count"><%= node.child_count %></span>
               <% } %>
-              <% if (node.online && (cpuPct > 0 || ramPct > 0)) { %>
+              <% if (node.online) { %>
               <span class="node-tree-mini-bars">
                 <span class="mini-bar" title="CPU: <%= cpuPct %>%">
-                  <span class="mini-bar-fill cpu <%= getBarClass(cpuPct) %>" style="width: <%= cpuPct %>%;"></span>
+                  <span class="mini-bar-fill cpu <%= getBarClass(cpuPct) %>" style="width: <%= Math.max(cpuPct, 2) %>%;"></span>
                 </span>
                 <span class="mini-bar" title="RAM: <%= ramPct %>%">
-                  <span class="mini-bar-fill ram <%= getBarClass(ramPct) %>" style="width: <%= ramPct %>%;"></span>
+                  <span class="mini-bar-fill ram <%= getBarClass(ramPct) %>" style="width: <%= Math.max(ramPct, 2) %>%;"></span>
                 </span>
               </span>
               <% } %>
@@ -101,13 +101,13 @@
             <a href="/nodes/<%= node.id %>" class="node-tree-row" data-level="0">
               <span class="node-tree-status <%= node.online ? 'online' : 'offline' %>"></span>
               <span class="node-tree-name"><%= node.name %></span>
-              <% if (node.online && (cpuPct > 0 || ramPct > 0)) { %>
+              <% if (node.online) { %>
               <span class="node-tree-mini-bars">
                 <span class="mini-bar" title="CPU: <%= cpuPct %>%">
-                  <span class="mini-bar-fill cpu <%= getBarClass(cpuPct) %>" style="width: <%= cpuPct %>%;"></span>
+                  <span class="mini-bar-fill cpu <%= getBarClass(cpuPct) %>" style="width: <%= Math.max(cpuPct, 2) %>%;"></span>
                 </span>
                 <span class="mini-bar" title="RAM: <%= ramPct %>%">
-                  <span class="mini-bar-fill ram <%= getBarClass(ramPct) %>" style="width: <%= ramPct %>%;"></span>
+                  <span class="mini-bar-fill ram <%= getBarClass(ramPct) %>" style="width: <%= Math.max(ramPct, 2) %>%;"></span>
                 </span>
               </span>
               <% } %>
