@@ -39,8 +39,9 @@
   // Helper function for status badge class
   function getTaskStatusClass(task) {
     if (task.status === 'running') return 'running';
-    if (task.exitstatus === 'OK') return 'ok';
-    if (task.exitstatus) return 'error';
+    if (task.status === 'OK' || task.exitstatus === 'OK') return 'ok';
+    if (task.exitstatus && task.exitstatus !== '' && task.exitstatus !== 'OK') return 'error';
+    if (task.status && task.status !== 'running' && task.status !== 'OK' && task.status !== '') return 'error';
     return 'unknown';
   }
 
@@ -148,9 +149,9 @@
               <span class="task-status <%= statusClass %>">
                 <% if (task.status === 'running') { %>
                   <span class="spinner-mini"></span> Laufend
-                <% } else if (task.exitstatus === 'OK') { %>
+                <% } else if (task.status === 'OK' || task.exitstatus === 'OK') { %>
                   OK
-                <% } else if (task.exitstatus) { %>
+                <% } else if ((task.exitstatus && task.exitstatus !== 'OK') || (task.status && task.status !== 'running' && task.status !== 'OK' && task.status !== '')) { %>
                   Fehler
                 <% } else { %>
                   <%= task.status || '-' %>

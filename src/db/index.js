@@ -2367,11 +2367,11 @@ var tasks = {
         sql += ' AND status = ?';
         params.push('running');
       } else if (status === 'ok') {
-        sql += ' AND exitstatus = ?';
-        params.push('OK');
+        sql += ' AND (status = ? OR exitstatus = ?)';
+        params.push('OK', 'OK');
       } else if (status === 'error') {
-        sql += ' AND exitstatus IS NOT NULL AND exitstatus != ?';
-        params.push('OK');
+        sql += ' AND ((status NOT IN (?, ?, ?) AND status IS NOT NULL) OR (exitstatus IS NOT NULL AND exitstatus != ? AND exitstatus != ?))';
+        params.push('running', 'OK', '', 'OK', '');
       }
     }
     if (vmid) {
@@ -2401,8 +2401,10 @@ var tasks = {
       SELECT
         COUNT(*) as total,
         SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as running,
-        SUM(CASE WHEN exitstatus = 'OK' THEN 1 ELSE 0 END) as ok,
-        SUM(CASE WHEN exitstatus IS NOT NULL AND exitstatus != 'OK' THEN 1 ELSE 0 END) as error
+        SUM(CASE WHEN status = 'OK' OR exitstatus = 'OK' THEN 1 ELSE 0 END) as ok,
+        SUM(CASE WHEN status NOT IN ('running', 'OK', '') AND status IS NOT NULL THEN 1
+            WHEN exitstatus IS NOT NULL AND exitstatus != 'OK' AND exitstatus != '' THEN 1
+            ELSE 0 END) as error
       FROM node_tasks WHERE node_id = ?
     `).get(nodeId);
     return result || { total: 0, running: 0, ok: 0, error: 0 };

@@ -159,8 +159,9 @@ function getTaskTypeLabel(type) {
 // Get task status class
 function getTaskStatusClass(task) {
   if (task.status === 'running') return 'running';
-  if (task.exitstatus === 'OK') return 'ok';
-  if (task.exitstatus) return 'error';
+  if (task.status === 'OK' || task.exitstatus === 'OK') return 'ok';
+  if (task.exitstatus && task.exitstatus !== '' && task.exitstatus !== 'OK') return 'error';
+  if (task.status && task.status !== 'running' && task.status !== 'OK' && task.status !== '') return 'error';
   return 'unknown';
 }
 
@@ -233,9 +234,9 @@ function filterTasks() {
     html += '<td><span class="task-status ' + statusClass + '">';
     if (task.status === 'running') {
       html += '<span class="spinner-mini"></span> Laufend';
-    } else if (task.exitstatus === 'OK') {
+    } else if (task.status === 'OK' || task.exitstatus === 'OK') {
       html += 'OK';
-    } else if (task.exitstatus) {
+    } else if ((task.exitstatus && task.exitstatus !== 'OK') || (task.status && task.status !== 'running' && task.status !== 'OK' && task.status !== '')) {
       html += 'Fehler';
     } else {
       html += escapeTaskHtml(task.status || '-');
