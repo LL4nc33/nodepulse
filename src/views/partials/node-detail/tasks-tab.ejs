@@ -1,0 +1,228 @@
+<%
+  // Default values
+  var taskData = typeof tasksData !== 'undefined' && tasksData ? tasksData : {
+    tasks: [],
+    counts: { total: 0, running: 0, ok: 0, error: 0 },
+    types: []
+  };
+
+  // Helper function for task type labels
+  function getTaskTypeLabel(type) {
+    var labels = {
+      'vzdump': 'Backup',
+      'vzrestore': 'Restore',
+      'vzcreate': 'CT Create',
+      'vzstart': 'CT Start',
+      'vzstop': 'CT Stop',
+      'qmcreate': 'VM Create',
+      'qmstart': 'VM Start',
+      'qmstop': 'VM Stop',
+      'qmreboot': 'VM Reboot',
+      'qmshutdown': 'VM Shutdown',
+      'qmreset': 'VM Reset',
+      'qmsuspend': 'VM Suspend',
+      'qmresume': 'VM Resume',
+      'qmclone': 'VM Clone',
+      'qmmigrate': 'VM Migrate',
+      'qmrestore': 'VM Restore',
+      'qmconfig': 'VM Config',
+      'qmtemplate': 'VM Template',
+      'imgcopy': 'Disk Copy',
+      'download': 'Download',
+      'aptupdate': 'APT Update',
+      'startall': 'Start All',
+      'stopall': 'Stop All'
+    };
+    return labels[type] || type;
+  }
+
+  // Helper function for status badge class
+  function getTaskStatusClass(task) {
+    if (task.status === 'running') return 'running';
+    if (task.exitstatus === 'OK') return 'ok';
+    if (task.exitstatus) return 'error';
+    return 'unknown';
+  }
+
+  // Helper function for time ago
+  function timeAgo(timestamp) {
+    if (!timestamp) return '-';
+    var now = Math.floor(Date.now() / 1000);
+    var diff = now - timestamp;
+    if (diff < 60) return 'gerade eben';
+    if (diff < 3600) return Math.floor(diff / 60) + ' Min.';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' Std.';
+    if (diff < 604800) return Math.floor(diff / 86400) + ' Tage';
+    return new Date(timestamp * 1000).toLocaleDateString('de-DE');
+  }
+
+  // Helper function for duration
+  function formatDuration(starttime, endtime) {
+    if (!starttime) return '-';
+    var end = endtime || Math.floor(Date.now() / 1000);
+    var duration = end - starttime;
+    if (duration < 60) return duration + 's';
+    if (duration < 3600) return Math.floor(duration / 60) + 'm ' + (duration % 60) + 's';
+    return Math.floor(duration / 3600) + 'h ' + Math.floor((duration % 3600) / 60) + 'm';
+  }
+%>
+
+<div class="tab-content" id="tab-tasks">
+  <!-- Summary Cards -->
+  <div class="task-summary">
+    <div class="summary-card">
+      <div class="summary-value"><%= taskData.counts.total || 0 %></div>
+      <div class="summary-label">Gesamt</div>
+    </div>
+    <div class="summary-card running">
+      <div class="summary-value"><%= taskData.counts.running || 0 %></div>
+      <div class="summary-label">Laufend</div>
+    </div>
+    <div class="summary-card ok">
+      <div class="summary-value"><%= taskData.counts.ok || 0 %></div>
+      <div class="summary-label">Erfolgreich</div>
+    </div>
+    <div class="summary-card error">
+      <div class="summary-value"><%= taskData.counts.error || 0 %></div>
+      <div class="summary-label">Fehler</div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="task-actions">
+    <button type="button" class="btn" onclick="refreshTasks()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+      Aktualisieren
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="task-filters">
+    <input type="text" id="task-search" class="form-input" placeholder="Suchen (VMID, User...)" onkeyup="filterTasks()">
+    <select id="task-type-filter" class="form-input" onchange="filterTasks()">
+      <option value="">Alle Typen</option>
+      <% if (taskData.types && taskData.types.length > 0) { %>
+        <% taskData.types.forEach(function(type) { %>
+          <option value="<%= type %>"><%= getTaskTypeLabel(type) %></option>
+        <% }); %>
+      <% } %>
+    </select>
+    <select id="task-status-filter" class="form-input" onchange="filterTasks()">
+      <option value="">Alle Status</option>
+      <option value="running">Laufend</option>
+      <option value="ok">Erfolgreich</option>
+      <option value="error">Fehler</option>
+    </select>
+  </div>
+
+  <!-- Task List -->
+  <div id="tasks-list">
+    <% if (taskData.tasks && taskData.tasks.length > 0) { %>
+    <div class="task-table-wrapper">
+      <table class="task-table">
+        <thead>
+          <tr>
+            <th>Typ</th>
+            <th>VMID</th>
+            <th>User</th>
+            <th>Status</th>
+            <th>Gestartet</th>
+            <th>Dauer</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% taskData.tasks.forEach(function(task) {
+            var statusClass = getTaskStatusClass(task);
+          %>
+          <tr data-upid="<%= task.upid %>" data-type="<%= task.task_type %>" data-vmid="<%= task.vmid || '' %>" data-status="<%= statusClass %>">
+            <td>
+              <span class="task-type-badge"><%= getTaskTypeLabel(task.task_type) %></span>
+            </td>
+            <td><%= task.vmid || '-' %></td>
+            <td class="task-user"><%= task.user || '-' %></td>
+            <td>
+              <span class="task-status <%= statusClass %>">
+                <% if (task.status === 'running') { %>
+                  <span class="spinner-mini"></span> Laufend
+                <% } else if (task.exitstatus === 'OK') { %>
+                  OK
+                <% } else if (task.exitstatus) { %>
+                  Fehler
+                <% } else { %>
+                  <%= task.status || '-' %>
+                <% } %>
+              </span>
+            </td>
+            <td title="<%= new Date(task.starttime * 1000).toLocaleString('de-DE') %>">
+              <%= timeAgo(task.starttime) %>
+            </td>
+            <td><%= formatDuration(task.starttime, task.endtime) %></td>
+            <td class="actions-cell">
+              <button type="button" class="btn btn-sm" onclick="showTaskLog('<%= task.upid %>')" title="Log anzeigen">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </button>
+              <% if (task.status === 'running') { %>
+              <button type="button" class="btn btn-sm btn-danger" onclick="stopTask('<%= task.upid %>')" title="Task stoppen">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="6" y="6" width="12" height="12"/>
+                </svg>
+              </button>
+              <% } %>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %>
+    <div class="empty-state compact">
+      <p>Keine Tasks gefunden.</p>
+      <p class="text-muted">Starten Sie eine Aktion in Proxmox oder aktualisieren Sie die Liste.</p>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Task Log Modal -->
+<div id="taskLogModal" class="modal" style="display: none;">
+  <div class="modal-content modal-lg">
+    <div class="modal-header">
+      <h3>Task Log</h3>
+      <button type="button" class="modal-close" onclick="closeTaskModal('taskLogModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="task-log-info">
+        <span id="taskLogUpid" class="mono"></span>
+        <span id="taskLogStatus" class="task-status"></span>
+      </div>
+      <div class="task-log-container">
+        <pre id="taskLogContent" class="task-log">Lade Log...</pre>
+      </div>
+      <div class="task-log-actions">
+        <button type="button" class="btn btn-sm" onclick="refreshTaskLog()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="m3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+          </svg>
+          Aktualisieren
+        </button>
+        <label class="checkbox-item">
+          <input type="checkbox" id="taskLogAutoRefresh" onchange="toggleTaskLogAutoRefresh()">
+          <span class="checkbox-label">Auto-Refresh</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" onclick="closeTaskModal('taskLogModal')">Schliessen</button>
+    </div>
+  </div>
+</div>

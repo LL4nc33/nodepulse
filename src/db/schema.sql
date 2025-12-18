@@ -590,6 +590,36 @@ CREATE INDEX IF NOT EXISTS idx_node_backups_storage ON node_backups(storage_id);
 CREATE INDEX IF NOT EXISTS idx_node_backup_jobs_node ON node_backup_jobs(node_id);
 
 -- =====================================================
+-- PROXMOX TASKS
+-- =====================================================
+
+-- Task History (Proxmox UPID-based tasks)
+CREATE TABLE IF NOT EXISTS node_tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    node_id INTEGER NOT NULL,
+    upid TEXT NOT NULL,  -- Proxmox Unique Process ID
+    pve_node TEXT,  -- Proxmox node name (from UPID)
+    task_type TEXT NOT NULL,  -- vzcreate, vzdump, qmstart, qmstop, qmigrate, etc.
+    vmid INTEGER,  -- VM/CT ID if applicable
+    user TEXT,  -- User who started the task
+    status TEXT,  -- running, stopped, OK, ERROR, etc.
+    exitstatus TEXT,  -- OK, error message, etc.
+    starttime INTEGER,  -- Unix timestamp
+    endtime INTEGER,  -- Unix timestamp (null if running)
+    pid INTEGER,
+    pstart INTEGER,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE,
+    UNIQUE(node_id, upid)
+);
+
+CREATE INDEX IF NOT EXISTS idx_node_tasks_node ON node_tasks(node_id);
+CREATE INDEX IF NOT EXISTS idx_node_tasks_type ON node_tasks(task_type);
+CREATE INDEX IF NOT EXISTS idx_node_tasks_vmid ON node_tasks(vmid);
+CREATE INDEX IF NOT EXISTS idx_node_tasks_status ON node_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_node_tasks_starttime ON node_tasks(starttime);
+
+-- =====================================================
 -- SETTINGS
 -- =====================================================
 

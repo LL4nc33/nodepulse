@@ -1033,6 +1033,57 @@ async function runBackupDiscovery(node) {
 }
 
 /**
+ * Run Task discovery on a Proxmox node
+ * Collects task history (completed and running tasks)
+ * @param {Object} node - Node object from database (must have credentials)
+ * @returns {Promise<Object>} Task data
+ */
+async function runTaskDiscovery(node) {
+  const script = getScript('task-discovery.sh');
+  const result = await ssh.executeScript(node, script, 120000);
+
+  if (result.exitCode !== 0 && !result.stdout) {
+    const errMsg = result.stderr || 'Task discovery script failed';
+    throw new Error(errMsg);
+  }
+
+  let data;
+  try {
+    data = parseScriptOutput(result.stdout, node.name);
+  } catch (err) {
+    throw new Error('Task Discovery: Invalid JSON response - ' + err.message);
+  }
+
+  // Merge completed tasks and running tasks
+  let allTasks = [];
+
+  if (data.tasks && Array.isArray(data.tasks)) {
+    allTasks = allTasks.concat(data.tasks);
+  }
+
+  if (data.running && Array.isArray(data.running)) {
+    // Add running tasks (avoid duplicates by checking UPID)
+    const existingUpids = new Set(allTasks.map(t => t.upid));
+    for (const runningTask of data.running) {
+      if (!existingUpids.has(runningTask.upid)) {
+        allTasks.push(runningTask);
+      }
+    }
+  }
+
+  // Save tasks to database
+  db.tasks.saveTasks(node.id, allTasks);
+
+  // Update node online status
+  db.nodes.setOnline(node.id, true);
+
+  return {
+    tasks: allTasks,
+    counts: db.tasks.getTaskCounts(node.id)
+  };
+}
+
+/**
  * Run a generic command on a node via SSH
  * Used for LVM and other storage operations
  * SECURITY: Only call this from API routes that have validated the command!
@@ -1074,6 +1125,8 @@ module.exports = {
   runCommand,
   // Backup Discovery
   runBackupDiscovery,
+  // Task Discovery
+  runTaskDiscovery,
   // Tiered monitoring
   startTieredMonitoring,
   stopTieredMonitoring,

@@ -23,6 +23,7 @@ const modules = [
   'services.css',
   'storage.css',
   'backup.css',
+  'tasks.css',
   'network.css',
   'charts.css',
   'responsive.css'

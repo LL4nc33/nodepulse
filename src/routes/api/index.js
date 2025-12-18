@@ -12,6 +12,7 @@
  * - /api/nodes/:nodeId/health       - Health checks, updates, repo management
  * - /api/nodes/:nodeId/storage      - LVM storage management (per node)
  * - /api/nodes/:nodeId/backup       - Backup management (per node)
+ * - /api/nodes/:nodeId/tasks        - Task history & logs (per node)
  * - /api/tags                       - Tag management
  * - /api/stats                      - Statistics collection
  * - /api/alerts                     - Alert management
@@ -36,6 +37,7 @@ const settingsRouter = require('./settings');
 const healthRouter = require('./health');
 const storageRouter = require('./storage');
 const backupRouter = require('./backup');
+const tasksRouter = require('./tasks');
 
 // Mount sub-routers
 router.use('/metrics', metricsRouter);
@@ -54,5 +56,6 @@ router.use('/nodes/:nodeId/services', servicesRouter);
 router.use('/nodes/:nodeId/health', healthRouter);
 router.use('/nodes/:nodeId/storage', storageRouter);
 router.use('/nodes/:nodeId/backup', backupRouter);
+router.use('/nodes/:nodeId/tasks', tasksRouter);
 
 module.exports = router;

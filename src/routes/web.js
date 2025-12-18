@@ -264,6 +264,16 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     };
   }
 
+  // Tasks data for Proxmox hosts
+  let tasksData = null;
+  if (discovery && discovery.is_proxmox_host) {
+    tasksData = {
+      tasks: db.tasks.getTasks(node.id, { limit: 50 }),
+      counts: db.tasks.getTaskCounts(node.id),
+      types: db.tasks.getTaskTypes(node.id).map(t => t.task_type)
+    };
+  }
+
   // Sidebar data comes from middleware
   res.render('nodes/detail', {
     title: node.name,
@@ -278,6 +288,7 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     health,
     lvmData,
     backupData,
+    tasksData,
     formatBytes
   });
 }));
