@@ -90,15 +90,43 @@ router.post('/check', asyncHandler(async (req, res) => {
       return apiResponse(res, 500, null, 'Ungültige Antwort vom Health-Check Script');
     }
 
-    // Save to database
+    // Save to database (Extended health metrics)
     db.health.save(nodeId, {
       kernel_version: healthData.kernel_version,
       last_boot: healthData.last_boot,
       uptime_seconds: healthData.uptime_seconds,
       reboot_required: healthData.reboot_required,
+      // Extended metrics
+      cpu_temp: healthData.cpu_temp,
+      cpu_temp_status: healthData.cpu_temp_status,
+      load_1: healthData.load_1,
+      load_5: healthData.load_5,
+      load_15: healthData.load_15,
+      load_status: healthData.load_status,
+      mem_percent: healthData.mem_percent,
+      mem_status: healthData.mem_status,
+      swap_percent: healthData.swap_percent,
+      swap_status: healthData.swap_status,
+      disk_percent: healthData.disk_percent,
+      disk_status: healthData.disk_status,
+      failed_services: healthData.failed_services,
+      failed_services_list: healthData.failed_services_list,
+      services_status: healthData.services_status,
+      zombie_processes: healthData.zombie_processes,
+      zombie_status: healthData.zombie_status,
+      time_sync: healthData.time_sync,
+      time_status: healthData.time_status,
+      net_gateway: healthData.net_gateway,
+      net_status: healthData.net_status,
+      health_score: healthData.health_score,
+      health_status: healthData.health_status,
+      health_issues: healthData.health_issues,
+      // APT
       apt_updates: healthData.apt_updates,
       apt_security: healthData.apt_security,
+      apt_status: healthData.apt_status,
       apt_packages_json: JSON.stringify(healthData.apt_packages || []),
+      // Proxmox & Other
       pve_version: healthData.pve_version,
       pve_repo: healthData.pve_repo,
       docker_images: healthData.docker_images,

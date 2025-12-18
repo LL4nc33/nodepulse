@@ -506,9 +506,38 @@ CREATE TABLE IF NOT EXISTS node_health (
     uptime_seconds INTEGER,
     reboot_required INTEGER DEFAULT 0,
 
+    -- Health Metrics (Extended)
+    cpu_temp INTEGER DEFAULT 0,
+    cpu_temp_status TEXT DEFAULT 'unknown',
+    load_1 REAL DEFAULT 0,
+    load_5 REAL DEFAULT 0,
+    load_15 REAL DEFAULT 0,
+    load_status TEXT DEFAULT 'ok',
+    mem_percent INTEGER DEFAULT 0,
+    mem_status TEXT DEFAULT 'ok',
+    swap_percent INTEGER DEFAULT 0,
+    swap_status TEXT DEFAULT 'ok',
+    disk_percent INTEGER DEFAULT 0,
+    disk_status TEXT DEFAULT 'ok',
+    failed_services INTEGER DEFAULT 0,
+    failed_services_list TEXT,
+    services_status TEXT DEFAULT 'ok',
+    zombie_processes INTEGER DEFAULT 0,
+    zombie_status TEXT DEFAULT 'ok',
+    time_sync TEXT,
+    time_status TEXT DEFAULT 'unknown',
+    net_gateway TEXT,
+    net_status TEXT DEFAULT 'unknown',
+
+    -- Overall Health Score
+    health_score INTEGER DEFAULT 100,
+    health_status TEXT DEFAULT 'healthy',
+    health_issues TEXT,
+
     -- APT Updates
     apt_updates INTEGER DEFAULT 0,
     apt_security INTEGER DEFAULT 0,
+    apt_status TEXT DEFAULT 'ok',
     apt_packages_json TEXT,  -- JSON array of packages
 
     -- Proxmox specific

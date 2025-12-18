@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-18T11:51:27.915Z
+   Generated: 2025-12-18T14:45:33.340Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -22,7 +22,7 @@
 
 
 /* ============================================================
-   FROM: base.css (950 lines)
+   FROM: base.css (1002 lines)
    ============================================================ */
 
 /* =====================================================
@@ -380,6 +380,58 @@ a:focus {
 .btn-warning:focus {
   background-color: var(--color-warning);
   opacity: 0.9;
+}
+
+/* Button with Badge (Updates Count, Alerts, etc.) */
+.btn .btn-badge {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  color: #fff;
+  background-color: var(--color-error);
+  border-radius: 9px;
+  -webkit-animation: badge-pop 0.3s ease;
+  animation: badge-pop 0.3s ease;
+}
+
+.btn-warning .btn-badge {
+  background-color: var(--color-bg);
+  color: var(--color-warning);
+}
+
+.btn .btn-text {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 6px;
+}
+
+@-webkit-keyframes badge-pop {
+  0% { -webkit-transform: scale(0); transform: scale(0); }
+  50% { -webkit-transform: scale(1.2); transform: scale(1.2); }
+  100% { -webkit-transform: scale(1); transform: scale(1); }
+}
+
+@keyframes badge-pop {
+  0% { -webkit-transform: scale(0); transform: scale(0); }
+  50% { -webkit-transform: scale(1.2); transform: scale(1.2); }
+  100% { -webkit-transform: scale(1); transform: scale(1); }
 }
 
 .btn-sm {
@@ -7599,7 +7651,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: detail-pages.css (993 lines)
+   FROM: detail-pages.css (1303 lines)
    ============================================================ */
 
 /* =====================================================
@@ -8592,6 +8644,316 @@ a:focus {
   .tags-inline {
     -webkit-flex-basis: 100%;
     flex-basis: 100%;
+  }
+}
+
+/* =====================================================
+   HEALTH CHECK GRID (ProxMenux Style)
+   ===================================================== */
+
+/* Health Issues Banner */
+.health-issues-banner {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.health-issues-banner.warning {
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning);
+  color: var(--color-warning);
+}
+
+.health-issues-banner.critical {
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+}
+
+/* Health Checks Grid */
+.health-checks-grid {
+  display: -ms-grid;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* Health Check Item */
+.health-check-item {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  -webkit-transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.health-check-item:hover {
+  border-color: var(--color-border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Status-based border colors */
+.health-check-item.ok {
+  border-left: 3px solid var(--color-success);
+}
+
+.health-check-item.warning {
+  border-left: 3px solid var(--color-warning);
+}
+
+.health-check-item.critical {
+  border-left: 3px solid var(--color-error);
+}
+
+.health-check-item.unknown {
+  border-left: 3px solid var(--color-text-muted);
+}
+
+/* Health Check Icon */
+.health-check-icon {
+  -webkit-box-flex: 0;
+  -webkit-flex: 0 0 auto;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+}
+
+.health-check-icon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-secondary);
+}
+
+.health-check-item.ok .health-check-icon svg {
+  color: var(--color-success);
+}
+
+.health-check-item.warning .health-check-icon svg {
+  color: var(--color-warning);
+}
+
+.health-check-item.critical .health-check-icon svg {
+  color: var(--color-error);
+}
+
+/* Health Check Info */
+.health-check-info {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.health-check-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.health-check-value {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Health Check Status Dot */
+.health-check-status {
+  -webkit-box-flex: 0;
+  -webkit-flex: 0 0 auto;
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+.health-check-status.ok {
+  background: var(--color-success);
+  box-shadow: 0 0 6px var(--color-success);
+}
+
+.health-check-status.warning {
+  background: var(--color-warning);
+  box-shadow: 0 0 6px var(--color-warning);
+  -webkit-animation: pulse-warning 2s infinite;
+  animation: pulse-warning 2s infinite;
+}
+
+.health-check-status.critical {
+  background: var(--color-error);
+  box-shadow: 0 0 6px var(--color-error);
+  -webkit-animation: pulse-critical 1s infinite;
+  animation: pulse-critical 1s infinite;
+}
+
+.health-check-status.unknown {
+  background: var(--color-text-muted);
+}
+
+@-webkit-keyframes pulse-warning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@-webkit-keyframes pulse-critical {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--color-error); }
+  50% { opacity: 0.7; box-shadow: 0 0 12px var(--color-error); }
+}
+
+@keyframes pulse-critical {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--color-error); }
+  50% { opacity: 0.7; box-shadow: 0 0 12px var(--color-error); }
+}
+
+/* Health Details (collapsible) */
+.health-details {
+  margin: 1rem 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.health-details summary {
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-surface);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+}
+
+.health-details summary:hover {
+  background: var(--color-bg);
+}
+
+.health-details[open] summary {
+  border-bottom: 1px solid var(--color-border);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.health-details .detail-grid {
+  padding: 1rem;
+}
+
+/* Health Actions */
+.health-actions {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.health-actions .btn svg {
+  margin-right: 0.25rem;
+}
+
+.health-actions .text-muted {
+  margin-left: auto;
+}
+
+/* Failed Services List */
+.failed-services-list {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .health-checks-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .health-check-item {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .health-check-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .health-check-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .health-checks-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .health-actions {
+    -webkit-box-orient: vertical;
+    -webkit-flex-direction: column;
+    flex-direction: column;
+    -webkit-box-align: stretch;
+    -webkit-align-items: stretch;
+    align-items: stretch;
+  }
+
+  .health-actions .btn {
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+  }
+
+  .health-actions .text-muted {
+    margin-left: 0;
+    text-align: center;
   }
 }
 

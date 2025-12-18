@@ -448,11 +448,16 @@
     </div>
   </div>
 
-  <!-- System Health Section (Collapsible) -->
+  <!-- System Health Section (Collapsible) - ProxMenux Style -->
   <div class="overview-section collapsible">
     <h2 class="section-header" onclick="toggleSection(this)">
       <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
       System Health
+      <% if (health && health.health_status) { %>
+        <span class="badge badge-<%= health.health_status === 'healthy' ? 'ok' : (health.health_status === 'warning' ? 'warning' : 'critical') %>">
+          <%= health.health_score || 100 %>%
+        </span>
+      <% } %>
       <% if (health && health.apt_updates > 0) { %>
         <span class="badge badge-warning"><%= health.apt_updates %> Updates</span>
       <% } %>
@@ -470,46 +475,214 @@
           </button>
         </div>
       <% } else { %>
-        <div class="detail-grid compact-grid">
+        <!-- Health Score Overview -->
+        <% if (health.health_issues) { %>
+          <div class="health-issues-banner <%= health.health_status %>">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span><%= health.health_issues %></span>
+          </div>
+        <% } %>
+
+        <!-- Health Checks Grid (ProxMenux Style) -->
+        <div class="health-checks-grid">
+          <!-- CPU Temperature -->
+          <div class="health-check-item <%= health.cpu_temp_status || 'unknown' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">CPU Temp</span>
+              <span class="health-check-value"><%= health.cpu_temp > 0 ? health.cpu_temp + '°C' : 'N/A' %></span>
+            </div>
+            <div class="health-check-status <%= health.cpu_temp_status || 'unknown' %>"></div>
+          </div>
+
+          <!-- Load Average -->
+          <div class="health-check-item <%= health.load_status || 'ok' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Load Average</span>
+              <span class="health-check-value"><%= health.load_1 ? health.load_1.toFixed(2) : '0.00' %></span>
+            </div>
+            <div class="health-check-status <%= health.load_status || 'ok' %>"></div>
+          </div>
+
+          <!-- Memory -->
+          <div class="health-check-item <%= health.mem_status || 'ok' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="6" width="20" height="12" rx="2"/>
+                <line x1="6" y1="10" x2="6" y2="14"/><line x1="10" y1="10" x2="10" y2="14"/>
+                <line x1="14" y1="10" x2="14" y2="14"/><line x1="18" y1="10" x2="18" y2="14"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Memory</span>
+              <span class="health-check-value"><%= health.mem_percent || 0 %>%</span>
+            </div>
+            <div class="health-check-status <%= health.mem_status || 'ok' %>"></div>
+          </div>
+
+          <!-- Swap -->
+          <div class="health-check-item <%= health.swap_status || 'ok' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Swap</span>
+              <span class="health-check-value"><%= health.swap_percent || 0 %>%</span>
+            </div>
+            <div class="health-check-status <%= health.swap_status || 'ok' %>"></div>
+          </div>
+
+          <!-- Disk -->
+          <div class="health-check-item <%= health.disk_status || 'ok' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Disk (root)</span>
+              <span class="health-check-value"><%= health.disk_percent || 0 %>%</span>
+            </div>
+            <div class="health-check-status <%= health.disk_status || 'ok' %>"></div>
+          </div>
+
+          <!-- Failed Services -->
+          <div class="health-check-item <%= health.services_status || 'ok' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/>
+                <line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Failed Services</span>
+              <span class="health-check-value"><%= health.failed_services || 0 %></span>
+            </div>
+            <div class="health-check-status <%= health.services_status || 'ok' %>"></div>
+          </div>
+
+          <!-- Zombie Processes -->
+          <div class="health-check-item <%= health.zombie_status || 'ok' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M8 15h8"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Zombies</span>
+              <span class="health-check-value"><%= health.zombie_processes || 0 %></span>
+            </div>
+            <div class="health-check-status <%= health.zombie_status || 'ok' %>"></div>
+          </div>
+
+          <!-- Time Sync -->
+          <div class="health-check-item <%= health.time_status || 'unknown' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Time Sync</span>
+              <span class="health-check-value"><%= health.time_sync || 'Unknown' %></span>
+            </div>
+            <div class="health-check-status <%= health.time_status || 'unknown' %>"></div>
+          </div>
+
+          <!-- Network -->
+          <div class="health-check-item <%= health.net_status || 'unknown' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Network</span>
+              <span class="health-check-value"><%= health.net_gateway || 'N/A' %></span>
+            </div>
+            <div class="health-check-status <%= health.net_status || 'unknown' %>"></div>
+          </div>
+
           <!-- Updates -->
-          <div class="detail-card compact">
-            <h3>Updates</h3>
-            <dl>
-              <dt>APT Updates</dt>
-              <dd>
-                <% if (health.apt_updates > 0) { %>
-                  <span class="badge badge-warning"><%= health.apt_updates %></span>
-                <% } else { %>
-                  <span class="badge badge-ok">0</span>
-                <% } %>
-              </dd>
-              <% if (health.apt_security > 0) { %>
-                <dt>Security</dt>
-                <dd><span class="badge badge-critical"><%= health.apt_security %></span></dd>
-              <% } %>
-            </dl>
+          <div class="health-check-item <%= health.apt_status || 'ok' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Updates</span>
+              <span class="health-check-value"><%= health.apt_updates || 0 %><% if (health.apt_security > 0) { %> (<%= health.apt_security %> sec)<% } %></span>
+            </div>
+            <div class="health-check-status <%= health.apt_status || 'ok' %>"></div>
           </div>
 
-          <!-- System -->
-          <div class="detail-card compact">
-            <h3>System</h3>
-            <dl>
-              <dt>Kernel</dt>
-              <dd><%= health.kernel_version || '-' %></dd>
-              <dt>Letzter Boot</dt>
-              <dd><%= health.last_boot || '-' %></dd>
-              <dt>Reboot nötig</dt>
-              <dd>
-                <% if (health.reboot_required) { %>
-                  <span class="badge badge-critical">Ja</span>
-                <% } else { %>
-                  <span class="badge badge-ok">Nein</span>
-                <% } %>
-              </dd>
-            </dl>
+          <!-- Reboot Required -->
+          <div class="health-check-item <%= health.reboot_required ? 'warning' : 'ok' %>">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Reboot</span>
+              <span class="health-check-value"><%= health.reboot_required ? 'Required' : 'Not needed' %></span>
+            </div>
+            <div class="health-check-status <%= health.reboot_required ? 'warning' : 'ok' %>"></div>
           </div>
 
-          <% if (health.pve_version) { %>
+          <!-- Kernel -->
+          <div class="health-check-item ok">
+            <div class="health-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>
+              </svg>
+            </div>
+            <div class="health-check-info">
+              <span class="health-check-label">Kernel</span>
+              <span class="health-check-value"><%= health.kernel_version ? health.kernel_version.substring(0, 20) : 'N/A' %></span>
+            </div>
+            <div class="health-check-status ok"></div>
+          </div>
+        </div>
+
+        <!-- System Details (collapsed by default) -->
+        <details class="health-details">
+          <summary>System Details</summary>
+          <div class="detail-grid compact-grid">
+            <!-- System Info -->
+            <div class="detail-card compact">
+              <h3>System</h3>
+              <dl>
+                <dt>Kernel</dt>
+                <dd><%= health.kernel_version || '-' %></dd>
+                <dt>Letzter Boot</dt>
+                <dd><%= health.last_boot || '-' %></dd>
+                <dt>Load (1/5/15)</dt>
+                <dd><%= health.load_1 ? health.load_1.toFixed(2) : '0' %> / <%= health.load_5 ? health.load_5.toFixed(2) : '0' %> / <%= health.load_15 ? health.load_15.toFixed(2) : '0' %></dd>
+              </dl>
+            </div>
+
+            <% if (health.pve_version) { %>
             <!-- Proxmox -->
             <div class="detail-card compact">
               <h3>Proxmox</h3>
@@ -528,29 +701,49 @@
                 </dd>
               </dl>
             </div>
-          <% } %>
+            <% } %>
 
-          <!-- Actions -->
-          <div class="detail-card compact">
-            <h3>Aktionen</h3>
-            <div class="button-stack-horizontal">
-              <button class="btn btn-secondary btn-sm btn-health-check" onclick="runHealthCheck(<%= node.id %>)">
-                <span class="btn-text">Erneut prüfen</span>
-                <span class="btn-loading"><span class="spinner"></span></span>
-              </button>
-              <% if (health.apt_updates > 0) { %>
-                <button class="btn btn-primary btn-sm" onclick="runUpgrade(<%= node.id %>)">
-                  Upgrade (<%= health.apt_updates %>)
-                </button>
-              <% } %>
-              <% if (health.pve_version && health.pve_repo === 'enterprise') { %>
-                <button class="btn btn-warning btn-sm" onclick="switchProxmoxRepo(<%= node.id %>, 'no-subscription')">
-                  No-Subscription
-                </button>
-              <% } %>
+            <% if (health.failed_services > 0 && health.failed_services_list) { %>
+            <!-- Failed Services Detail -->
+            <div class="detail-card compact">
+              <h3>Failed Services</h3>
+              <div class="failed-services-list">
+                <% health.failed_services_list.split(',').forEach(function(svc) { if(svc) { %>
+                  <span class="badge badge-critical"><%= svc.trim() %></span>
+                <% }}); %>
+              </div>
             </div>
-            <small class="text-muted">Zuletzt: <%= health.checked_at || '-' %></small>
+            <% } %>
           </div>
+        </details>
+
+        <!-- Actions -->
+        <div class="health-actions">
+          <button class="btn btn-secondary btn-sm btn-health-check" onclick="runHealthCheck(<%= node.id %>)">
+            <span class="btn-text">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              Erneut pruefen
+            </span>
+            <span class="btn-loading"><span class="spinner"></span></span>
+          </button>
+          <% if (health.apt_updates > 0) { %>
+            <button class="btn btn-primary btn-sm" onclick="runUpgrade(<%= node.id %>)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Upgrade (<%= health.apt_updates %>)
+            </button>
+          <% } %>
+          <% if (health.pve_version && health.pve_repo === 'enterprise') { %>
+            <button class="btn btn-warning btn-sm" onclick="switchProxmoxRepo(<%= node.id %>, 'no-subscription')">
+              No-Subscription
+            </button>
+          <% } %>
+          <small class="text-muted">Zuletzt: <%= health.checked_at || '-' %></small>
         </div>
       <% } %>
     </div>

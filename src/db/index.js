@@ -111,6 +111,45 @@ async function init() {
       throw err;
     }
 
+    // Migration: Extended health metrics columns
+    try {
+      var healthCols = db.prepare("PRAGMA table_info(node_health)").all();
+      var hasHealthScore = healthCols.some(function(col) { return col.name === 'health_score'; });
+      if (!hasHealthScore) {
+        console.log('[DB] Adding extended health columns...');
+        db.exec(`
+          ALTER TABLE node_health ADD COLUMN cpu_temp INTEGER DEFAULT 0;
+          ALTER TABLE node_health ADD COLUMN cpu_temp_status TEXT DEFAULT 'unknown';
+          ALTER TABLE node_health ADD COLUMN load_1 REAL DEFAULT 0;
+          ALTER TABLE node_health ADD COLUMN load_5 REAL DEFAULT 0;
+          ALTER TABLE node_health ADD COLUMN load_15 REAL DEFAULT 0;
+          ALTER TABLE node_health ADD COLUMN load_status TEXT DEFAULT 'ok';
+          ALTER TABLE node_health ADD COLUMN mem_percent INTEGER DEFAULT 0;
+          ALTER TABLE node_health ADD COLUMN mem_status TEXT DEFAULT 'ok';
+          ALTER TABLE node_health ADD COLUMN swap_percent INTEGER DEFAULT 0;
+          ALTER TABLE node_health ADD COLUMN swap_status TEXT DEFAULT 'ok';
+          ALTER TABLE node_health ADD COLUMN disk_percent INTEGER DEFAULT 0;
+          ALTER TABLE node_health ADD COLUMN disk_status TEXT DEFAULT 'ok';
+          ALTER TABLE node_health ADD COLUMN failed_services INTEGER DEFAULT 0;
+          ALTER TABLE node_health ADD COLUMN failed_services_list TEXT;
+          ALTER TABLE node_health ADD COLUMN services_status TEXT DEFAULT 'ok';
+          ALTER TABLE node_health ADD COLUMN zombie_processes INTEGER DEFAULT 0;
+          ALTER TABLE node_health ADD COLUMN zombie_status TEXT DEFAULT 'ok';
+          ALTER TABLE node_health ADD COLUMN time_sync TEXT;
+          ALTER TABLE node_health ADD COLUMN time_status TEXT DEFAULT 'unknown';
+          ALTER TABLE node_health ADD COLUMN net_gateway TEXT;
+          ALTER TABLE node_health ADD COLUMN net_status TEXT DEFAULT 'unknown';
+          ALTER TABLE node_health ADD COLUMN health_score INTEGER DEFAULT 100;
+          ALTER TABLE node_health ADD COLUMN health_status TEXT DEFAULT 'healthy';
+          ALTER TABLE node_health ADD COLUMN health_issues TEXT;
+          ALTER TABLE node_health ADD COLUMN apt_status TEXT DEFAULT 'ok';
+        `);
+        console.log('[DB] Extended health columns added');
+      }
+    } catch (err) {
+      console.error('[DB] Migration error (extended health):', err.message);
+    }
+
     // Migration 7: Tiered Polling Timestamps + Capabilities
     try {
       const statsCols = db.prepare("PRAGMA table_info(node_stats_current)").all();
@@ -1871,16 +1910,23 @@ var health = {
     ).all();
   },
 
-  // Save or update health data
+  // Save or update health data (Extended with all health metrics)
   save: function(nodeId, data) {
     var stmt = getDb().prepare(`
       INSERT OR REPLACE INTO node_health (
         node_id, kernel_version, last_boot, uptime_seconds, reboot_required,
-        apt_updates, apt_security, apt_packages_json,
+        cpu_temp, cpu_temp_status, load_1, load_5, load_15, load_status,
+        mem_percent, mem_status, swap_percent, swap_status,
+        disk_percent, disk_status,
+        failed_services, failed_services_list, services_status,
+        zombie_processes, zombie_status,
+        time_sync, time_status, net_gateway, net_status,
+        health_score, health_status, health_issues,
+        apt_updates, apt_security, apt_status, apt_packages_json,
         pve_version, pve_repo,
         docker_images, npm_outdated, apt_cache_free_mb,
         checked_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `);
     return stmt.run(
       nodeId,
@@ -1888,8 +1934,33 @@ var health = {
       data.last_boot || null,
       data.uptime_seconds || 0,
       data.reboot_required ? 1 : 0,
+      data.cpu_temp || 0,
+      data.cpu_temp_status || 'unknown',
+      data.load_1 || 0,
+      data.load_5 || 0,
+      data.load_15 || 0,
+      data.load_status || 'ok',
+      data.mem_percent || 0,
+      data.mem_status || 'ok',
+      data.swap_percent || 0,
+      data.swap_status || 'ok',
+      data.disk_percent || 0,
+      data.disk_status || 'ok',
+      data.failed_services || 0,
+      data.failed_services_list || null,
+      data.services_status || 'ok',
+      data.zombie_processes || 0,
+      data.zombie_status || 'ok',
+      data.time_sync || null,
+      data.time_status || 'unknown',
+      data.net_gateway || null,
+      data.net_status || 'unknown',
+      data.health_score || 100,
+      data.health_status || 'healthy',
+      data.health_issues || null,
       data.apt_updates || 0,
       data.apt_security || 0,
+      data.apt_status || 'ok',
       data.apt_packages_json || null,
       data.pve_version || null,
       data.pve_repo || null,

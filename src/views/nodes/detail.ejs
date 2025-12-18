@@ -25,6 +25,18 @@
       <span class="btn-text">Discovery</span>
       <span class="btn-loading"><span class="spinner"></span> Scanne...</span>
     </button>
+    <button class="btn btn-health-check <%= health && health.apt_updates > 0 ? 'btn-warning' : '' %>" onclick="runHealthCheck(<%= node.id %>)">
+      <span class="btn-text">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        Health
+        <% if (health && health.apt_updates > 0) { %>
+          <span class="btn-badge"><%= health.apt_updates %></span>
+        <% } %>
+      </span>
+      <span class="btn-loading"><span class="spinner"></span></span>
+    </button>
     <a href="/nodes/<%= node.id %>/edit" class="btn">Bearbeiten</a>
   </div>
 </div>
