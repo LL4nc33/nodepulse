@@ -53,10 +53,11 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
 ### Changed
 
-- CSS Build auf 15 Module erweitert (~11.500 Zeilen)
+- CSS Build auf 15 Module erweitert (~12.100 Zeilen)
 - Dashboard verwendet kompakte Cluster-Bar statt großer Cards
 - Node-Liste mit allen Spalten (Status, Name, Host, Uptime, CPU, RAM, Disk, VMs, Container, Typ)
 - Light Mode Terminal: Bessere Farben für höheren Kontrast
+- **Unified Design System**: Tabs, Modals, Cards, Tables, Alerts konsistent gestylt
 
 ### Technical
 
