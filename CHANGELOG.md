@@ -4,6 +4,75 @@ Alle bemerkenswerten Aenderungen an diesem Projekt werden in dieser Datei dokume
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
+## [0.4.6] - 2025-12-18 (Task History & Logs)
+
+### Added
+
+#### Task History & Logs (Sprint 3: Proxmox Advanced Features)
+
+- **Neue Datenbank-Tabelle** (`src/db/schema.sql`)
+  - `node_tasks` - Proxmox Task History mit UPID, Status, Typ, VMID
+  - Indizes fuer Performance (node_id, upid, task_type, status)
+
+- **DB Module fuer Tasks** (`src/db/index.js`)
+  - `saveTasks()` - Speichert Task-Liste (UPSERT)
+  - `getTasks()` - Tasks mit Filtern (limit, offset, type, status, vmid)
+  - `getTaskByUpid()` - Einzelnen Task laden
+  - `getRunningTasks()` - Nur laufende Tasks
+  - `getTaskCounts()` - Aggregierte Statistiken (total, running, ok, error)
+  - `getTaskTypes()` - Verfuegbare Task-Typen
+  - `cleanupOldTasks()` - Alte Tasks loeschen
+  - `deleteForNode()` - Cleanup bei Node-Loeschung
+
+- **Task Discovery Script** (`scripts/task-discovery.sh`)
+  - Sammelt Cluster-Tasks via `pvesh get /cluster/tasks`
+  - Sammelt Node-Tasks via `pvesh get /nodes/{node}/tasks`
+  - UPID-Parsing fuer Task-Typ, Node, PID
+  - JSON-Output fuer API
+
+- **Task API Router** (`src/routes/api/tasks.js`)
+  - `GET /api/nodes/:id/tasks` - Task-Liste mit Filtern
+  - `GET /api/nodes/:id/tasks/running` - Laufende Tasks
+  - `GET /api/nodes/:id/tasks/:upid` - Einzelner Task
+  - `GET /api/nodes/:id/tasks/:upid/log` - Task Log (live von Proxmox)
+  - `GET /api/nodes/:id/tasks/:upid/status` - Task Status (live)
+  - `POST /api/nodes/:id/tasks/refresh` - Task Discovery ausfuehren
+  - `DELETE /api/nodes/:id/tasks/:upid` - Task stoppen
+
+- **Collector Integration** (`src/collector/index.js`)
+  - `runTaskDiscovery(node)` - Task-Daten sammeln
+  - Automatische DB-Speicherung aller Tasks
+
+- **Tasks Tab Frontend** (`src/views/partials/node-detail/tasks-tab.ejs`)
+  - Summary-Cards: Gesamt, Laufend, Erfolgreich, Fehler
+  - Tasks-Tabelle mit Typ, VMID, User, Status, Startzeit, Dauer
+  - Filter nach Suchbegriff, Task-Typ, Status
+  - Task Log Modal mit Auto-Refresh Option
+  - Stop-Button fuer laufende Tasks
+
+- **Tasks CSS** (`src/public/css/modules/tasks.css`)
+  - Summary-Cards mit Status-Highlighting
+  - Task-Tabelle mit Status-Badges
+  - Spinner fuer laufende Tasks
+  - Log Container mit Monospace-Font
+  - Responsive Design
+
+- **Tasks JavaScript** (`src/public/js/detail/tasks.js`)
+  - Dynamisches Laden und Rendern der Task-Daten
+  - Filter-Funktion fuer Task-Liste
+  - Task Log Modal mit Live-Updates
+  - Auto-Refresh Intervall (2s)
+  - Task stoppen Funktion
+  - Time-ago und Duration Formatierung
+
+### Changed
+
+- **web.js**: Tasks-Daten werden fuer Proxmox-Hosts geladen
+- **tabs-navigation.ejs**: Tasks-Tab hinzugefuegt (nur Proxmox-Hosts)
+- **detail.ejs**: Tasks-Tab Include hinzugefuegt
+- **build-css.js**: tasks.css zum Build hinzugefuegt
+- **build-detail-js.js**: tasks.js zum Build hinzugefuegt
+
 ## [0.4.5] - 2025-12-18 (Backup & Restore)
 
 ### Added
