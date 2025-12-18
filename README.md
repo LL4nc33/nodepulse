@@ -2,7 +2,7 @@
 
 Ein leichtgewichtiges Homelab Dashboard und CLI-Tool zur Verwaltung von Servern, Proxmox-Hosts und Docker-Containern.
 
-![Version](https://img.shields.io/badge/version-0.4.2-green)
+![Version](https://img.shields.io/badge/version-0.4.3-green)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![TOON](https://img.shields.io/badge/TOON-v1.0-blue)
@@ -280,6 +280,14 @@ sudo systemctl start nodepulse
 - ✅ Settings-Cache (93% weniger DB-Queries)
 - ✅ Hardware-Discovery erweitert (Thermal, Power, SMART, Network)
 - ✅ System Health-Check & Proxmox Repository Management
+
+### ✅ v0.4.3 - Dashboard Redesign (ABGESCHLOSSEN)
+- ✅ **Cluster-Zusammenfassung** (Proxmox-Style): Aggregierte Stats am oberen Rand
+- ✅ **Listen-View** mit absoluten Werten (Pulse-Style): "45% (12 cores)"
+- ✅ **Cards-View** Docker Desktop-Style: Luftige Karten mit Status-Border
+- ✅ **Tree-View** verbessert: Hierarchie, Aggregation, Expand/Collapse
+- ✅ CSS Duplikate bereinigt
+- ✅ Accessibility: ARIA-Attribute fuer Cluster-Summary
 
 ### ✅ v0.4.2 - Design System Foundations (ABGESCHLOSSEN)
 - ✅ CSS-Variablen: Spacing Scale (--space-xs bis --space-2xl)

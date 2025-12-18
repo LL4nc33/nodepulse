@@ -1,6 +1,6 @@
 # NodePulse Frontend Design System
 
-Version: 1.0 (Sprint 1)
+Version: 2.0 (Sprint 2)
 Stand: 2025-12-18
 
 ---
@@ -97,6 +97,61 @@ Konsistentes Spacing fuer die gesamte Anwendung:
   --transition-slow: 300ms ease;    /* Komplexe Animationen */
 }
 ```
+
+---
+
+## Dashboard (Sprint 2)
+
+### Cluster-Zusammenfassung (Proxmox-Style)
+
+Aggregierte Stats am oberen Rand des Dashboards:
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│ NODES: 7   ONLINE: 6 (85.7%)   ALERTS: 2 Warnings                  │
+│                                                                     │
+│ CPU             │ RAM             │ DISK            │ CONTAINERS   │
+│ ████░░░░ 34%   │ █████░░░ 62%   │ ██░░░░░░ 25%   │ 23 VMs/CTs   │
+│ 245 / 128 cores│ 89 / 144 GB    │ 1.2 / 4.8 TB   │ 15 Docker    │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+### Listen-View (Pulse-Style Metriken)
+
+Kompakte Zeilen mit Progress-Bars und absoluten Werten:
+
+```
+| Name    | Host           | CPU            | Memory          | Disk            |
+|---------|----------------|----------------|-----------------|-----------------|
+| node02  | 192.168.178.38 | ██░░ 2% (12c)  | ████████ 81%   | ██░░ 25% (58G)  |
+```
+
+**Format:** `45% (12 cores)` oder `81% (13/16 GB)`
+
+### Cards-View (Docker Desktop-Style)
+
+Luftige Karten mit Status-Border und Progress-Bars:
+
+```
+┌──────────────────────────────────┐
+│ ● node02              [Online]   │
+│ proxmox-host                     │
+├──────────────────────────────────┤
+│ CPU    ████████░░░░░░  45%       │
+│        18 / 32 cores             │
+│ Memory ██████████████░  82%      │
+│        52.4 / 64 GB              │
+└──────────────────────────────────┘
+```
+
+### Tree-View (Proxmox Datacenter-Style)
+
+Hierarchische Darstellung mit Expand/Collapse:
+
+- Parent-Nodes mit aggregierten Stats
+- Chevron-Icons fuer Expand/Collapse
+- Indentation fuer Child-Nodes
+- State-Persistierung in localStorage
 
 ---
 
@@ -275,11 +330,13 @@ Optimiert fuer aeltere Browser (Chrome 50+, Fire HD 10 2017):
 - [x] CSS-Klassen Deduplizierung
 - [x] Progress-Bar vereinheitlicht
 
-### Sprint 2 - Dashboard (GEPLANT)
-- [ ] Stats-Cards Proxmox-Style
-- [ ] Listen-View mit absoluten Werten
-- [ ] Cards-View Docker Desktop-Style
-- [ ] Tree-View verbessern
+### Sprint 2 - Dashboard (ABGESCHLOSSEN)
+- [x] Stats-Cards Proxmox-Style (Cluster-Zusammenfassung)
+- [x] Listen-View mit absoluten Werten (Pulse-Style: "45% (12 cores)")
+- [x] Cards-View Docker Desktop-Style
+- [x] Tree-View verbessern (Hierarchie, Aggregation, Expand/Collapse)
+- [x] CSS Duplikate bereinigt
+- [x] Accessibility verbessert (ARIA-Attribute)
 
 ### Sprint 3 - Node-Detail (GEPLANT)
 - [ ] Overview-Tab Proxmox-Style
