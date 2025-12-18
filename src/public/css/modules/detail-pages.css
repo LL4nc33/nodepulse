@@ -440,3 +440,536 @@
   color: var(--color-text-muted);
   text-align: center;
 }
+
+/* =====================================================
+   PHASE 3: HERO METRICS (Proxmox-Style Overview)
+   ===================================================== */
+
+.hero-metrics {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.hero-metric-card {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 calc(25% - 0.75rem);
+  flex: 1 1 calc(25% - 0.75rem);
+  min-width: 180px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+  padding: 1rem;
+  -webkit-transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.hero-metric-card:hover {
+  border-color: var(--color-accent);
+}
+
+.hero-metric-card.warning {
+  border-left: 3px solid var(--color-warning);
+}
+
+.hero-metric-card.critical {
+  border-left: 3px solid var(--color-error);
+}
+
+.hero-metric-card.offline {
+  opacity: 0.6;
+  border-left: 3px solid var(--color-text-muted);
+}
+
+.hero-metric-header {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.hero-metric-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-accent);
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.hero-metric-title {
+  font-size: var(--font-size-sm, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hero-metric-temp {
+  margin-left: auto;
+  font-size: var(--font-size-xs, 0.6875rem);
+  font-weight: var(--font-weight-medium, 500);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.hero-metric-temp.warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.hero-metric-temp.critical {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.hero-metric-value {
+  margin-bottom: 0.75rem;
+}
+
+.hero-metric-value .value-large {
+  font-size: var(--font-size-2xl, 2rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.hero-metric-value .value-large.warning {
+  color: var(--color-warning);
+}
+
+.hero-metric-value .value-large.critical {
+  color: var(--color-error);
+}
+
+.hero-metric-value .offline-text {
+  font-size: var(--font-size-lg, 1.25rem);
+  color: var(--color-text-muted);
+}
+
+.hero-metric-value .no-data {
+  font-size: var(--font-size-2xl, 2rem);
+  color: var(--color-text-muted);
+}
+
+.hero-metric-bar {
+  height: 6px;
+  background: var(--color-bg-elevated);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.hero-metric-fill {
+  height: 100%;
+  border-radius: 3px;
+  -webkit-transition: width 0.5s ease-out;
+  transition: width 0.5s ease-out;
+}
+
+.hero-metric-fill.ok {
+  background: var(--color-success);
+}
+
+.hero-metric-fill.warning {
+  background: var(--color-warning);
+}
+
+.hero-metric-fill.critical {
+  background: var(--color-error);
+}
+
+.hero-metric-details {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: var(--font-size-xs, 0.6875rem);
+  color: var(--color-text-muted);
+}
+
+.hero-metric-subtext {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Network Stats in Hero Card */
+.hero-metric-network .network-stats {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.hero-metric-network .net-rx,
+.hero-metric-network .net-tx {
+  font-size: var(--font-size-md, 1rem);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.hero-metric-network .net-arrow {
+  font-size: var(--font-size-sm, 0.75rem);
+  margin-right: 0.25rem;
+}
+
+.hero-metric-network .net-rx .net-arrow {
+  color: var(--color-success);
+}
+
+.hero-metric-network .net-tx .net-arrow {
+  color: var(--color-accent);
+}
+
+/* =====================================================
+   INFO STRIP (Compact Status Bar)
+   ===================================================== */
+
+.info-strip {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-md, 6px);
+  margin-bottom: 1.5rem;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+}
+
+.info-item {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-label {
+  font-size: var(--font-size-xs, 0.6875rem);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-value {
+  font-size: var(--font-size-sm, 0.75rem);
+  color: var(--color-text);
+}
+
+.info-value.mono {
+  font-family: monospace;
+}
+
+.status-badge {
+  font-size: var(--font-size-xs, 0.6875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full, 9999px);
+}
+
+.status-badge.online {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.status-badge.offline {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.tags-inline {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+  flex: 1;
+}
+
+.tags-compact {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.tag-mini {
+  font-size: var(--font-size-xs, 0.6875rem);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-sm, 4px);
+  color: #fff;
+}
+
+/* Notes Strip */
+.notes-strip {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: start;
+  -webkit-align-items: flex-start;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-accent-bg);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-md, 6px) var(--radius-md, 6px) 0;
+  margin-bottom: 1.5rem;
+  font-size: var(--font-size-sm, 0.75rem);
+  color: var(--color-text);
+}
+
+.notes-strip svg {
+  color: var(--color-accent);
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+/* =====================================================
+   COMPACT GRIDS & CARDS
+   ===================================================== */
+
+.compact-grid {
+  gap: 0.75rem;
+}
+
+.compact-grid .detail-card.compact {
+  min-width: 180px;
+}
+
+/* Compact Empty State */
+.empty-state.compact {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.empty-state.compact p {
+  margin-bottom: 0.75rem;
+  font-size: var(--font-size-sm, 0.75rem);
+}
+
+/* Disk List Compact */
+.disk-list-compact {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.disk-item-compact {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 0.375rem 0.5rem;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-sm, 4px);
+}
+
+.disk-item-compact strong {
+  font-size: var(--font-size-sm, 0.75rem);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.disk-info {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--font-size-xs, 0.6875rem);
+  color: var(--color-text-muted);
+}
+
+.disk-type-badge {
+  font-size: var(--font-size-xs, 0.6875rem);
+  padding: 0.0625rem 0.25rem;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+/* Thermal Grid */
+.thermal-grid {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.thermal-chip {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-bg-elevated);
+  min-width: 60px;
+}
+
+.thermal-chip.ok {
+  border-bottom: 2px solid var(--color-success);
+}
+
+.thermal-chip.warning {
+  border-bottom: 2px solid var(--color-warning);
+}
+
+.thermal-chip.critical {
+  border-bottom: 2px solid var(--color-error);
+}
+
+.thermal-chip-label {
+  font-size: var(--font-size-xs, 0.6875rem);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70px;
+}
+
+.thermal-chip-value {
+  font-size: var(--font-size-sm, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.thermal-chip.ok .thermal-chip-value {
+  color: var(--color-success);
+}
+
+.thermal-chip.warning .thermal-chip-value {
+  color: var(--color-warning);
+}
+
+.thermal-chip.critical .thermal-chip-value {
+  color: var(--color-error);
+}
+
+/* Power Grid */
+.power-grid {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.power-chip {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-bg-elevated);
+  min-width: 60px;
+}
+
+.power-chip-label {
+  font-size: var(--font-size-xs, 0.6875rem);
+  color: var(--color-text-muted);
+}
+
+.power-chip-value {
+  font-size: var(--font-size-sm, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--color-accent);
+}
+
+/* Button Stack Horizontal */
+.button-stack-horizontal {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* =====================================================
+   RESPONSIVE: Hero Metrics
+   ===================================================== */
+
+@media (max-width: 1024px) {
+  .hero-metric-card {
+    -webkit-flex: 1 1 calc(50% - 0.5rem);
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-metric-card {
+    -webkit-flex: 1 1 100%;
+    flex: 1 1 100%;
+  }
+
+  .hero-metric-value .value-large {
+    font-size: var(--font-size-xl, 1.5rem);
+  }
+
+  .info-strip {
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .info-item {
+    -webkit-flex-basis: calc(50% - 0.25rem);
+    flex-basis: calc(50% - 0.25rem);
+  }
+
+  .tags-inline {
+    -webkit-flex-basis: 100%;
+    flex-basis: 100%;
+  }
+}

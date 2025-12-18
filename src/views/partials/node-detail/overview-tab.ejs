@@ -1,65 +1,223 @@
-<!-- Overview Tab (erweitert mit Hardware & Discovery) -->
+<!-- Overview Tab - Proxmox VE Style -->
 <div class="tab-content active" id="tab-overview">
-  <!-- Status & Verbindung -->
-  <div class="detail-grid">
-    <div class="detail-card compact">
-      <h3>Status</h3>
-      <dl>
-        <dt>Online</dt>
-        <dd><%= node.online ? 'Ja' : 'Nein' %></dd>
-        <dt>Zuletzt gesehen</dt>
-        <dd><%= node.last_seen || 'Nie' %></dd>
-        <dt>Node-Typ</dt>
-        <dd><span class="node-type-badge"><%= node.node_type || 'Unbekannt' %></span></dd>
-        <dt>Letzter Fehler</dt>
-        <dd class="<%= node.last_error ? 'text-error' : '' %>"><%= node.last_error || '-' %></dd>
-      </dl>
-    </div>
+  <!-- Hero Metrics Section (Proxmox-Style) -->
+  <div class="hero-metrics">
+    <%
+      // Helper function für Bytes-Formatierung
+      function formatBytesLocal(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        var i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+      }
 
-    <div class="detail-card compact">
-      <h3>Verbindung</h3>
-      <dl>
-        <dt>Host</dt>
-        <dd><%= node.host %></dd>
-        <dt>SSH Port</dt>
-        <dd><%= node.ssh_port %></dd>
-        <dt>SSH User</dt>
-        <dd><%= node.ssh_user %></dd>
-        <dt>SSH Key</dt>
-        <dd><%= node.ssh_key_path || 'Standard' %></dd>
-      </dl>
-    </div>
+      // CPU-Temperaturen extrahieren
+      var cpuTemps = [];
+      try {
+        var allThermals = JSON.parse((hardware && hardware.thermal_json) || '[]');
+        cpuTemps = allThermals.filter(function(s) {
+          var name = (s.name || '').toLowerCase();
+          var label = (s.label || '').toLowerCase();
+          return name.indexOf('cpu') !== -1 || name.indexOf('coretemp') !== -1 ||
+                 name.indexOf('k10temp') !== -1 || label.indexOf('package') !== -1 ||
+                 label.indexOf('tctl') !== -1;
+        });
+      } catch(e) {}
 
-    <div class="detail-card compact">
-      <h3>Monitoring</h3>
-      <dl>
-        <dt>Aktiv</dt>
-        <dd><%= node.monitoring_enabled ? 'Ja' : 'Nein' %></dd>
-        <dt>Interval</dt>
-        <dd><%= node.monitoring_interval %>s</dd>
-        <dt>Auto-Discovery</dt>
-        <dd><%= node.auto_discovery ? 'Ja' : 'Nein' %></dd>
-      </dl>
-    </div>
+      var cpuPercent = (typeof currentStats !== 'undefined' && currentStats) ? currentStats.cpu_percent : null;
+      var ramPercent = (typeof currentStats !== 'undefined' && currentStats) ? currentStats.ram_percent : null;
+      var diskPercent = (typeof currentStats !== 'undefined' && currentStats) ? currentStats.disk_percent : null;
+      var isOffline = !node.online;
+    %>
 
-    <div class="detail-card compact">
-      <h3>Tags</h3>
-      <div class="tags">
-        <% if (tags.length === 0) { %>
-          <span class="empty">Keine Tags</span>
+    <!-- CPU Card -->
+    <div class="hero-metric-card <%= isOffline ? 'offline' : (cpuPercent >= 90 ? 'critical' : (cpuPercent >= 70 ? 'warning' : '')) %>">
+      <div class="hero-metric-header">
+        <svg class="hero-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+          <rect x="9" y="9" width="6" height="6"/>
+          <line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/>
+          <line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/>
+          <line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/>
+          <line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>
+        </svg>
+        <span class="hero-metric-title">CPU</span>
+        <% if (cpuTemps.length > 0 && cpuTemps[0].temp_c) { %>
+          <span class="hero-metric-temp <%= cpuTemps[0].temp_c >= 80 ? 'critical' : (cpuTemps[0].temp_c >= 60 ? 'warning' : '') %>">
+            <%= cpuTemps[0].temp_c.toFixed(0) %>&deg;C
+          </span>
+        <% } %>
+      </div>
+      <div class="hero-metric-value">
+        <% if (isOffline) { %>
+          <span class="offline-text">Offline</span>
+        <% } else if (cpuPercent !== null) { %>
+          <span class="value-large <%= cpuPercent >= 90 ? 'critical' : (cpuPercent >= 70 ? 'warning' : '') %>"><%= Math.round(cpuPercent) %>%</span>
         <% } else { %>
-          <% tags.forEach(function(tag) { %>
-            <span class="tag" style="background-color: <%= tag.color %>"><%= tag.name %></span>
-          <% }); %>
+          <span class="no-data">-</span>
+        <% } %>
+      </div>
+      <div class="hero-metric-bar">
+        <div class="hero-metric-fill <%= cpuPercent >= 90 ? 'critical' : (cpuPercent >= 70 ? 'warning' : 'ok') %>"
+             style="width: <%= isOffline ? 0 : Math.min(cpuPercent || 0, 100) %>%"></div>
+      </div>
+      <div class="hero-metric-details">
+        <% if (hardware && hardware.cpu_cores) { %>
+          <span><%= hardware.cpu_cores %> Cores</span>
+        <% } %>
+        <% if (hardware && hardware.cpu_model) { %>
+          <span class="hero-metric-subtext"><%= hardware.cpu_model.substring(0, 30) %></span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Memory Card -->
+    <div class="hero-metric-card <%= isOffline ? 'offline' : (ramPercent >= 90 ? 'critical' : (ramPercent >= 75 ? 'warning' : '')) %>">
+      <div class="hero-metric-header">
+        <svg class="hero-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="6" width="20" height="12" rx="2"/>
+          <line x1="6" y1="10" x2="6" y2="14"/>
+          <line x1="10" y1="10" x2="10" y2="14"/>
+          <line x1="14" y1="10" x2="14" y2="14"/>
+          <line x1="18" y1="10" x2="18" y2="14"/>
+        </svg>
+        <span class="hero-metric-title">Memory</span>
+      </div>
+      <div class="hero-metric-value">
+        <% if (isOffline) { %>
+          <span class="offline-text">Offline</span>
+        <% } else if (ramPercent !== null) { %>
+          <span class="value-large <%= ramPercent >= 90 ? 'critical' : (ramPercent >= 75 ? 'warning' : '') %>"><%= Math.round(ramPercent) %>%</span>
+        <% } else { %>
+          <span class="no-data">-</span>
+        <% } %>
+      </div>
+      <div class="hero-metric-bar">
+        <div class="hero-metric-fill <%= ramPercent >= 90 ? 'critical' : (ramPercent >= 75 ? 'warning' : 'ok') %>"
+             style="width: <%= isOffline ? 0 : Math.min(ramPercent || 0, 100) %>%"></div>
+      </div>
+      <div class="hero-metric-details">
+        <% if (currentStats && currentStats.ram_used_bytes && hardware && hardware.ram_total_bytes) { %>
+          <span><%= formatBytesLocal(currentStats.ram_used_bytes) %> / <%= formatBytesLocal(hardware.ram_total_bytes) %></span>
+        <% } else if (hardware && hardware.ram_total_bytes) { %>
+          <span><%= formatBytesLocal(hardware.ram_total_bytes) %> Total</span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Storage Card -->
+    <div class="hero-metric-card <%= isOffline ? 'offline' : (diskPercent >= 90 ? 'critical' : (diskPercent >= 80 ? 'warning' : '')) %>">
+      <div class="hero-metric-header">
+        <svg class="hero-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+        <span class="hero-metric-title">Storage</span>
+      </div>
+      <div class="hero-metric-value">
+        <% if (isOffline) { %>
+          <span class="offline-text">Offline</span>
+        <% } else if (diskPercent !== null) { %>
+          <span class="value-large <%= diskPercent >= 90 ? 'critical' : (diskPercent >= 80 ? 'warning' : '') %>"><%= Math.round(diskPercent) %>%</span>
+        <% } else { %>
+          <span class="no-data">-</span>
+        <% } %>
+      </div>
+      <div class="hero-metric-bar">
+        <div class="hero-metric-fill <%= diskPercent >= 90 ? 'critical' : (diskPercent >= 80 ? 'warning' : 'ok') %>"
+             style="width: <%= isOffline ? 0 : Math.min(diskPercent || 0, 100) %>%"></div>
+      </div>
+      <div class="hero-metric-details">
+        <% if (currentStats && currentStats.disk_used_bytes && currentStats.disk_total_bytes) { %>
+          <span><%= formatBytesLocal(currentStats.disk_used_bytes) %> / <%= formatBytesLocal(currentStats.disk_total_bytes) %></span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Network Card -->
+    <div class="hero-metric-card <%= isOffline ? 'offline' : '' %>">
+      <div class="hero-metric-header">
+        <svg class="hero-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+          <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+          <line x1="12" y1="20" x2="12.01" y2="20"/>
+        </svg>
+        <span class="hero-metric-title">Network</span>
+      </div>
+      <div class="hero-metric-value hero-metric-network">
+        <% if (isOffline) { %>
+          <span class="offline-text">Offline</span>
+        <% } else if (currentStats && (currentStats.net_rx_bytes || currentStats.net_tx_bytes)) { %>
+          <div class="network-stats">
+            <span class="net-rx"><span class="net-arrow">↓</span> <%= formatBytesLocal(currentStats.net_rx_bytes || 0) %></span>
+            <span class="net-tx"><span class="net-arrow">↑</span> <%= formatBytesLocal(currentStats.net_tx_bytes || 0) %></span>
+          </div>
+        <% } else { %>
+          <span class="no-data">-</span>
+        <% } %>
+      </div>
+      <div class="hero-metric-details">
+        <% if (currentStats && currentStats.load_1m !== undefined) { %>
+          <span>Load: <%= currentStats.load_1m.toFixed(2) %></span>
+        <% } %>
+        <% if (currentStats && currentStats.uptime_seconds) { %>
+          <%
+            var days = Math.floor(currentStats.uptime_seconds / 86400);
+            var hours = Math.floor((currentStats.uptime_seconds % 86400) / 3600);
+          %>
+          <span>Uptime: <%= days %>d <%= hours %>h</span>
         <% } %>
       </div>
     </div>
   </div>
 
+  <!-- Status & Connection Info (Compact) -->
+  <div class="info-strip">
+    <div class="info-item">
+      <span class="info-label">Status</span>
+      <span class="status-badge <%= node.online ? 'online' : 'offline' %>">
+        <%= node.online ? 'Online' : 'Offline' %>
+      </span>
+    </div>
+    <div class="info-item">
+      <span class="info-label">Host</span>
+      <span class="info-value mono"><%= node.host %>:<%= node.ssh_port %></span>
+    </div>
+    <div class="info-item">
+      <span class="info-label">SSH User</span>
+      <span class="info-value"><%= node.ssh_user %></span>
+    </div>
+    <div class="info-item">
+      <span class="info-label">Typ</span>
+      <span class="node-type-badge"><%= node.node_type || 'Server' %></span>
+    </div>
+    <div class="info-item">
+      <span class="info-label">Monitoring</span>
+      <span class="info-value"><%= node.monitoring_enabled ? node.monitoring_interval + 's' : 'Aus' %></span>
+    </div>
+    <% if (tags.length > 0) { %>
+      <div class="info-item tags-inline">
+        <span class="info-label">Tags</span>
+        <div class="tags-compact">
+          <% tags.forEach(function(tag) { %>
+            <span class="tag-mini" style="background-color: <%= tag.color %>"><%= tag.name %></span>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
   <% if (node.notes) { %>
-    <div class="detail-card full-width">
-      <h3>Notizen</h3>
-      <p><%= node.notes %></p>
+    <div class="notes-strip">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+      <span><%= node.notes %></span>
     </div>
   <% } %>
 
@@ -67,39 +225,20 @@
   <div class="overview-section collapsible">
     <h2 class="section-header" onclick="toggleSection(this)">
       <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
-      Hardware
+      Hardware Details
     </h2>
     <div class="section-content">
       <% if (!hardware) { %>
-        <div class="empty-state">
+        <div class="empty-state compact">
           <p>Keine Hardware-Daten vorhanden.</p>
-          <button class="btn btn-primary btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
+          <button class="btn btn-primary btn-sm btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
             <span class="btn-text">Discovery starten</span>
-            <span class="btn-loading"><span class="spinner"></span> Scanne...</span>
+            <span class="btn-loading"><span class="spinner"></span></span>
           </button>
         </div>
       <% } else { %>
-        <div class="detail-grid">
-          <!-- CPU -->
-          <%
-            var cpuThermalSensors = [];
-            try {
-              var allThermals = JSON.parse(hardware.thermal_json || '[]');
-              // Filter CPU-related sensors
-              cpuThermalSensors = allThermals.filter(function(s) {
-                var name = (s.name || '').toLowerCase();
-                var label = (s.label || '').toLowerCase();
-                var type = (s.type || '').toLowerCase();
-                return name.indexOf('cpu') !== -1 ||
-                       name.indexOf('coretemp') !== -1 ||
-                       name.indexOf('k10temp') !== -1 ||
-                       label.indexOf('cpu') !== -1 ||
-                       label.indexOf('tctl') !== -1 ||
-                       label.indexOf('package') !== -1 ||
-                       type.indexOf('cpu') !== -1;
-              });
-            } catch(e) {}
-          %>
+        <div class="detail-grid compact-grid">
+          <!-- CPU Details -->
           <div class="detail-card compact">
             <h3>CPU</h3>
             <dl>
@@ -111,81 +250,45 @@
               <dd><%= hardware.cpu_arch || '-' %></dd>
               <dt>Virtualisierung</dt>
               <dd><%= hardware.cpu_virt_support || '-' %></dd>
-              <% if (cpuThermalSensors.length > 0) { %>
-                <% cpuThermalSensors.slice(0, 2).forEach(function(sensor) { %>
-                  <% if (sensor.temp_c !== null && sensor.temp_c !== undefined) { %>
-                    <dt><%= (sensor.label || sensor.type || sensor.name || 'Temp').substring(0, 15) %></dt>
-                    <dd>
-                      <span class="temp-badge <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : 'ok') %>">
-                        <%= typeof sensor.temp_c === 'number' ? sensor.temp_c.toFixed(1) : sensor.temp_c %>&deg;C
-                      </span>
-                    </dd>
-                  <% } %>
-                <% }); %>
-              <% } %>
             </dl>
           </div>
 
-          <!-- RAM -->
+          <!-- RAM Details -->
           <div class="detail-card compact">
             <h3>Arbeitsspeicher</h3>
-            <% if (typeof currentStats !== 'undefined' && currentStats && currentStats.ram_percent) { %>
-              <div class="hardware-progress">
-                <div class="hardware-progress-header">
-                  <span>RAM Auslastung</span>
-                  <span class="hardware-progress-value <%= currentStats.ram_percent >= 90 ? 'critical' : (currentStats.ram_percent >= 75 ? 'warning' : '') %>"><%= Math.round(currentStats.ram_percent) %>%</span>
-                </div>
-                <div class="hardware-progress-bar">
-                  <div class="hardware-progress-fill <%= currentStats.ram_percent >= 90 ? 'critical' : (currentStats.ram_percent >= 75 ? 'warning' : 'ok') %>" style="width: <%= Math.min(currentStats.ram_percent, 100) %>%"></div>
-                </div>
-                <div class="hardware-progress-label">
-                  <%= currentStats.ram_used_bytes ? formatBytes(currentStats.ram_used_bytes) : '-' %> / <%= hardware.ram_total_bytes ? formatBytes(hardware.ram_total_bytes) : '-' %> verwendet
-                </div>
-              </div>
-            <% } %>
             <dl>
               <dt>RAM Total</dt>
-              <dd><%= hardware.ram_total_bytes ? formatBytes(hardware.ram_total_bytes) : '-' %></dd>
+              <dd><%= hardware.ram_total_bytes ? formatBytesLocal(hardware.ram_total_bytes) : '-' %></dd>
               <dt>RAM Typ</dt>
               <dd><%= hardware.ram_type || '-' %></dd>
             </dl>
           </div>
 
-          <!-- Disk -->
+          <!-- Disks -->
           <div class="detail-card compact">
             <h3>Festplatten</h3>
-            <% if (typeof currentStats !== 'undefined' && currentStats && currentStats.disk_percent) { %>
-              <div class="hardware-progress">
-                <div class="hardware-progress-header">
-                  <span>Disk Auslastung (Root)</span>
-                  <span class="hardware-progress-value <%= currentStats.disk_percent >= 90 ? 'critical' : (currentStats.disk_percent >= 75 ? 'warning' : '') %>"><%= Math.round(currentStats.disk_percent) %>%</span>
-                </div>
-                <div class="hardware-progress-bar">
-                  <div class="hardware-progress-fill <%= currentStats.disk_percent >= 90 ? 'critical' : (currentStats.disk_percent >= 75 ? 'warning' : 'ok') %>" style="width: <%= Math.min(currentStats.disk_percent, 100) %>%"></div>
-                </div>
-                <div class="hardware-progress-label">
-                  <%= currentStats.disk_used_bytes ? formatBytes(currentStats.disk_used_bytes) : '-' %> / <%= currentStats.disk_total_bytes ? formatBytes(currentStats.disk_total_bytes) : '-' %> verwendet
-                </div>
-              </div>
-            <% } %>
             <%
               var disks = [];
               try { disks = JSON.parse(hardware.disks_json || '[]'); } catch(e) {}
             %>
             <% if (disks.length > 0) { %>
-              <div class="disk-list">
-                <% disks.slice(0, 3).forEach(function(disk) { %>
-                  <div class="disk-item">
+              <div class="disk-list-compact">
+                <% disks.slice(0, 4).forEach(function(disk) { %>
+                  <div class="disk-item-compact">
                     <strong><%= disk.name || disk.NAME || '-' %></strong>
-                    <% var size = disk.size || disk.SIZE; %>
-                    <span class="disk-size"><%= size ? formatBytes(size) : '-' %></span>
-                    <span class="disk-type"><%= (disk.rota || disk.ROTA) === 1 ? 'HDD' : 'SSD' %></span>
+                    <span class="disk-info">
+                      <% var size = disk.size || disk.SIZE; %>
+                      <%= size ? formatBytesLocal(size) : '-' %>
+                      <span class="disk-type-badge"><%= (disk.rota || disk.ROTA) === 1 ? 'HDD' : 'SSD' %></span>
+                    </span>
                   </div>
                 <% }); %>
-                <% if (disks.length > 3) { %>
-                  <small class="disk-more">... und <%= disks.length - 3 %> weitere</small>
+                <% if (disks.length > 4) { %>
+                  <small class="text-muted">+<%= disks.length - 4 %> weitere</small>
                 <% } %>
               </div>
+            <% } else { %>
+              <span class="text-muted">Keine Disks</span>
             <% } %>
           </div>
 
@@ -202,27 +305,46 @@
             </dl>
           </div>
 
-          <!-- Power Sensors -->
+          <!-- Thermal Sensors (wenn vorhanden) -->
+          <%
+            var thermalSensors = [];
+            try { thermalSensors = JSON.parse(hardware.thermal_json || '[]'); } catch(e) {}
+          %>
+          <% if (thermalSensors.length > 0) { %>
+            <div class="detail-card compact">
+              <h3>Temperaturen</h3>
+              <div class="thermal-grid">
+                <% thermalSensors.slice(0, 6).forEach(function(sensor) { %>
+                  <% if (sensor.temp_c !== null && sensor.temp_c !== undefined) { %>
+                    <div class="thermal-chip <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : 'ok') %>">
+                      <span class="thermal-chip-label"><%= (sensor.label || sensor.name || 'Temp').substring(0, 10) %></span>
+                      <span class="thermal-chip-value"><%= sensor.temp_c.toFixed(0) %>&deg;C</span>
+                    </div>
+                  <% } %>
+                <% }); %>
+              </div>
+            </div>
+          <% } %>
+
+          <!-- Power Sensors (wenn vorhanden) -->
           <%
             var powerSensors = [];
             try { powerSensors = JSON.parse(hardware.power_json || '[]'); } catch(e) {}
           %>
           <% if (powerSensors.length > 0) { %>
-          <div class="detail-card compact">
-            <h3>Stromverbrauch</h3>
-            <div class="thermal-list-compact">
-              <% powerSensors.slice(0, 6).forEach(function(sensor) { %>
-                <% if (sensor.power_w !== null && sensor.power_w !== undefined) { %>
-                  <div class="thermal-item-compact">
-                    <span class="thermal-label"><%= (sensor.label || sensor.name || 'Power').substring(0, 12) %></span>
-                    <span class="thermal-temp ok">
-                      <%= typeof sensor.power_w === 'number' ? sensor.power_w.toFixed(2) : sensor.power_w %> W
-                    </span>
-                  </div>
-                <% } %>
-              <% }); %>
+            <div class="detail-card compact">
+              <h3>Stromverbrauch</h3>
+              <div class="power-grid">
+                <% powerSensors.slice(0, 4).forEach(function(sensor) { %>
+                  <% if (sensor.power_w !== null && sensor.power_w !== undefined) { %>
+                    <div class="power-chip">
+                      <span class="power-chip-label"><%= (sensor.label || sensor.name || 'Power').substring(0, 10) %></span>
+                      <span class="power-chip-value"><%= sensor.power_w.toFixed(1) %> W</span>
+                    </div>
+                  <% } %>
+                <% }); %>
+              </div>
             </div>
-          </div>
           <% } %>
         </div>
       <% } %>
@@ -237,16 +359,16 @@
     </h2>
     <div class="section-content">
       <% if (!discovery) { %>
-        <div class="empty-state">
+        <div class="empty-state compact">
           <p>Keine Discovery-Daten vorhanden.</p>
-          <button class="btn btn-primary btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
+          <button class="btn btn-primary btn-sm btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
             <span class="btn-text">Discovery starten</span>
-            <span class="btn-loading"><span class="spinner"></span> Scanne...</span>
+            <span class="btn-loading"><span class="spinner"></span></span>
           </button>
         </div>
       <% } else { %>
-        <div class="detail-grid">
-          <!-- System Info -->
+        <div class="detail-grid compact-grid">
+          <!-- OS Info -->
           <div class="detail-card compact">
             <h3>Betriebssystem</h3>
             <dl>
@@ -257,22 +379,22 @@
               <dt>Architektur</dt>
               <dd><%= discovery.arch || '-' %></dd>
               <dt>Virtualisierung</dt>
-              <dd><%= discovery.virtualization || 'none' %></dd>
+              <dd><%= discovery.virtualization || 'Bare Metal' %></dd>
             </dl>
           </div>
 
-          <!-- Proxmox -->
+          <!-- Proxmox (wenn vorhanden) -->
           <% if (discovery.is_proxmox_host) { %>
             <div class="detail-card compact">
-              <h3>Proxmox</h3>
+              <h3>Proxmox VE</h3>
               <dl>
                 <dt>Version</dt>
                 <dd><%= discovery.proxmox_version || '-' %></dd>
                 <dt>Cluster</dt>
-                <dd><%= discovery.is_proxmox_cluster ? 'Ja' : 'Nein' %></dd>
-                <% if (discovery.is_proxmox_cluster) { %>
+                <dd><%= discovery.is_proxmox_cluster ? 'Ja' : 'Standalone' %></dd>
+                <% if (discovery.is_proxmox_cluster && discovery.proxmox_cluster_name) { %>
                   <dt>Cluster Name</dt>
-                  <dd><%= discovery.proxmox_cluster_name || '-' %></dd>
+                  <dd><%= discovery.proxmox_cluster_name %></dd>
                 <% } %>
               </dl>
             </div>
@@ -280,37 +402,47 @@
 
           <!-- Container Runtimes -->
           <div class="detail-card compact">
-            <h3>Container & Virtualisierung</h3>
+            <h3>Container & Runtimes</h3>
             <dl>
-              <% if (discovery.is_proxmox_host) { %>
-                <dt>Proxmox Host</dt>
-                <dd>Ja</dd>
-              <% } %>
               <dt>Docker</dt>
-              <dd><%= discovery.has_docker ? discovery.docker_version || 'Ja' : 'Nein' %></dd>
+              <dd>
+                <% if (discovery.has_docker) { %>
+                  <span class="badge badge-ok"><%= discovery.docker_version || 'Ja' %></span>
+                <% } else { %>
+                  <span class="badge badge-neutral">Nein</span>
+                <% } %>
+              </dd>
               <% if (discovery.has_podman) { %>
                 <dt>Podman</dt>
-                <dd><%= discovery.podman_version || 'Ja' %></dd>
+                <dd><span class="badge badge-ok"><%= discovery.podman_version || 'Ja' %></span></dd>
               <% } %>
               <% if (discovery.is_raspberry_pi) { %>
                 <dt>Raspberry Pi</dt>
-                <dd><%= discovery.raspberry_pi_model || 'Ja' %></dd>
+                <dd><span class="badge badge-info"><%= discovery.raspberry_pi_model || 'Ja' %></span></dd>
               <% } %>
+              <dt>Systemd</dt>
+              <dd>
+                <% if (discovery.has_systemd) { %>
+                  <span class="badge badge-ok">Verfuegbar</span>
+                <% } else { %>
+                  <span class="badge badge-neutral">Nein</span>
+                <% } %>
+              </dd>
             </dl>
           </div>
 
-          <!-- Systemd -->
-          <% if (discovery.has_systemd) { %>
-            <div class="detail-card compact">
-              <h3>System</h3>
-              <dl>
-                <dt>Systemd</dt>
-                <dd>Verfügbar</dd>
-                <dt>Zuletzt gescannt</dt>
-                <dd><%= discovery.discovered_at || '-' %></dd>
-              </dl>
-            </div>
-          <% } %>
+          <!-- Last Discovery -->
+          <div class="detail-card compact">
+            <h3>Discovery Info</h3>
+            <dl>
+              <dt>Zuletzt gescannt</dt>
+              <dd><%= discovery.discovered_at || '-' %></dd>
+            </dl>
+            <button class="btn btn-secondary btn-sm btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
+              <span class="btn-text">Erneut scannen</span>
+              <span class="btn-loading"><span class="spinner"></span></span>
+            </button>
+          </div>
         </div>
       <% } %>
     </div>
@@ -330,16 +462,16 @@
     </h2>
     <div class="section-content">
       <% if (!health) { %>
-        <div class="empty-state">
+        <div class="empty-state compact">
           <p>Noch kein Health-Check durchgefuehrt.</p>
-          <button class="btn btn-primary btn-health-check" onclick="runHealthCheck(<%= node.id %>)">
+          <button class="btn btn-primary btn-sm btn-health-check" onclick="runHealthCheck(<%= node.id %>)">
             <span class="btn-text">Health-Check starten</span>
-            <span class="btn-loading"><span class="spinner"></span> Pruefe...</span>
+            <span class="btn-loading"><span class="spinner"></span></span>
           </button>
         </div>
       <% } else { %>
-        <div class="detail-grid">
-          <!-- System Updates -->
+        <div class="detail-grid compact-grid">
+          <!-- Updates -->
           <div class="detail-card compact">
             <h3>Updates</h3>
             <dl>
@@ -355,12 +487,10 @@
                 <dt>Security</dt>
                 <dd><span class="badge badge-critical"><%= health.apt_security %></span></dd>
               <% } %>
-              <dt>Disk-Platz</dt>
-              <dd><%= health.apt_cache_free_mb || 0 %> MB frei</dd>
             </dl>
           </div>
 
-          <!-- System Info -->
+          <!-- System -->
           <div class="detail-card compact">
             <h3>System</h3>
             <dl>
@@ -380,7 +510,7 @@
           </div>
 
           <% if (health.pve_version) { %>
-            <!-- Proxmox Repo -->
+            <!-- Proxmox -->
             <div class="detail-card compact">
               <h3>Proxmox</h3>
               <dl>
@@ -403,19 +533,18 @@
           <!-- Actions -->
           <div class="detail-card compact">
             <h3>Aktionen</h3>
-            <div class="button-stack">
-              <button class="btn btn-sm btn-secondary btn-health-check" onclick="runHealthCheck(<%= node.id %>)">
+            <div class="button-stack-horizontal">
+              <button class="btn btn-secondary btn-sm btn-health-check" onclick="runHealthCheck(<%= node.id %>)">
                 <span class="btn-text">Erneut pruefen</span>
                 <span class="btn-loading"><span class="spinner"></span></span>
               </button>
               <% if (health.apt_updates > 0) { %>
-                <button class="btn btn-sm btn-primary" onclick="runUpgrade(<%= node.id %>)">
-                  <span class="btn-text">Upgrade (<%= health.apt_updates %>)</span>
-                  <span class="btn-loading"><span class="spinner"></span></span>
+                <button class="btn btn-primary btn-sm" onclick="runUpgrade(<%= node.id %>)">
+                  Upgrade (<%= health.apt_updates %>)
                 </button>
               <% } %>
               <% if (health.pve_version && health.pve_repo === 'enterprise') { %>
-                <button class="btn btn-sm btn-warning" onclick="switchProxmoxRepo(<%= node.id %>, 'no-subscription')">
+                <button class="btn btn-warning btn-sm" onclick="switchProxmoxRepo(<%= node.id %>, 'no-subscription')">
                   No-Subscription
                 </button>
               <% } %>
