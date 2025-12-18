@@ -2047,23 +2047,30 @@ var lvm = {
 
   // === Logical Volumes ===
   saveLVs: function(nodeId, lvs) {
-    var deleteStmt = getDb().prepare('DELETE FROM node_lvm_lvs WHERE node_id = ?');
-    deleteStmt.run(nodeId);
-
-    if (!lvs || lvs.length === 0) return;
-
-    var insertStmt = getDb().prepare(`
+    // Upsert um registered_storage_id zu erhalten
+    var upsertStmt = getDb().prepare(`
       INSERT INTO node_lvm_lvs (node_id, lv_name, vg_name, lv_size_bytes, lv_path, lv_attr, is_thin_pool, thin_pool_name, data_percent)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(node_id, vg_name, lv_name) DO UPDATE SET
+        lv_size_bytes = excluded.lv_size_bytes,
+        lv_path = excluded.lv_path,
+        lv_attr = excluded.lv_attr,
+        is_thin_pool = excluded.is_thin_pool,
+        thin_pool_name = excluded.thin_pool_name,
+        data_percent = excluded.data_percent,
+        updated_at = CURRENT_TIMESTAMP
     `);
 
-    for (var i = 0; i < lvs.length; i++) {
+    // Track which LVs we've seen to delete removed ones
+    var seenLvs = [];
+
+    for (var i = 0; i < (lvs || []).length; i++) {
       var lv = lvs[i];
       // Thin Pool Detection: lv_attr beginnt mit 't' oder 'T'
       var isThinPool = lv.lv_attr && lv.lv_attr.charAt(0).toLowerCase() === 't' ? 1 : 0;
       var lvSize = parseLvmBytes(lv.lv_size);
 
-      insertStmt.run(
+      upsertStmt.run(
         nodeId,
         lv.lv_name,
         lv.vg_name,
@@ -2074,6 +2081,22 @@ var lvm = {
         lv.pool_lv || null,
         lv.data_percent ? parseFloat(lv.data_percent) : null
       );
+      seenLvs.push(lv.vg_name + '/' + lv.lv_name);
+    }
+
+    // Delete LVs that no longer exist
+    if (seenLvs.length > 0) {
+      var existing = getDb().prepare('SELECT vg_name, lv_name FROM node_lvm_lvs WHERE node_id = ?').all(nodeId);
+      var deleteStmt = getDb().prepare('DELETE FROM node_lvm_lvs WHERE node_id = ? AND vg_name = ? AND lv_name = ?');
+      for (var j = 0; j < existing.length; j++) {
+        var key = existing[j].vg_name + '/' + existing[j].lv_name;
+        if (seenLvs.indexOf(key) === -1) {
+          deleteStmt.run(nodeId, existing[j].vg_name, existing[j].lv_name);
+        }
+      }
+    } else {
+      // Keine LVs mehr - alle loeschen
+      getDb().prepare('DELETE FROM node_lvm_lvs WHERE node_id = ?').run(nodeId);
     }
   },
 

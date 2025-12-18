@@ -64,31 +64,51 @@ echo ","
 # =====================================================
 # Proxmox Storage Config (fuer VG/Pool Namen)
 # =====================================================
-echo '"proxmox_storage_config": '
+echo -n '"proxmox_storage_config": '
 if [ -f /etc/pve/storage.cfg ]; then
-  # Parse storage.cfg fuer lvm/lvmthin Eintraege
-  result=$(awk '
-    /^lvm:/ { name=$2; type="lvm"; vgname=""; thinpool="" }
-    /^lvmthin:/ { name=$2; type="lvmthin"; vgname=""; thinpool="" }
-    /vgname/ && name { vgname=$2 }
-    /thinpool/ && name { thinpool=$2 }
-    /^$/ || /^[a-z]+:/ {
-      if (name != "" && type != "") {
-        printf "{\"storage\":\"%s\",\"type\":\"%s\",\"vgname\":\"%s\",\"thinpool\":\"%s\"},", name, type, vgname, thinpool
-        name=""
-      }
-    }
-    END {
-      if (name != "" && type != "") {
-        printf "{\"storage\":\"%s\",\"type\":\"%s\",\"vgname\":\"%s\",\"thinpool\":\"%s\"}", name, type, vgname, thinpool
-      }
-    }
-  ' /etc/pve/storage.cfg 2>/dev/null | sed 's/,$//')
-  if [ -n "$result" ]; then
-    echo "[$result]"
-  else
-    echo '[]'
-  fi
+  python3 << 'PYTHON_PARSE'
+import json
+import re
+
+storages = []
+current = None
+
+try:
+    with open('/etc/pve/storage.cfg', 'r') as f:
+        for line in f:
+            line = line.strip()
+            # Neue Section beginnt
+            if line.startswith('lvm:') or line.startswith('lvmthin:'):
+                if current and current.get('type'):
+                    storages.append(current)
+                parts = line.split(':')
+                current = {
+                    'storage': parts[1].strip() if len(parts) > 1 else '',
+                    'type': parts[0].strip(),
+                    'vgname': '',
+                    'thinpool': ''
+                }
+            elif current and line.startswith('vgname'):
+                parts = line.split(None, 1)
+                if len(parts) > 1:
+                    current['vgname'] = parts[1].strip()
+            elif current and line.startswith('thinpool'):
+                parts = line.split(None, 1)
+                if len(parts) > 1:
+                    current['thinpool'] = parts[1].strip()
+            # Andere Section beginnt - speichere aktuelle
+            elif line and ':' in line and not line.startswith('\t') and not line.startswith(' '):
+                if current and current.get('type') in ('lvm', 'lvmthin'):
+                    storages.append(current)
+                current = None
+    # Letzte Section nicht vergessen
+    if current and current.get('type') in ('lvm', 'lvmthin'):
+        storages.append(current)
+except:
+    pass
+
+print(json.dumps(storages))
+PYTHON_PARSE
 else
   echo '[]'
 fi
