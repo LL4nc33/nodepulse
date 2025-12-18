@@ -474,29 +474,15 @@
 
 .hero-metric-card.warning {
   border-left: 3px solid var(--color-warning);
-  box-shadow: var(--shadow-glow-warning);
 }
 
 .hero-metric-card.critical {
   border-left: 3px solid var(--color-error);
-  box-shadow: var(--shadow-glow-error);
-  -webkit-animation: pulse-glow 2s ease-in-out infinite;
-  animation: pulse-glow 2s ease-in-out infinite;
 }
 
 .hero-metric-card.offline {
   opacity: 0.6;
   border-left: 3px solid var(--color-text-muted);
-}
-
-@-webkit-keyframes pulse-glow {
-  0%, 100% { box-shadow: var(--shadow-glow-error); }
-  50% { box-shadow: 0 0 16px rgba(229, 62, 62, 0.6); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: var(--shadow-glow-error); }
-  50% { box-shadow: 0 0 16px rgba(229, 62, 62, 0.6); }
 }
 
 .hero-metric-header {

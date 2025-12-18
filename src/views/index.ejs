@@ -352,54 +352,121 @@
 
       <!-- Flat List View -->
       <div class="node-list" id="nodeListFlat">
+        <div class="node-list-header">
+          <div class="node-list-col-status"></div>
+          <div class="node-list-col-icon"></div>
+          <div class="node-list-col-name">Name</div>
+          <div class="node-list-col-host">Host</div>
+          <div class="node-list-col-uptime">Uptime</div>
+          <div class="node-list-col-metrics">CPU</div>
+          <div class="node-list-col-metrics">RAM</div>
+          <div class="node-list-col-metrics">Disk</div>
+          <div class="node-list-col-count">VMs</div>
+          <div class="node-list-col-count">Container</div>
+          <div class="node-list-col-type">Typ</div>
+          <div class="node-list-col-actions"></div>
+        </div>
 
         <% nodes.forEach(function(node) {
           var stats = statsMap[node.id] || {};
           var nodeStatus = node.online ? 'online' : 'offline';
           var cpuPercent = Math.round(stats.cpu_percent || 0);
           var memPercent = Math.round(stats.ram_percent || 0);
-          var cpuClass = cpuPercent >= 80 ? 'critical' : (cpuPercent >= 60 ? 'warning' : 'ok');
-          var memClass = memPercent >= 80 ? 'critical' : (memPercent >= 60 ? 'warning' : 'ok');
+          var diskPercent = Math.round(stats.disk_percent || 0);
+          var cpuClass = cpuPercent >= 80 ? 'critical' : (cpuPercent >= 60 ? 'warning' : '');
+          var memClass = memPercent >= 80 ? 'critical' : (memPercent >= 60 ? 'warning' : '');
+          var diskClass = diskPercent >= 80 ? 'critical' : (diskPercent >= 60 ? 'warning' : '');
           var vmCount = (stats.vms_running || 0) + (stats.cts_running || 0);
         %>
-          <a href="/nodes/<%= node.id %>" class="node-row-pulse <%= nodeStatus %>"
-             data-node-id="<%= node.id %>"
-             data-name="<%= node.name.toLowerCase() %>"
-             data-type="<%= node.node_type || 'unknown' %>"
-             data-status="<%= nodeStatus %>"
-             data-cpu="<%= cpuPercent %>"
-             data-ram="<%= memPercent %>"
-             data-disk="<%= Math.round(stats.disk_percent || 0) %>"
-             data-vms="<%= vmCount %>"
-             data-containers="<%= stats.containers_running || 0 %>"
-             data-uptime="<%= stats.uptime_seconds || 0 %>"
-             data-tags="<%= node.tags || '' %>">
-            <span class="node-tree-status <%= nodeStatus %>"></span>
-            <span class="node-name"><%= node.name %></span>
-            <span class="node-host"><%= node.host %></span>
-            <% if (!node.online) { %>
-              <div class="metric-bar-compact"><span class="value offline">-</span></div>
-              <div class="metric-bar-compact"><span class="value offline">-</span></div>
-            <% } else { %>
-              <div class="metric-bar-compact">
-                <div class="fill <%= cpuClass %>" style="width:<%= cpuPercent %>%"></div>
-                <span class="value"><%= cpuPercent %>%</span>
-              </div>
-              <div class="metric-bar-compact">
-                <div class="fill <%= memClass %>" style="width:<%= memPercent %>%"></div>
-                <span class="value"><%= memPercent %>%</span>
-              </div>
-            <% } %>
-            <% if (vmCount > 0) { %>
-              <span class="count-pill proxmox"><%= vmCount %> VMs</span>
-            <% } %>
-            <% if (stats.containers_running && stats.containers_running > 0) { %>
-              <span class="count-pill docker"><%= stats.containers_running %> CT</span>
-            <% } %>
-          </a>
-        <%
-          });
-        %>
+          <div class="node-list-row"
+               data-node-id="<%= node.id %>"
+               data-name="<%= node.name.toLowerCase() %>"
+               data-type="<%= node.node_type || 'unknown' %>"
+               data-status="<%= nodeStatus %>"
+               data-cpu="<%= cpuPercent %>"
+               data-ram="<%= memPercent %>"
+               data-disk="<%= diskPercent %>"
+               data-vms="<%= vmCount %>"
+               data-containers="<%= stats.containers_running || 0 %>"
+               data-uptime="<%= stats.uptime_seconds || 0 %>"
+               data-tags="<%= node.tags || '' %>">
+            <div class="node-list-status">
+              <span class="node-list-status-dot <%= nodeStatus %>"></span>
+            </div>
+            <div class="node-list-icon">
+              <%- include('partials/node-type-icon', { nodeType: node.node_type || 'unknown', size: 22 }) %>
+            </div>
+            <div class="node-list-name">
+              <a href="/nodes/<%= node.id %>"><%= node.name %></a>
+              <span class="node-list-host-mobile"><%= node.host %></span>
+            </div>
+            <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-uptime">
+              <% if (node.online && stats.uptime_seconds) {
+                var uptimeDays = Math.floor(stats.uptime_seconds / 86400);
+                var uptimeHours = Math.floor((stats.uptime_seconds % 86400) / 3600);
+                var uptimeMins = Math.floor((stats.uptime_seconds % 3600) / 60);
+                var uptimeDisplay = uptimeDays > 0 ? (uptimeDays + 'd ' + uptimeHours + 'h') : (uptimeHours > 0 ? (uptimeHours + 'h ' + uptimeMins + 'm') : (uptimeMins + 'm'));
+              %>
+                <span class="uptime-value"><%= uptimeDisplay %></span>
+              <% } else { %>
+                <span class="uptime-value offline">-</span>
+              <% } %>
+            </div>
+            <div class="node-list-metric">
+              <% if (node.online) { %>
+                <div class="node-list-metric-bar">
+                  <div class="node-list-metric-fill <%= cpuClass %>" style="width: <%= cpuPercent %>%;"></div>
+                </div>
+                <span class="node-list-metric-value <%= cpuClass %>"><%= cpuPercent %>%</span>
+              <% } else { %>
+                <span class="node-list-metric-value offline">-</span>
+              <% } %>
+            </div>
+            <div class="node-list-metric">
+              <% if (node.online) { %>
+                <div class="node-list-metric-bar">
+                  <div class="node-list-metric-fill <%= memClass %>" style="width: <%= memPercent %>%;"></div>
+                </div>
+                <span class="node-list-metric-value <%= memClass %>"><%= memPercent %>%</span>
+              <% } else { %>
+                <span class="node-list-metric-value offline">-</span>
+              <% } %>
+            </div>
+            <div class="node-list-metric">
+              <% if (node.online) { %>
+                <div class="node-list-metric-bar">
+                  <div class="node-list-metric-fill <%= diskClass %>" style="width: <%= diskPercent %>%;"></div>
+                </div>
+                <span class="node-list-metric-value <%= diskClass %>"><%= diskPercent %>%</span>
+              <% } else { %>
+                <span class="node-list-metric-value offline">-</span>
+              <% } %>
+            </div>
+            <div class="node-list-count">
+              <% if (vmCount > 0) { %>
+                <span class="count-badge proxmox"><%= vmCount %></span>
+              <% } else { %>
+                <span class="count-badge empty">-</span>
+              <% } %>
+            </div>
+            <div class="node-list-count">
+              <% if (stats.containers_running && stats.containers_running > 0) { %>
+                <span class="count-badge docker"><%= stats.containers_running %></span>
+              <% } else { %>
+                <span class="count-badge empty">-</span>
+              <% } %>
+            </div>
+            <div class="node-list-type">
+              <span class="type-tag <%= (node.node_type || 'unknown').toLowerCase() %>"><%= (node.node_type || 'Unknown').charAt(0).toUpperCase() + (node.node_type || 'Unknown').slice(1) %></span>
+            </div>
+            <div class="node-list-actions">
+              <a href="/nodes/<%= node.id %>" class="node-list-action" title="Details">
+                <span class="icon-arrow"></span>
+              </a>
+            </div>
+          </div>
+        <% }); %>
       </div>
 
       <!-- Tree View (Hierarchical) -->

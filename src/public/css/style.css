@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-18T07:46:54.185Z
+   Generated: 2025-12-18T07:54:04.270Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -6391,7 +6391,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: detail-pages.css (1007 lines)
+   FROM: detail-pages.css (993 lines)
    ============================================================ */
 
 /* =====================================================
@@ -6870,29 +6870,15 @@ a:focus {
 
 .hero-metric-card.warning {
   border-left: 3px solid var(--color-warning);
-  box-shadow: var(--shadow-glow-warning);
 }
 
 .hero-metric-card.critical {
   border-left: 3px solid var(--color-error);
-  box-shadow: var(--shadow-glow-error);
-  -webkit-animation: pulse-glow 2s ease-in-out infinite;
-  animation: pulse-glow 2s ease-in-out infinite;
 }
 
 .hero-metric-card.offline {
   opacity: 0.6;
   border-left: 3px solid var(--color-text-muted);
-}
-
-@-webkit-keyframes pulse-glow {
-  0%, 100% { box-shadow: var(--shadow-glow-error); }
-  50% { box-shadow: 0 0 16px rgba(229, 62, 62, 0.6); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: var(--shadow-glow-error); }
-  50% { box-shadow: 0 0 16px rgba(229, 62, 62, 0.6); }
 }
 
 .hero-metric-header {
