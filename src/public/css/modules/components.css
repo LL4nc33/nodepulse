@@ -28,6 +28,7 @@
 }
 
 .tab-btn {
+  position: relative;
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
@@ -66,15 +67,16 @@
   position: relative;
 }
 
+/* Tab Active Underline Style (Proxmox VE inspired) */
 .tab-btn.active::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 3px;
+  height: 2px;
   background: var(--color-accent);
-  border-radius: 3px 3px 0 0;
+  border-radius: 1px 1px 0 0;
 }
 
 .tab-btn:focus {
@@ -106,8 +108,17 @@
   font-weight: var(--font-weight-semibold, 600);
 }
 
-/* Tab Badges (for counts) - Enhanced */
+/* Tab Badge Positioning */
 .tab-badge {
+  position: relative;
+  top: -1px;
+  margin-left: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 10px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
   display: -webkit-inline-box;
   display: -webkit-inline-flex;
   display: inline-flex;
@@ -119,12 +130,6 @@
   justify-content: center;
   min-width: 22px;
   height: 22px;
-  padding: 0 7px;
-  background: var(--color-bg-elevated);
-  color: var(--color-text-muted);
-  border-radius: var(--radius-full, 9999px);
-  font-size: var(--font-size-xs, 0.6875rem);
-  font-weight: var(--font-weight-bold, 700);
   line-height: 1;
   -webkit-transition: all var(--transition-fast, 150ms ease);
   transition: all var(--transition-fast, 150ms ease);
@@ -138,6 +143,44 @@
 .tab-btn.active .tab-badge {
   background: var(--color-accent);
   color: #fff;
+}
+
+/* Tab Actions (Refresh button etc.) */
+.tabs-actions {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  margin-left: auto;
+  gap: 0.5rem;
+}
+
+.tab-action-btn {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  -webkit-transition: all 0.15s ease;
+  transition: all 0.15s ease;
+}
+
+.tab-action-btn:hover {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
 }
 
 .tab-content {

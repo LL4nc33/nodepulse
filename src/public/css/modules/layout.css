@@ -472,6 +472,88 @@
   display: none;
 }
 
+/* =====================================================
+   Sidebar Search
+   ===================================================== */
+
+.side-panel-search {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.side-panel-search input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  min-height: 36px;
+  -webkit-transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.side-panel-search input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-bg);
+}
+
+.side-panel-search input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Node Mini Resource Bars */
+.node-tree-row .mini-bars {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  opacity: 0.8;
+}
+
+.mini-bar {
+  width: 30px;
+  height: 4px;
+  background: var(--color-bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mini-bar .fill {
+  height: 100%;
+  border-radius: 2px;
+  -webkit-transition: width 0.3s ease;
+  transition: width 0.3s ease;
+}
+
+.mini-bar .fill.ok { background: var(--color-success); }
+.mini-bar .fill.warning { background: var(--color-warning); }
+.mini-bar .fill.critical { background: var(--color-error); }
+
+/* Node Row with Mini-Bars - Compact */
+.node-tree-row:hover .mini-bars {
+  opacity: 1;
+}
+
+/* Keyboard Shortcut Hint */
+.kbd-hint {
+  display: inline-block;
+  padding: 0.125rem 0.375rem;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  font-size: 0.6875rem;
+  font-family: monospace;
+  color: var(--color-text-muted);
+  margin-left: 0.25rem;
+}
+
 /* Side Panel Footer (App Info) */
 .side-panel-footer {
   margin-top: auto;
@@ -792,7 +874,7 @@
   line-height: 1;
   cursor: pointer;
   padding: 0 4px;
-  opacity: 0;
+  opacity: 0.5;
   -webkit-transition: opacity 0.2s;
   transition: opacity 0.2s;
   -webkit-flex-shrink: 0;
@@ -800,7 +882,7 @@
 }
 
 .terminal-tab:hover .tab-close-btn {
-  opacity: 0.7;
+  opacity: 1;
 }
 
 .tab-close-btn:hover {

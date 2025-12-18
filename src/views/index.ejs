@@ -5,7 +5,37 @@
 
   <!-- Main Content -->
   <main class="main-panel" id="main-content">
-    <!-- Cluster Summary (Proxmox-Style) -->
+    <% if (typeof clusterResources !== 'undefined' && clusterResources) { %>
+    <!-- Cluster Bar (kompakt) -->
+    <div class="cluster-bar">
+      <div class="cluster-stats">
+        <span class="stat-total"><%= stats.total %> Nodes</span>
+        <span class="stat-online"><%= stats.online %> Online</span>
+        <span class="stat-offline"><%= stats.offline %> Offline</span>
+      </div>
+      <div class="cluster-resources">
+        <% if (clusterResources.cpu) { %>
+        <div class="resource-metric">
+          <span class="label">CPU</span>
+          <div class="metric-bar-compact">
+            <div class="fill <%= clusterResources.cpu > 80 ? 'critical' : (clusterResources.cpu > 60 ? 'warning' : 'ok') %>" style="width:<%= clusterResources.cpu %>%"></div>
+            <span class="value"><%= clusterResources.cpu %>%</span>
+          </div>
+        </div>
+        <% } %>
+        <% if (clusterResources.memory) { %>
+        <div class="resource-metric">
+          <span class="label">RAM</span>
+          <div class="metric-bar-compact">
+            <div class="fill <%= clusterResources.memory > 80 ? 'critical' : (clusterResources.memory > 60 ? 'warning' : 'ok') %>" style="width:<%= clusterResources.memory %>%"></div>
+            <span class="value"><%= clusterResources.memory %>%</span>
+          </div>
+        </div>
+        <% } %>
+      </div>
+    </div>
+    <% } else { %>
+    <!-- Cluster Summary (Proxmox-Style) - Fallback -->
     <div class="cluster-summary" role="region" aria-label="Cluster-Zusammenfassung">
       <!-- Node Status -->
       <div class="cluster-section cluster-nodes">
@@ -87,6 +117,7 @@
         <a href="/nodes/add" class="btn btn-primary">+ Node</a>
       </div>
     </div>
+    <% } %>
 
     <% if (nodes.length === 0) { %>
       <% if (typeof tagFilter !== 'undefined' && tagFilter) { %>
@@ -321,126 +352,51 @@
 
       <!-- Flat List View -->
       <div class="node-list" id="nodeListFlat">
-        <div class="node-list-header">
-          <div class="node-list-col-status"></div>
-          <div class="node-list-col-icon"></div>
-          <div class="node-list-col-name">Name</div>
-          <div class="node-list-col-host">Host</div>
-          <div class="node-list-col-uptime">Uptime</div>
-          <div class="node-list-col-metrics">CPU</div>
-          <div class="node-list-col-metrics">RAM</div>
-          <div class="node-list-col-metrics">Disk</div>
-          <div class="node-list-col-count">VMs</div>
-          <div class="node-list-col-count">Containers</div>
-          <div class="node-list-col-type">Typ</div>
-          <div class="node-list-col-actions"></div>
-        </div>
 
         <% nodes.forEach(function(node) {
           var stats = statsMap[node.id] || {};
+          var nodeStatus = node.online ? 'online' : 'offline';
+          var cpuPercent = Math.round(stats.cpu_percent || 0);
+          var memPercent = Math.round(stats.ram_percent || 0);
+          var cpuClass = cpuPercent >= 80 ? 'critical' : (cpuPercent >= 60 ? 'warning' : 'ok');
+          var memClass = memPercent >= 80 ? 'critical' : (memPercent >= 60 ? 'warning' : 'ok');
+          var vmCount = (stats.vms_running || 0) + (stats.cts_running || 0);
         %>
-          <div class="node-list-row"
-               data-node-id="<%= node.id %>"
-               data-name="<%= node.name.toLowerCase() %>"
-               data-type="<%= node.node_type || 'unknown' %>"
-               data-status="<%= node.online ? 'online' : 'offline' %>"
-               data-cpu="<%= stats.cpu_percent || 0 %>"
-               data-ram="<%= stats.ram_percent || 0 %>"
-               data-disk="<%= stats.disk_percent || 0 %>"
-               data-vms="<%= (stats.vms_running || 0) + (stats.cts_running || 0) %>"
-               data-containers="<%= stats.containers_running || 0 %>"
-               data-uptime="<%= stats.uptime_seconds || 0 %>"
-               data-tags="<%= node.tags || '' %>">
-            <div class="node-list-status">
-              <span class="node-list-status-dot <%= node.online ? 'online' : 'offline' %>"></span>
-            </div>
-            <div class="node-list-icon">
-              <%- include('partials/node-type-icon', { nodeType: node.node_type || 'unknown', size: 22 }) %>
-            </div>
-            <div class="node-list-name">
-              <a href="/nodes/<%= node.id %>"><%= node.name %></a>
-              <span class="node-list-host-mobile"><%= node.host %></span>
-            </div>
-            <div class="node-list-host"><%= node.host %></div>
-            <div class="node-list-uptime">
-              <% if (node.online && stats.uptime_seconds) {
-                var uptimeDays = Math.floor(stats.uptime_seconds / 86400);
-                var uptimeHours = Math.floor((stats.uptime_seconds % 86400) / 3600);
-                var uptimeMins = Math.floor((stats.uptime_seconds % 3600) / 60);
-                var uptimeDisplay = uptimeDays > 0 ? (uptimeDays + 'd ' + uptimeHours + 'h') : (uptimeHours > 0 ? (uptimeHours + 'h ' + uptimeMins + 'm') : (uptimeMins + 'm'));
-              %>
-                <span class="uptime-value"><%= uptimeDisplay %></span>
-              <% } else { %>
-                <span class="uptime-na">-</span>
-              <% } %>
-            </div>
-            <div class="node-list-metric pulse-metric">
-              <% if (!node.online) { %>
-                <span class="metric-na">-</span>
-              <% } else { %>
-                <%
-                  var cpuClass = (stats.cpu_percent || 0) >= 95 ? 'critical' : (stats.cpu_percent || 0) >= 80 ? 'warning' : 'ok';
-                %>
-                <span class="metric-percent <%= cpuClass %>"><%= Math.round(stats.cpu_percent || 0) %>%</span>
-                <% if (stats.cpu_cores) { %>
-                  <span class="metric-detail">(<%= stats.cpu_cores %> cores)</span>
-                <% } %>
-              <% } %>
-            </div>
-            <div class="node-list-metric pulse-metric">
-              <% if (!node.online) { %>
-                <span class="metric-na">-</span>
-              <% } else { %>
-                <%
-                  var ramClass = (stats.ram_percent || 0) >= 95 ? 'critical' : (stats.ram_percent || 0) >= 85 ? 'warning' : 'ok';
-                  var ramUsed = stats.ram_used_bytes ? formatBytes(stats.ram_used_bytes) : '?';
-                  var ramTotal = stats.ram_total_bytes ? formatBytes(stats.ram_total_bytes) : '?';
-                %>
-                <span class="metric-percent <%= ramClass %>"><%= Math.round(stats.ram_percent || 0) %>%</span>
-                <% if (stats.ram_total_bytes) { %>
-                  <span class="metric-detail">(<%= ramUsed %>/<%= ramTotal %>)</span>
-                <% } %>
-              <% } %>
-            </div>
-            <div class="node-list-metric pulse-metric">
-              <% if (!node.online) { %>
-                <span class="metric-na">-</span>
-              <% } else { %>
-                <%
-                  var diskClass = (stats.disk_percent || 0) >= 95 ? 'critical' : (stats.disk_percent || 0) >= 80 ? 'warning' : 'ok';
-                  var diskUsed = stats.disk_used_bytes ? formatBytes(stats.disk_used_bytes) : '?';
-                  var diskTotal = stats.disk_total_bytes ? formatBytes(stats.disk_total_bytes) : '?';
-                %>
-                <span class="metric-percent <%= diskClass %>"><%= Math.round(stats.disk_percent || 0) %>%</span>
-                <% if (stats.disk_total_bytes) { %>
-                  <span class="metric-detail">(<%= diskUsed %>/<%= diskTotal %>)</span>
-                <% } %>
-              <% } %>
-            </div>
-            <div class="node-list-count">
-              <%
-                var vmCount = (stats.vms_running || 0) + (stats.cts_running || 0);
-              %>
-              <% if (vmCount > 0) { %>
-                <span class="count-badge"><%= vmCount %></span>
-              <% } else { %>
-                <span class="count-na">-</span>
-              <% } %>
-            </div>
-            <div class="node-list-count">
-              <% if (stats.containers_running && stats.containers_running > 0) { %>
-                <span class="count-badge"><%= stats.containers_running %></span>
-              <% } else { %>
-                <span class="count-na">-</span>
-              <% } %>
-            </div>
-            <div class="node-list-type"><span class="node-type-badge <%= node.node_type || 'unknown' %>"><%= node.node_type || 'unknown' %></span></div>
-            <div class="node-list-actions">
-              <a href="/nodes/<%= node.id %>" class="node-list-action" title="Details">
-                <span class="icon-arrow"></span>
-              </a>
-            </div>
-          </div>
+          <a href="/nodes/<%= node.id %>" class="node-row-pulse <%= nodeStatus %>"
+             data-node-id="<%= node.id %>"
+             data-name="<%= node.name.toLowerCase() %>"
+             data-type="<%= node.node_type || 'unknown' %>"
+             data-status="<%= nodeStatus %>"
+             data-cpu="<%= cpuPercent %>"
+             data-ram="<%= memPercent %>"
+             data-disk="<%= Math.round(stats.disk_percent || 0) %>"
+             data-vms="<%= vmCount %>"
+             data-containers="<%= stats.containers_running || 0 %>"
+             data-uptime="<%= stats.uptime_seconds || 0 %>"
+             data-tags="<%= node.tags || '' %>">
+            <span class="node-tree-status <%= nodeStatus %>"></span>
+            <span class="node-name"><%= node.name %></span>
+            <span class="node-host"><%= node.host %></span>
+            <% if (!node.online) { %>
+              <div class="metric-bar-compact"><span class="value offline">-</span></div>
+              <div class="metric-bar-compact"><span class="value offline">-</span></div>
+            <% } else { %>
+              <div class="metric-bar-compact">
+                <div class="fill <%= cpuClass %>" style="width:<%= cpuPercent %>%"></div>
+                <span class="value"><%= cpuPercent %>%</span>
+              </div>
+              <div class="metric-bar-compact">
+                <div class="fill <%= memClass %>" style="width:<%= memPercent %>%"></div>
+                <span class="value"><%= memPercent %>%</span>
+              </div>
+            <% } %>
+            <% if (vmCount > 0) { %>
+              <span class="count-pill proxmox"><%= vmCount %> VMs</span>
+            <% } %>
+            <% if (stats.containers_running && stats.containers_running > 0) { %>
+              <span class="count-pill docker"><%= stats.containers_running %> CT</span>
+            <% } %>
+          </a>
         <%
           });
         %>
@@ -752,7 +708,7 @@ function filterNodes() {
   var searchInput = document.getElementById('nodeSearchInput');
   var typeFilter = document.getElementById('nodeTypeFilter');
   var statusFilter = document.getElementById('nodeStatusFilter');
-  var rows = document.querySelectorAll('.node-list-row');
+  var rows = document.querySelectorAll('.node-list-row, .node-row-pulse');
   var visibleCount = 0;
 
   var searchQuery = searchInput ? searchInput.value : '';
@@ -778,10 +734,11 @@ function filterNodes() {
     // Advanced search with parser
     if (parsedQuery) {
       // Build node object from data attributes and stats
+      var hostEl = row.querySelector('.node-list-host') || row.querySelector('.node-host');
       var nodeData = {
         id: nodeId,
         name: row.getAttribute('data-name') || '',
-        host: row.querySelector('.node-list-host') ? row.querySelector('.node-list-host').textContent : '',
+        host: hostEl ? hostEl.textContent : '',
         node_type: type,
         online: status === 'online',
         cpu_percent: parseFloat(row.getAttribute('data-cpu')) || 0,
@@ -1080,56 +1037,91 @@ function updateStatsCards(nodes) {
   if (offlineEl) offlineEl.textContent = offline;
 }
 
-// Update List-View (Mini-Bars)
+// Update List-View (Mini-Bars and Compact Bars)
 function updateListView(nodes) {
   for (var i = 0; i < nodes.length; i++) {
     var node = nodes[i];
-    var row = document.querySelector('.node-list-row[data-node-id="' + node.id + '"]');
+    var row = document.querySelector('.node-list-row[data-node-id="' + node.id + '"]') ||
+              document.querySelector('.node-row-pulse[data-node-id="' + node.id + '"]');
     if (!row) continue;
 
-    // Status Dot
-    var statusDot = row.querySelector('.node-list-status-dot');
-    if (statusDot) {
-      statusDot.className = 'node-list-status-dot ' + (node.online ? 'online' : 'offline');
-    }
-
-    // Mini-Bars (CPU, RAM, Disk)
-    var metrics = row.querySelectorAll('.node-list-metric');
-
-    // CPU (index 0)
-    if (metrics[0] && node.online) {
-      var cpuPercent = Math.round(node.cpu_percent || 0);
-      var cpuBar = metrics[0].querySelector('.mini-bar-fill');
-      var cpuValue = metrics[0].querySelector('.mini-bar-value');
-      if (cpuBar) {
-        cpuBar.className = 'mini-bar-fill ' + getBarClass(cpuPercent, thresholds.cpu_warning, thresholds.cpu_critical);
-        cpuBar.style.width = Math.min(cpuPercent, 100) + '%';
+    // Update status class for pulse rows
+    if (row.classList.contains('node-row-pulse')) {
+      row.className = 'node-row-pulse ' + (node.online ? 'online' : 'offline');
+      var statusDot = row.querySelector('.node-tree-status');
+      if (statusDot) {
+        statusDot.className = 'node-tree-status ' + (node.online ? 'online' : 'offline');
       }
-      if (cpuValue) cpuValue.textContent = cpuPercent + '%';
-    }
 
-    // RAM (index 1)
-    if (metrics[1] && node.online) {
-      var ramPercent = Math.round(node.ram_percent || 0);
-      var ramBar = metrics[1].querySelector('.mini-bar-fill');
-      var ramValue = metrics[1].querySelector('.mini-bar-value');
-      if (ramBar) {
-        ramBar.className = 'mini-bar-fill ' + getBarClass(ramPercent, thresholds.ram_warning, thresholds.ram_critical);
-        ramBar.style.width = Math.min(ramPercent, 100) + '%';
-      }
-      if (ramValue) ramValue.textContent = ramPercent + '%';
-    }
+      // Update metric bars (CPU, RAM)
+      var compactBars = row.querySelectorAll('.metric-bar-compact');
+      if (compactBars.length >= 2 && node.online) {
+        var cpuPercent = Math.round(node.cpu_percent || 0);
+        var ramPercent = Math.round(node.ram_percent || 0);
 
-    // Disk (index 2)
-    if (metrics[2] && node.online) {
-      var diskPercent = Math.round(node.disk_percent || 0);
-      var diskBar = metrics[2].querySelector('.mini-bar-fill');
-      var diskValue = metrics[2].querySelector('.mini-bar-value');
-      if (diskBar) {
-        diskBar.className = 'mini-bar-fill ' + getBarClass(diskPercent, thresholds.disk_warning, thresholds.disk_critical);
-        diskBar.style.width = Math.min(diskPercent, 100) + '%';
+        // CPU Bar
+        var cpuFill = compactBars[0].querySelector('.fill');
+        var cpuValue = compactBars[0].querySelector('.value');
+        if (cpuFill && cpuValue) {
+          cpuFill.className = 'fill ' + getBarClass(cpuPercent, thresholds.cpu_warning, thresholds.cpu_critical);
+          cpuFill.style.width = Math.min(cpuPercent, 100) + '%';
+          cpuValue.textContent = cpuPercent + '%';
+        }
+
+        // RAM Bar
+        var ramFill = compactBars[1].querySelector('.fill');
+        var ramValue = compactBars[1].querySelector('.value');
+        if (ramFill && ramValue) {
+          ramFill.className = 'fill ' + getBarClass(ramPercent, thresholds.ram_warning, thresholds.ram_critical);
+          ramFill.style.width = Math.min(ramPercent, 100) + '%';
+          ramValue.textContent = ramPercent + '%';
+        }
       }
-      if (diskValue) diskValue.textContent = diskPercent + '%';
+    } else {
+      // Legacy node-list-row support
+      var statusDot = row.querySelector('.node-list-status-dot');
+      if (statusDot) {
+        statusDot.className = 'node-list-status-dot ' + (node.online ? 'online' : 'offline');
+      }
+
+      // Mini-Bars (CPU, RAM, Disk)
+      var metrics = row.querySelectorAll('.node-list-metric');
+
+      // CPU (index 0)
+      if (metrics[0] && node.online) {
+        var cpuPercent = Math.round(node.cpu_percent || 0);
+        var cpuBar = metrics[0].querySelector('.mini-bar-fill');
+        var cpuValue = metrics[0].querySelector('.mini-bar-value');
+        if (cpuBar) {
+          cpuBar.className = 'mini-bar-fill ' + getBarClass(cpuPercent, thresholds.cpu_warning, thresholds.cpu_critical);
+          cpuBar.style.width = Math.min(cpuPercent, 100) + '%';
+        }
+        if (cpuValue) cpuValue.textContent = cpuPercent + '%';
+      }
+
+      // RAM (index 1)
+      if (metrics[1] && node.online) {
+        var ramPercent = Math.round(node.ram_percent || 0);
+        var ramBar = metrics[1].querySelector('.mini-bar-fill');
+        var ramValue = metrics[1].querySelector('.mini-bar-value');
+        if (ramBar) {
+          ramBar.className = 'mini-bar-fill ' + getBarClass(ramPercent, thresholds.ram_warning, thresholds.ram_critical);
+          ramBar.style.width = Math.min(ramPercent, 100) + '%';
+        }
+        if (ramValue) ramValue.textContent = ramPercent + '%';
+      }
+
+      // Disk (index 2)
+      if (metrics[2] && node.online) {
+        var diskPercent = Math.round(node.disk_percent || 0);
+        var diskBar = metrics[2].querySelector('.mini-bar-fill');
+        var diskValue = metrics[2].querySelector('.mini-bar-value');
+        if (diskBar) {
+          diskBar.className = 'mini-bar-fill ' + getBarClass(diskPercent, thresholds.disk_warning, thresholds.disk_critical);
+          diskBar.style.width = Math.min(diskPercent, 100) + '%';
+        }
+        if (diskValue) diskValue.textContent = diskPercent + '%';
+      }
     }
   }
 }

@@ -19,6 +19,14 @@
   }
 %>
 <aside class="side-panel" id="sidePanel">
+  <!-- Search Input -->
+  <div class="side-panel-search">
+    <input type="text"
+           placeholder="Suche... (/)"
+           id="sidebarSearch"
+           aria-label="Nodes durchsuchen">
+  </div>
+
   <div class="side-panel-section">
     <div class="side-panel-section-header">
       <span class="side-panel-section-title">Nodes (<%= sidebarStats.total %>)</span>
@@ -137,4 +145,43 @@
     <div class="side-panel-footer-text">nodepulse v0.4.3</div>
     <div class="side-panel-footer-text">by OidaNice</div>
   </div>
+
+  <script>
+(function() {
+  var searchInput = document.getElementById('sidebarSearch');
+  if (!searchInput) return;
+
+  // "/" Shortcut
+  document.addEventListener('keydown', function(e) {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      searchInput.focus();
+    }
+    if (e.key === 'Escape' && document.activeElement === searchInput) {
+      searchInput.blur();
+      searchInput.value = '';
+      filterSidebarNodes('');
+    }
+  });
+
+  // Filter on input
+  searchInput.addEventListener('input', function(e) {
+    filterSidebarNodes(e.target.value);
+  });
+
+  function filterSidebarNodes(query) {
+    var items = document.querySelectorAll('.node-tree-item');
+    var lowerQuery = query.toLowerCase();
+
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var name = item.querySelector('.node-tree-name');
+      if (name) {
+        var text = name.textContent.toLowerCase();
+        item.style.display = text.indexOf(lowerQuery) !== -1 ? '' : 'none';
+      }
+    }
+  }
+})();
+  </script>
 </aside>

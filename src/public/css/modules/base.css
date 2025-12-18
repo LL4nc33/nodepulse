@@ -87,6 +87,29 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* Z-Index Scale */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+
+  /* Extended Gray Palette */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* Glow Shadows for Status */
+  --shadow-glow-success: 0 0 8px rgba(95, 163, 50, 0.4);
+  --shadow-glow-warning: 0 0 8px rgba(164, 125, 91, 0.4);
+  --shadow-glow-error: 0 0 8px rgba(229, 62, 62, 0.4);
 }
 
 /* Light Mode - Brown Accent */
@@ -827,6 +850,72 @@ a:focus {
 .np-gap-1 { gap: var(--space-sm); }
 .np-gap-2 { gap: var(--space-md); }
 .np-gap-3 { gap: var(--space-lg); }
+
+/* =====================================================
+   Animations (ES5/Old Browser Compatible)
+   ===================================================== */
+
+@-webkit-keyframes fadeInUp {
+  from {
+    opacity: 0;
+    -webkit-transform: translateY(10px);
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    -webkit-transform: translateY(10px);
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  -webkit-animation: fadeInUp 0.3s ease;
+  animation: fadeInUp 0.3s ease;
+}
+
+@-webkit-keyframes slideInLeft {
+  from {
+    opacity: 0;
+    -webkit-transform: translateX(-20px);
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    -webkit-transform: translateX(-20px);
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  -webkit-animation: slideInLeft 0.3s ease;
+  animation: slideInLeft 0.3s ease;
+}
 
 /* Mobile Responsive for unified components */
 @media (max-width: 768px) {

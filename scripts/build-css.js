@@ -15,6 +15,7 @@ const BACKUP_FILE = path.join(__dirname, '../src/public/css/style-backup.css');
 const modules = [
   'base.css',
   'layout.css',
+  'pulse-components.css',
   'components.css',
   'dashboard.css',
   'detail-pages.css',

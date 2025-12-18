@@ -1826,3 +1826,166 @@
   }
 
 }
+
+/* =====================================================
+   Pulse-Style Node Rows
+   ===================================================== */
+
+.node-row-pulse {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 0.625rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  -webkit-transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease;
+  min-height: 52px;
+}
+
+.node-row-pulse:hover {
+  background: var(--color-accent-bg);
+}
+
+.node-row-pulse.warning {
+  border-left: 3px solid var(--color-warning);
+  padding-left: calc(1rem - 3px);
+}
+
+.node-row-pulse.critical {
+  border-left: 3px solid var(--color-error);
+  padding-left: calc(1rem - 3px);
+  background: var(--color-error-bg);
+}
+
+/* Compact Metric Bars */
+.metric-bar-compact {
+  width: 80px;
+  height: 18px;
+  background: var(--color-bg);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-bar-compact .fill {
+  height: 100%;
+  border-radius: 3px;
+  -webkit-transition: width 0.3s ease;
+  transition: width 0.3s ease;
+}
+
+.metric-bar-compact .fill.ok { background: var(--color-success); }
+.metric-bar-compact .fill.warning { background: var(--color-warning); }
+.metric-bar-compact .fill.critical { background: var(--color-error); }
+
+.metric-bar-compact .value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-text-heading);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Count Pills (VMs, Containers) */
+.count-pill {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+  margin-left: 0.25rem;
+}
+
+.count-pill.docker {
+  background: rgba(13, 183, 237, 0.15);
+  color: #0db7ed;
+}
+
+.count-pill.proxmox {
+  background: rgba(230, 130, 0, 0.15);
+  color: #e68200;
+}
+
+/* Cluster Bar (kompakte Summary) */
+.cluster-bar {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cluster-stats {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cluster-stats .stat-total {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.cluster-stats .stat-online {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.cluster-stats .stat-offline {
+  color: var(--color-error);
+  font-weight: 500;
+}
+
+.cluster-resources {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  gap: 1.5rem;
+}
+
+.resource-metric {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.resource-metric .label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  min-width: 40px;
+}
