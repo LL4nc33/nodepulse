@@ -468,11 +468,7 @@
     <div class="section-content">
       <% if (!health) { %>
         <div class="empty-state compact">
-          <p>Noch kein Health-Check durchgefuehrt.</p>
-          <button class="btn btn-primary btn-sm btn-health-check" onclick="runHealthCheck(<%= node.id %>)">
-            <span class="btn-text">Health-Check starten</span>
-            <span class="btn-loading"><span class="spinner"></span></span>
-          </button>
+          <p>Noch kein Health-Check durchgefuehrt. Klicke oben auf <strong>Health</strong> um einen Check zu starten.</p>
         </div>
       <% } else { %>
         <!-- Health Score Overview -->
