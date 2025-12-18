@@ -108,27 +108,27 @@
 <%- include('../partials/node-detail/modals') %>
 
 <!-- Edit Sidepanel -->
-<div class="edit-panel-overlay" id="editPanelOverlay" onclick="closeEditPanel()"></div>
-<aside class="edit-panel" id="editPanel">
-  <div class="edit-panel-header">
+<div class="right-panel-overlay" id="editPanelOverlay" onclick="closeEditPanel()"></div>
+<aside class="right-panel" id="editPanel">
+  <div class="right-panel-header">
     <h2>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
       </svg>
       Node bearbeiten
     </h2>
-    <button class="edit-panel-close" onclick="closeEditPanel()" title="Schliessen">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <button class="right-panel-close" onclick="closeEditPanel()" title="Schliessen">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
       </svg>
     </button>
   </div>
 
-  <form class="edit-panel-form" id="editNodeForm" onsubmit="saveNode(event)">
-    <div class="edit-panel-body">
+  <form id="editNodeForm" onsubmit="saveNode(event)">
+    <div class="right-panel-body">
       <!-- Basic Info -->
-      <div class="form-section">
+      <div class="right-panel-section">
         <h3>Grundeinstellungen</h3>
         <div class="form-group">
           <label for="edit-name">Name</label>
@@ -141,9 +141,9 @@
       </div>
 
       <!-- SSH Settings -->
-      <div class="form-section">
+      <div class="right-panel-section">
         <h3>SSH Verbindung</h3>
-        <div class="form-row-compact">
+        <div class="form-row">
           <div class="form-group">
             <label for="edit-ssh_user">User</label>
             <input type="text" id="edit-ssh_user" name="ssh_user" value="<%= node.ssh_user %>" required maxlength="64">
@@ -166,17 +166,19 @@
       </div>
 
       <!-- Monitoring -->
-      <div class="form-section">
+      <div class="right-panel-section">
         <h3>Monitoring</h3>
-        <div class="form-row-compact">
+        <div class="form-row">
           <div class="form-group">
-            <label class="checkbox-inline">
-              <input type="checkbox" id="edit-monitoring_enabled" name="monitoring_enabled" <%= node.monitoring_enabled ? 'checked' : '' %>>
-              <span>Monitoring aktiv</span>
-            </label>
+            <div class="checkbox-row">
+              <label>
+                <input type="checkbox" id="edit-monitoring_enabled" name="monitoring_enabled" <%= node.monitoring_enabled ? 'checked' : '' %>>
+                <span>Monitoring aktiv</span>
+              </label>
+            </div>
           </div>
           <div class="form-group form-group-small">
-            <label for="edit-monitoring_interval">Interval (s)</label>
+            <label for="edit-monitoring_interval">Interval</label>
             <input type="number" id="edit-monitoring_interval" name="monitoring_interval"
                    value="<%= node.monitoring_interval %>" min="5" max="3600">
           </div>
@@ -184,7 +186,7 @@
       </div>
 
       <!-- Notes -->
-      <div class="form-section">
+      <div class="right-panel-section">
         <h3>Notizen</h3>
         <div class="form-group">
           <textarea id="edit-notes" name="notes" rows="3" placeholder="Optionale Notizen..."><%= node.notes || '' %></textarea>
@@ -192,15 +194,15 @@
       </div>
 
       <!-- Danger Zone -->
-      <details class="danger-zone-collapsible">
+      <details class="right-panel-danger">
         <summary>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
             <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
           Gefahrenzone
         </summary>
-        <div class="danger-zone-content">
+        <div class="right-panel-danger-content">
           <p>Node und alle zugehoerigen Daten unwiderruflich loeschen.</p>
           <button type="button" class="btn btn-danger btn-sm" onclick="deleteNode(<%= node.id %>, '<%= node.name %>')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -212,7 +214,7 @@
       </details>
     </div>
 
-    <div class="edit-panel-footer">
+    <div class="right-panel-footer">
       <button type="button" class="btn btn-secondary" onclick="closeEditPanel()">Abbrechen</button>
       <button type="submit" class="btn btn-primary" id="editSaveBtn">
         <span class="btn-text">Speichern</span>
