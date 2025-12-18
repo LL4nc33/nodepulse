@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-18T02:51:06.744Z
+   Generated: 2025-12-18T02:56:04.469Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -6350,7 +6350,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: docker.css (808 lines)
+   FROM: docker.css (893 lines)
    ============================================================ */
 
    Docker Management
@@ -6400,7 +6400,7 @@ a:focus {
   margin-bottom: 0.75rem;
 }
 
-/* Docker Summary Cards */
+/* Docker Summary Cards - Docker Desktop Style */
 .docker-summary {
   display: -webkit-box;
   display: -webkit-flex;
@@ -6408,39 +6408,51 @@ a:focus {
   margin-bottom: 1.5rem;
   -webkit-flex-wrap: wrap;
   flex-wrap: wrap;
-  margin-left: -0.5rem;
-  margin-right: -0.5rem;
-}
-
-.docker-summary > * {
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
 }
 
 .summary-card {
-  background: var(--color-bg-elevated);
-  border-radius: 8px;
-  padding: 1rem 1.5rem;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+  padding: 1rem 1.25rem;
   text-align: center;
-  min-width: 100px;
-  -webkit-flex: 1 1 auto;
-  flex: 1 1 auto;
+  min-width: 90px;
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 calc(20% - 0.75rem);
+  flex: 1 1 calc(20% - 0.75rem);
+  -webkit-transition: border-color var(--transition-fast, 150ms ease), box-shadow var(--transition-fast, 150ms ease);
+  transition: border-color var(--transition-fast, 150ms ease), box-shadow var(--transition-fast, 150ms ease);
+}
+
+.summary-card:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card:first-child {
+  border-left: 3px solid var(--color-success);
 }
 
 .summary-value {
   display: block;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-accent-hover);
+  font-size: var(--font-size-xl, 1.5rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text);
   line-height: 1.2;
+}
+
+.summary-card:first-child .summary-value {
+  color: var(--color-success);
 }
 
 .summary-label {
   display: block;
-  font-size: 0.875rem;
+  font-size: var(--font-size-xs, 0.6875rem);
   color: var(--color-text-muted);
   margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Docker Sections */
@@ -6456,34 +6468,42 @@ a:focus {
   padding-bottom: 0.5rem;
 }
 
-/* Docker Tables */
+/* Docker Tables - Docker Desktop Style */
 .docker-table-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   background: var(--color-bg-elevated);
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
 }
 
 .docker-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9375rem;
+  font-size: var(--font-size-base, 0.875rem);
 }
 
 .docker-table th,
 .docker-table td {
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 1rem;
   text-align: left;
   border-bottom: 1px solid var(--color-border-light);
+  vertical-align: middle;
 }
 
 .docker-table th {
   background: var(--color-bg-surface);
   color: var(--color-text-muted);
-  font-weight: 600;
-  font-size: 0.8125rem;
+  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--font-size-xs, 0.6875rem);
   text-transform: uppercase;
-  letter-spacing: 0.025em;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.docker-table tbody tr {
+  -webkit-transition: background-color var(--transition-fast, 150ms ease);
+  transition: background-color var(--transition-fast, 150ms ease);
 }
 
 .docker-table tr:last-child td {
@@ -6494,36 +6514,61 @@ a:focus {
   background: var(--color-accent-bg);
 }
 
-/* Container Row States */
+/* Container Row States - Docker Desktop Style */
+.container-row {
+  border-left: 3px solid transparent;
+}
+
 .container-row.running {
-  border-left: 3px solid var(--color-accent-hover);
+  border-left-color: var(--color-success);
 }
 
 .container-row.exited {
-  border-left: 3px solid var(--color-error);
+  border-left-color: var(--color-error);
+  opacity: 0.8;
 }
 
 .container-row.paused {
-  border-left: 3px solid var(--color-warning);
+  border-left-color: var(--color-warning);
 }
 
 .container-row.created {
-  border-left: 3px solid var(--color-text-muted);
+  border-left-color: var(--color-text-muted);
 }
 
-/* State Badges */
+/* State Badges - Docker Desktop Style Pills */
 .state-badge {
-  display: inline-block;
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.375rem;
   padding: 0.25rem 0.625rem;
-  border-radius: 4px;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  border-radius: 12px;
+  font-size: var(--font-size-xs, 0.6875rem);
+  font-weight: var(--font-weight-semibold, 600);
   text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.state-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
 }
 
 .state-badge.running {
-  background: var(--color-accent-bg);
-  color: var(--color-accent);
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-success);
+}
+
+.state-badge.running::before {
+  background: var(--color-success);
 }
 
 .state-badge.exited {
@@ -6531,14 +6576,26 @@ a:focus {
   color: var(--color-error-text);
 }
 
+.state-badge.exited::before {
+  background: var(--color-error);
+}
+
 .state-badge.paused {
   background: var(--color-warning-bg);
   color: var(--color-warning);
 }
 
+.state-badge.paused::before {
+  background: var(--color-warning);
+}
+
 .state-badge.created {
   background: var(--color-accent-bg);
   color: var(--color-text-muted);
+}
+
+.state-badge.created::before {
+  background: var(--color-text-muted);
 }
 
 /* Usage Badge */
@@ -6570,25 +6627,26 @@ a:focus {
   font-family: monospace;
 }
 
-/* Container Actions */
+/* Container Actions - Docker Desktop Style */
 .container-actions {
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
+  gap: 0.25rem;
+  opacity: 0.6;
+  -webkit-transition: opacity var(--transition-fast, 150ms ease);
+  transition: opacity var(--transition-fast, 150ms ease);
 }
 
-.container-actions > * {
-  margin-right: 0.5rem;
+.container-row:hover .container-actions {
+  opacity: 1;
 }
 
-.container-actions > *:last-child {
-  margin-right: 0;
-}
-
-/* Icon Buttons */
+/* Icon Buttons - Compact Docker Style */
 .btn-icon {
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   padding: 0;
   display: -webkit-box;
   display: -webkit-flex;
@@ -6599,6 +6657,33 @@ a:focus {
   -webkit-box-align: center;
   -webkit-align-items: center;
   align-items: center;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  -webkit-transition: background-color var(--transition-fast, 150ms ease), color var(--transition-fast, 150ms ease);
+  transition: background-color var(--transition-fast, 150ms ease), color var(--transition-fast, 150ms ease);
+}
+
+.btn-icon:hover {
+  background: var(--color-accent-bg);
+  color: var(--color-text);
+}
+
+.btn-icon.btn-danger:hover {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
+.btn-icon.btn-success:hover {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-success);
+}
+
+.btn-icon.btn-warning:hover {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
 }
 
 .icon-start,
