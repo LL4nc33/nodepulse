@@ -2,8 +2,8 @@
 
 Ein leichtgewichtiges Homelab Dashboard zur Verwaltung von Servern, Proxmox-Hosts und Docker-Containern.
 
-![Version](https://img.shields.io/badge/version-0.4.5-green)
-![Status](https://img.shields.io/badge/status-alpha-yellow)
+![Version](https://img.shields.io/badge/version-0.5.0-green)
+![Status](https://img.shields.io/badge/status-beta-blue)
 ![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
@@ -24,10 +24,11 @@ Ein leichtgewichtiges Homelab Dashboard zur Verwaltung von Servern, Proxmox-Host
 ## Features
 
 ### Proxmox Integration
-- VMs/Container verwalten (Start, Stop, Clone, Snapshot, Resize)
+- VMs/Container verwalten (Start, Stop, Shutdown, Reboot)
+- Snapshots erstellen und loeschen
 - **LVM Storage Management** - VGs, Thin Pools erstellen und in Proxmox registrieren
 - **Backup & Restore** - vzdump Backups erstellen, loeschen, wiederherstellen
-- VM/CT Erstellung direkt aus dem UI
+- **Task History** - Alle Proxmox Tasks mit Live-Logs und Status
 
 ### Docker Management
 - Container auflisten, starten, stoppen, Logs anzeigen
@@ -78,43 +79,6 @@ np exec <node> "uptime"      # Befehl ausfuehren
 
 ---
 
-## Roadmap
-
-### Abgeschlossen
-
-- **v0.4.5** - Backup & Restore (vzdump erstellen, loeschen, wiederherstellen)
-- **v0.4.4** - LVM Storage Management (VGs, Thin Pools, Proxmox-Registrierung)
-- **v0.4.0** - TOON Format (81% kleinere Responses), Performance-Optimierungen
-- **v0.3.0** - UI Modernization, Terminal Panel, Health-Checks
-
-### In Arbeit: Proxmox Advanced Features
-
-- [x] **Sprint 1:** LVM Storage Management
-- [x] **Sprint 2:** Backup & Restore
-- [ ] **Sprint 3:** Task History & Logs
-- [ ] **Sprint 4:** Live Migration
-- [ ] **Sprint 5:** Firewall Management
-
-### Geplant
-
-**v0.6.0 - Console & Compose**
-- VNC/SPICE Console fuer VMs
-- Docker Compose Support
-- Docker Exec (Shell in Container)
-
-**v0.7.0 - Advanced Features**
-- Backup-Scheduling
-- Multi-User mit Rollen
-- API-Tokens
-
-**v1.0.0 - Stable Release**
-- Cluster-Unterstuetzung
-- HA (High Availability)
-- Audit-Log
-- Plugin-System
-
----
-
 ## Tech Stack
 
 | Komponente | Technologie |
@@ -123,6 +87,35 @@ np exec <node> "uptime"      # Befehl ausfuehren
 | Frontend | EJS, Vanilla JS (ES5), CSS3 |
 | SSH | ssh2 |
 | Charts | Chart.js |
+
+---
+
+## Roadmap
+
+### Abgeschlossen
+
+- **v0.5.0** - Task History & Logs, Storage-Tab Fixes
+- **v0.4.5** - Backup & Restore (vzdump erstellen, loeschen, wiederherstellen)
+- **v0.4.4** - LVM Storage Management (VGs, Thin Pools, Proxmox-Registrierung)
+- **v0.4.0** - TOON Format (81% kleinere Responses), Performance-Optimierungen
+- **v0.3.0** - UI Modernization, Terminal Panel, Health-Checks
+
+### Geplant
+
+**v0.6.0 - Console & Compose**
+- VNC/SPICE Console fuer VMs
+- Docker Compose Support
+- Live Migration
+
+**v0.7.0 - Advanced Features**
+- Backup-Scheduling
+- Firewall Management
+- Multi-User mit Rollen
+
+**v1.0.0 - Stable Release**
+- Cluster-Unterstuetzung
+- Plugin-System
+- Audit-Log
 
 ---
 
