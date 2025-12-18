@@ -5,33 +5,85 @@
 
   <!-- Main Content -->
   <main class="main-panel" id="main-content">
-    <!-- Stats Cards -->
-    <div class="stats-cards">
-      <div class="stats-card">
-        <span class="stats-card-value"><%= stats.total %></span>
-        <span class="stats-card-label">Nodes</span>
+    <!-- Cluster Summary (Proxmox-Style) -->
+    <div class="cluster-summary">
+      <!-- Node Status -->
+      <div class="cluster-section cluster-nodes">
+        <div class="cluster-stat">
+          <span class="cluster-stat-value"><%= stats.total %></span>
+          <span class="cluster-stat-label">Nodes</span>
+        </div>
+        <div class="cluster-stat cluster-stat-online">
+          <span class="cluster-stat-dot online"></span>
+          <span class="cluster-stat-value"><%= stats.online %></span>
+          <span class="cluster-stat-label">Online</span>
+        </div>
+        <div class="cluster-stat cluster-stat-offline">
+          <span class="cluster-stat-dot offline"></span>
+          <span class="cluster-stat-value"><%= stats.offline %></span>
+          <span class="cluster-stat-label">Offline</span>
+        </div>
       </div>
-      <div class="stats-card stats-card-online">
-        <span class="stats-card-icon">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-            <circle cx="12" cy="12" r="10" fill="#10B981"/>
-            <path d="M8 12L11 15L16 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </span>
-        <span class="stats-card-value online"><%= stats.online %></span>
-        <span class="stats-card-label">Online</span>
+
+      <!-- CPU Summary -->
+      <div class="cluster-section cluster-metric">
+        <div class="cluster-metric-header">
+          <span class="cluster-metric-label">CPU</span>
+          <span class="cluster-metric-value <%= clusterStats.usedCpuPercent >= 95 ? 'critical' : clusterStats.usedCpuPercent >= 80 ? 'warning' : '' %>">
+            <%= clusterStats.usedCpuPercent %>%
+          </span>
+        </div>
+        <div class="cluster-metric-bar">
+          <div class="cluster-metric-fill <%= clusterStats.usedCpuPercent >= 95 ? 'critical' : clusterStats.usedCpuPercent >= 80 ? 'warning' : 'ok' %>"
+               style="width: <%= Math.min(clusterStats.usedCpuPercent, 100) %>%"></div>
+        </div>
+        <span class="cluster-metric-detail"><%= clusterStats.totalCpuCores %> cores</span>
       </div>
-      <div class="stats-card stats-card-offline">
-        <span class="stats-card-icon">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-            <circle cx="12" cy="12" r="10" fill="#EF4444"/>
-            <path d="M15 9L9 15M9 9L15 15" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </span>
-        <span class="stats-card-value offline"><%= stats.offline %></span>
-        <span class="stats-card-label">Offline</span>
+
+      <!-- RAM Summary -->
+      <div class="cluster-section cluster-metric">
+        <div class="cluster-metric-header">
+          <span class="cluster-metric-label">Memory</span>
+          <span class="cluster-metric-value <%= clusterStats.usedRamPercent >= 95 ? 'critical' : clusterStats.usedRamPercent >= 85 ? 'warning' : '' %>">
+            <%= clusterStats.usedRamPercent %>%
+          </span>
+        </div>
+        <div class="cluster-metric-bar">
+          <div class="cluster-metric-fill <%= clusterStats.usedRamPercent >= 95 ? 'critical' : clusterStats.usedRamPercent >= 85 ? 'warning' : 'ok' %>"
+               style="width: <%= Math.min(clusterStats.usedRamPercent, 100) %>%"></div>
+        </div>
+        <span class="cluster-metric-detail"><%= formatBytes(clusterStats.usedRamBytes) %> / <%= formatBytes(clusterStats.totalRamBytes) %></span>
       </div>
-      <div class="stats-cards-actions">
+
+      <!-- Disk Summary -->
+      <div class="cluster-section cluster-metric">
+        <div class="cluster-metric-header">
+          <span class="cluster-metric-label">Storage</span>
+          <span class="cluster-metric-value <%= clusterStats.usedDiskPercent >= 95 ? 'critical' : clusterStats.usedDiskPercent >= 80 ? 'warning' : '' %>">
+            <%= clusterStats.usedDiskPercent %>%
+          </span>
+        </div>
+        <div class="cluster-metric-bar">
+          <div class="cluster-metric-fill <%= clusterStats.usedDiskPercent >= 95 ? 'critical' : clusterStats.usedDiskPercent >= 80 ? 'warning' : 'ok' %>"
+               style="width: <%= Math.min(clusterStats.usedDiskPercent, 100) %>%"></div>
+        </div>
+        <span class="cluster-metric-detail"><%= formatBytes(clusterStats.usedDiskBytes) %> / <%= formatBytes(clusterStats.totalDiskBytes) %></span>
+      </div>
+
+      <!-- VMs & Containers -->
+      <div class="cluster-section cluster-counts">
+        <div class="cluster-count">
+          <span class="cluster-count-value"><%= clusterStats.totalVMs %></span>
+          <span class="cluster-count-label">VMs</span>
+        </div>
+        <div class="cluster-count">
+          <span class="cluster-count-value"><%= clusterStats.totalContainers %></span>
+          <span class="cluster-count-label">Container</span>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="cluster-section cluster-actions">
         <a href="/nodes/add" class="btn btn-primary">+ Node</a>
       </div>
     </div>
@@ -192,29 +244,48 @@
                 <span class="uptime-na">-</span>
               <% } %>
             </div>
-            <div class="node-list-metric">
-              <%- include('partials/progress-bar', {
-                progressValue: stats.cpu_percent,
-                thresholdWarning: 80,
-                thresholdCritical: 95,
-                offline: !node.online
-              }) %>
+            <div class="node-list-metric pulse-metric">
+              <% if (!node.online) { %>
+                <span class="metric-na">-</span>
+              <% } else { %>
+                <%
+                  var cpuClass = (stats.cpu_percent || 0) >= 95 ? 'critical' : (stats.cpu_percent || 0) >= 80 ? 'warning' : 'ok';
+                %>
+                <span class="metric-percent <%= cpuClass %>"><%= Math.round(stats.cpu_percent || 0) %>%</span>
+                <% if (stats.cpu_cores) { %>
+                  <span class="metric-detail">(<%= stats.cpu_cores %> cores)</span>
+                <% } %>
+              <% } %>
             </div>
-            <div class="node-list-metric">
-              <%- include('partials/progress-bar', {
-                progressValue: stats.ram_percent,
-                thresholdWarning: 85,
-                thresholdCritical: 95,
-                offline: !node.online
-              }) %>
+            <div class="node-list-metric pulse-metric">
+              <% if (!node.online) { %>
+                <span class="metric-na">-</span>
+              <% } else { %>
+                <%
+                  var ramClass = (stats.ram_percent || 0) >= 95 ? 'critical' : (stats.ram_percent || 0) >= 85 ? 'warning' : 'ok';
+                  var ramUsed = stats.ram_used_bytes ? formatBytes(stats.ram_used_bytes) : '?';
+                  var ramTotal = stats.ram_total_bytes ? formatBytes(stats.ram_total_bytes) : '?';
+                %>
+                <span class="metric-percent <%= ramClass %>"><%= Math.round(stats.ram_percent || 0) %>%</span>
+                <% if (stats.ram_total_bytes) { %>
+                  <span class="metric-detail">(<%= ramUsed %>/<%= ramTotal %>)</span>
+                <% } %>
+              <% } %>
             </div>
-            <div class="node-list-metric">
-              <%- include('partials/progress-bar', {
-                progressValue: stats.disk_percent,
-                thresholdWarning: 80,
-                thresholdCritical: 95,
-                offline: !node.online
-              }) %>
+            <div class="node-list-metric pulse-metric">
+              <% if (!node.online) { %>
+                <span class="metric-na">-</span>
+              <% } else { %>
+                <%
+                  var diskClass = (stats.disk_percent || 0) >= 95 ? 'critical' : (stats.disk_percent || 0) >= 80 ? 'warning' : 'ok';
+                  var diskUsed = stats.disk_used_bytes ? formatBytes(stats.disk_used_bytes) : '?';
+                  var diskTotal = stats.disk_total_bytes ? formatBytes(stats.disk_total_bytes) : '?';
+                %>
+                <span class="metric-percent <%= diskClass %>"><%= Math.round(stats.disk_percent || 0) %>%</span>
+                <% if (stats.disk_total_bytes) { %>
+                  <span class="metric-detail">(<%= diskUsed %>/<%= diskTotal %>)</span>
+                <% } %>
+              <% } %>
             </div>
             <div class="node-list-count">
               <%
@@ -303,29 +374,48 @@
                 <span class="uptime-na">-</span>
               <% } %>
             </div>
-            <div class="node-list-metric">
-              <%- include('partials/progress-bar', {
-                progressValue: stats.cpu_percent,
-                thresholdWarning: 80,
-                thresholdCritical: 95,
-                offline: !node.online
-              }) %>
+            <div class="node-list-metric pulse-metric">
+              <% if (!node.online) { %>
+                <span class="metric-na">-</span>
+              <% } else { %>
+                <%
+                  var cpuClass = (stats.cpu_percent || 0) >= 95 ? 'critical' : (stats.cpu_percent || 0) >= 80 ? 'warning' : 'ok';
+                %>
+                <span class="metric-percent <%= cpuClass %>"><%= Math.round(stats.cpu_percent || 0) %>%</span>
+                <% if (stats.cpu_cores) { %>
+                  <span class="metric-detail">(<%= stats.cpu_cores %> cores)</span>
+                <% } %>
+              <% } %>
             </div>
-            <div class="node-list-metric">
-              <%- include('partials/progress-bar', {
-                progressValue: stats.ram_percent,
-                thresholdWarning: 85,
-                thresholdCritical: 95,
-                offline: !node.online
-              }) %>
+            <div class="node-list-metric pulse-metric">
+              <% if (!node.online) { %>
+                <span class="metric-na">-</span>
+              <% } else { %>
+                <%
+                  var ramClass = (stats.ram_percent || 0) >= 95 ? 'critical' : (stats.ram_percent || 0) >= 85 ? 'warning' : 'ok';
+                  var ramUsed = stats.ram_used_bytes ? formatBytes(stats.ram_used_bytes) : '?';
+                  var ramTotal = stats.ram_total_bytes ? formatBytes(stats.ram_total_bytes) : '?';
+                %>
+                <span class="metric-percent <%= ramClass %>"><%= Math.round(stats.ram_percent || 0) %>%</span>
+                <% if (stats.ram_total_bytes) { %>
+                  <span class="metric-detail">(<%= ramUsed %>/<%= ramTotal %>)</span>
+                <% } %>
+              <% } %>
             </div>
-            <div class="node-list-metric">
-              <%- include('partials/progress-bar', {
-                progressValue: stats.disk_percent,
-                thresholdWarning: 80,
-                thresholdCritical: 95,
-                offline: !node.online
-              }) %>
+            <div class="node-list-metric pulse-metric">
+              <% if (!node.online) { %>
+                <span class="metric-na">-</span>
+              <% } else { %>
+                <%
+                  var diskClass = (stats.disk_percent || 0) >= 95 ? 'critical' : (stats.disk_percent || 0) >= 80 ? 'warning' : 'ok';
+                  var diskUsed = stats.disk_used_bytes ? formatBytes(stats.disk_used_bytes) : '?';
+                  var diskTotal = stats.disk_total_bytes ? formatBytes(stats.disk_total_bytes) : '?';
+                %>
+                <span class="metric-percent <%= diskClass %>"><%= Math.round(stats.disk_percent || 0) %>%</span>
+                <% if (stats.disk_total_bytes) { %>
+                  <span class="metric-detail">(<%= diskUsed %>/<%= diskTotal %>)</span>
+                <% } %>
+              <% } %>
             </div>
             <div class="node-list-count">
               <%
@@ -415,29 +505,48 @@
                 <span class="uptime-na">-</span>
               <% } %>
             </div>
-            <div class="node-list-metric">
-              <%- include('partials/progress-bar', {
-                progressValue: stats.cpu_percent,
-                thresholdWarning: 80,
-                thresholdCritical: 95,
-                offline: !node.online
-              }) %>
+            <div class="node-list-metric pulse-metric">
+              <% if (!node.online) { %>
+                <span class="metric-na">-</span>
+              <% } else { %>
+                <%
+                  var cpuClass = (stats.cpu_percent || 0) >= 95 ? 'critical' : (stats.cpu_percent || 0) >= 80 ? 'warning' : 'ok';
+                %>
+                <span class="metric-percent <%= cpuClass %>"><%= Math.round(stats.cpu_percent || 0) %>%</span>
+                <% if (stats.cpu_cores) { %>
+                  <span class="metric-detail">(<%= stats.cpu_cores %> cores)</span>
+                <% } %>
+              <% } %>
             </div>
-            <div class="node-list-metric">
-              <%- include('partials/progress-bar', {
-                progressValue: stats.ram_percent,
-                thresholdWarning: 85,
-                thresholdCritical: 95,
-                offline: !node.online
-              }) %>
+            <div class="node-list-metric pulse-metric">
+              <% if (!node.online) { %>
+                <span class="metric-na">-</span>
+              <% } else { %>
+                <%
+                  var ramClass = (stats.ram_percent || 0) >= 95 ? 'critical' : (stats.ram_percent || 0) >= 85 ? 'warning' : 'ok';
+                  var ramUsed = stats.ram_used_bytes ? formatBytes(stats.ram_used_bytes) : '?';
+                  var ramTotal = stats.ram_total_bytes ? formatBytes(stats.ram_total_bytes) : '?';
+                %>
+                <span class="metric-percent <%= ramClass %>"><%= Math.round(stats.ram_percent || 0) %>%</span>
+                <% if (stats.ram_total_bytes) { %>
+                  <span class="metric-detail">(<%= ramUsed %>/<%= ramTotal %>)</span>
+                <% } %>
+              <% } %>
             </div>
-            <div class="node-list-metric">
-              <%- include('partials/progress-bar', {
-                progressValue: stats.disk_percent,
-                thresholdWarning: 80,
-                thresholdCritical: 95,
-                offline: !node.online
-              }) %>
+            <div class="node-list-metric pulse-metric">
+              <% if (!node.online) { %>
+                <span class="metric-na">-</span>
+              <% } else { %>
+                <%
+                  var diskClass = (stats.disk_percent || 0) >= 95 ? 'critical' : (stats.disk_percent || 0) >= 80 ? 'warning' : 'ok';
+                  var diskUsed = stats.disk_used_bytes ? formatBytes(stats.disk_used_bytes) : '?';
+                  var diskTotal = stats.disk_total_bytes ? formatBytes(stats.disk_total_bytes) : '?';
+                %>
+                <span class="metric-percent <%= diskClass %>"><%= Math.round(stats.disk_percent || 0) %>%</span>
+                <% if (stats.disk_total_bytes) { %>
+                  <span class="metric-detail">(<%= diskUsed %>/<%= diskTotal %>)</span>
+                <% } %>
+              <% } %>
             </div>
             <div class="node-list-count">
               <%
@@ -492,7 +601,10 @@
                  data-type="<%= node.node_type || 'unknown' %>"
                  data-status="<%= node.online ? 'online' : 'offline' %>">
               <div class="monitoring-header">
-                <a href="/nodes/<%= node.id %>" class="monitoring-name"><%= node.name %></a>
+                <div class="monitoring-header-left">
+                  <a href="/nodes/<%= node.id %>" class="monitoring-name"><%= node.name %></a>
+                  <span class="monitoring-type"><%= node.node_type || 'unknown' %></span>
+                </div>
                 <span class="monitoring-status <%= node.online ? 'online' : 'offline' %>">
                   <%= node.online ? 'Online' : 'Offline' %>
                 </span>
@@ -512,6 +624,9 @@
                     <div class="stat-bar-fill <%= (node.cpu_percent || 0) >= thresholds.cpu_critical ? 'critical' : ((node.cpu_percent || 0) >= thresholds.cpu_warning ? 'warning' : 'ok') %>"
                          style="width: <%= Math.min(node.cpu_percent || 0, 100) %>%"></div>
                   </div>
+                  <% if (node.cpu_cores) { %>
+                  <div class="stat-bar-detail"><%= node.cpu_cores %> cores</div>
+                  <% } %>
                 </div>
 
                 <!-- RAM -->
@@ -526,6 +641,9 @@
                     <div class="stat-bar-fill <%= (node.ram_percent || 0) >= thresholds.ram_critical ? 'critical' : ((node.ram_percent || 0) >= thresholds.ram_warning ? 'warning' : 'ok') %>"
                          style="width: <%= Math.min(node.ram_percent || 0, 100) %>%"></div>
                   </div>
+                  <% if (node.ram_total_bytes) { %>
+                  <div class="stat-bar-detail"><%= formatBytes(node.ram_used_bytes || 0) %> / <%= formatBytes(node.ram_total_bytes) %></div>
+                  <% } %>
                 </div>
 
                 <!-- Disk -->
@@ -540,6 +658,9 @@
                     <div class="stat-bar-fill <%= (node.disk_percent || 0) >= thresholds.disk_critical ? 'critical' : ((node.disk_percent || 0) >= thresholds.disk_warning ? 'warning' : 'ok') %>"
                          style="width: <%= Math.min(node.disk_percent || 0, 100) %>%"></div>
                   </div>
+                  <% if (node.disk_total_bytes) { %>
+                  <div class="stat-bar-detail"><%= formatBytes(node.disk_used_bytes || 0) %> / <%= formatBytes(node.disk_total_bytes) %></div>
+                  <% } %>
                 </div>
 
                 <% if (node.temp_cpu !== null) { %>
@@ -560,7 +681,21 @@
                 <span>Load: <%= node.load_1m %></span>
                 <% } %>
                 <% if (node.uptime_seconds) { %>
-                <span>Up: <%= Math.floor(node.uptime_seconds / 86400) %>d</span>
+                <%
+                  var cardUptimeDays = Math.floor(node.uptime_seconds / 86400);
+                  var cardUptimeHours = Math.floor((node.uptime_seconds % 86400) / 3600);
+                  var cardUptimeDisplay = cardUptimeDays > 0 ? (cardUptimeDays + 'd ' + cardUptimeHours + 'h') : (cardUptimeHours + 'h');
+                %>
+                <span>Up: <%= cardUptimeDisplay %></span>
+                <% } %>
+                <%
+                  var cardVmCount = (node.vms_running || 0) + (node.cts_running || 0);
+                %>
+                <% if (cardVmCount > 0) { %>
+                <span>VMs: <%= cardVmCount %></span>
+                <% } %>
+                <% if (node.containers_running > 0) { %>
+                <span>Containers: <%= node.containers_running %></span>
                 <% } %>
               </div>
               <% } else { %>

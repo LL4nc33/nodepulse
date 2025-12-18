@@ -68,6 +68,55 @@ router.get('/', asyncHandler(async (req, res) => {
   // Alert thresholds (aus zentralem Modul)
   const thresholds = getThresholds(settings);
 
+  // Calculate cluster-wide stats (Proxmox-Style Summary)
+  const clusterStats = {
+    totalCpuCores: 0,
+    usedCpuPercent: 0,
+    totalRamBytes: 0,
+    usedRamBytes: 0,
+    totalDiskBytes: 0,
+    usedDiskBytes: 0,
+    totalVMs: 0,
+    totalContainers: 0,
+    onlineNodesWithCpu: 0,
+  };
+
+  nodesWithStats.forEach(function(n) {
+    if (n.online) {
+      // CPU: Sum cores, weighted average percent
+      if (n.cpu_cores) {
+        clusterStats.totalCpuCores += n.cpu_cores;
+        clusterStats.usedCpuPercent += (n.cpu_percent || 0) * n.cpu_cores;
+        clusterStats.onlineNodesWithCpu++;
+      }
+      // RAM: Sum total and used
+      if (n.ram_total_bytes) {
+        clusterStats.totalRamBytes += n.ram_total_bytes;
+        clusterStats.usedRamBytes += n.ram_used_bytes || 0;
+      }
+      // Disk: Sum total and used
+      if (n.disk_total_bytes) {
+        clusterStats.totalDiskBytes += n.disk_total_bytes;
+        clusterStats.usedDiskBytes += n.disk_used_bytes || 0;
+      }
+      // VMs + Containers
+      clusterStats.totalVMs += (n.vms_running || 0) + (n.cts_running || 0);
+      clusterStats.totalContainers += n.containers_running || 0;
+    }
+  });
+
+  // Calculate weighted average CPU percent
+  if (clusterStats.totalCpuCores > 0) {
+    clusterStats.usedCpuPercent = Math.round(clusterStats.usedCpuPercent / clusterStats.totalCpuCores);
+  }
+  // Calculate RAM and Disk percentages
+  clusterStats.usedRamPercent = clusterStats.totalRamBytes > 0
+    ? Math.round((clusterStats.usedRamBytes / clusterStats.totalRamBytes) * 100)
+    : 0;
+  clusterStats.usedDiskPercent = clusterStats.totalDiskBytes > 0
+    ? Math.round((clusterStats.usedDiskBytes / clusterStats.totalDiskBytes) * 100)
+    : 0;
+
   res.render('index', {
     title: tagFilter ? `Dashboard - ${tagFilter}` : 'Dashboard',
     currentPath: '/',
@@ -77,6 +126,7 @@ router.get('/', asyncHandler(async (req, res) => {
     tags,
     tagFilter,
     thresholds,
+    clusterStats,
     dashboardRefreshInterval: parseIntParam(settings.dashboard_refresh_interval, 5),
     stats: {
       total: nodes.length,
