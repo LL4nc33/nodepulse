@@ -75,7 +75,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-18T16:25:15.465Z
+   Generated: 2025-12-18T17:10:56.181Z
 */
 
 
@@ -4961,7 +4961,7 @@ function switchProxmoxRepo(nodeId, mode, evt) {
 
 
 // ============================================================
-// FROM: live-metrics.js (375 lines)
+// FROM: live-metrics.js (436 lines)
 // ============================================================
 
 // ============================================================
@@ -4984,6 +4984,13 @@ var statsHistory = {
   disk: []
 };
 
+// Previous network stats for rate calculation
+var prevNetStats = {
+  rx_bytes: null,
+  tx_bytes: null,
+  timestamp: null
+};
+
 /**
  * Format bytes to human-readable string (ES5)
  */
@@ -4992,6 +4999,43 @@ function formatBytesLive(bytes) {
   var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   var i = Math.floor(Math.log(bytes) / Math.log(1024));
   return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+}
+
+/**
+ * Format network rate (bytes per second) to human-readable string
+ */
+function formatNetRate(bytesPerSec) {
+  if (!bytesPerSec || bytesPerSec < 0) return '0 B/s';
+  if (bytesPerSec < 1024) return Math.round(bytesPerSec) + ' B/s';
+  if (bytesPerSec < 1024 * 1024) return (bytesPerSec / 1024).toFixed(1) + ' KB/s';
+  return (bytesPerSec / (1024 * 1024)).toFixed(2) + ' MB/s';
+}
+
+/**
+ * Calculate network rates from current and previous readings
+ */
+function calculateNetRates(currentRx, currentTx) {
+  var now = Date.now();
+  var rates = { rx: 0, tx: 0 };
+
+  if (prevNetStats.timestamp !== null && prevNetStats.rx_bytes !== null) {
+    var timeDiff = (now - prevNetStats.timestamp) / 1000; // seconds
+    if (timeDiff > 0) {
+      // Handle counter wrap-around (unlikely but possible)
+      var rxDiff = currentRx - prevNetStats.rx_bytes;
+      var txDiff = currentTx - prevNetStats.tx_bytes;
+
+      if (rxDiff >= 0) rates.rx = rxDiff / timeDiff;
+      if (txDiff >= 0) rates.tx = txDiff / timeDiff;
+    }
+  }
+
+  // Store current values for next calculation
+  prevNetStats.rx_bytes = currentRx;
+  prevNetStats.tx_bytes = currentTx;
+  prevNetStats.timestamp = now;
+
+  return rates;
 }
 
 /**
@@ -5103,25 +5147,42 @@ function updateLiveMetrics() {
           }
         }
 
-        // Update Network card
+        // Update Network card with rates
         var netCard = document.querySelector('.hero-metric-card:nth-child(4)');
         if (netCard) {
           var netStats = netCard.querySelector('.network-stats');
-          if (netStats) {
+          if (netStats && stats.net_rx_bytes !== undefined && stats.net_tx_bytes !== undefined) {
+            // Calculate rates
+            var rates = calculateNetRates(stats.net_rx_bytes, stats.net_tx_bytes);
+
             var rxEl = netStats.querySelector('.net-rx');
             var txEl = netStats.querySelector('.net-tx');
-            if (rxEl && stats.net_rx_bytes !== undefined) {
-              rxEl.innerHTML = '<span class="net-arrow">↓</span> ' + formatBytesLive(stats.net_rx_bytes || 0);
+            if (rxEl) {
+              rxEl.innerHTML = '<span class="net-arrow">↓</span> ' + formatNetRate(rates.rx);
             }
-            if (txEl && stats.net_tx_bytes !== undefined) {
-              txEl.innerHTML = '<span class="net-arrow">↑</span> ' + formatBytesLive(stats.net_tx_bytes || 0);
+            if (txEl) {
+              txEl.innerHTML = '<span class="net-arrow">↑</span> ' + formatNetRate(rates.tx);
             }
           }
 
-          // Update Load
-          var loadEl = netCard.querySelector('.hero-metric-details span');
+          // Update Load with all three averages
+          var loadEl = netCard.querySelector('.hero-metric-details');
           if (loadEl && stats.load_1m !== undefined) {
-            loadEl.textContent = 'Load: ' + stats.load_1m.toFixed(2);
+            var load1 = stats.load_1m ? stats.load_1m.toFixed(2) : '0.00';
+            var load5 = stats.load_5m ? stats.load_5m.toFixed(2) : '0.00';
+            var load15 = stats.load_15m ? stats.load_15m.toFixed(2) : '0.00';
+            loadEl.innerHTML = '<span>Load: ' + load1 + ' / ' + load5 + ' / ' + load15 + '</span>';
+          }
+        }
+
+        // Update CPU temperature if available
+        if (stats.temp_cpu && stats.temp_cpu > 0) {
+          var tempEl = document.getElementById('cpu-temp');
+          if (tempEl) {
+            tempEl.textContent = Math.round(stats.temp_cpu) + '°C';
+            tempEl.className = 'hero-metric-temp';
+            if (stats.temp_cpu >= 80) tempEl.classList.add('critical');
+            else if (stats.temp_cpu >= 60) tempEl.classList.add('warning');
           }
         }
 

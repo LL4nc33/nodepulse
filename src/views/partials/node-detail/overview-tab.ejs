@@ -160,29 +160,40 @@
           <line x1="12" y1="20" x2="12.01" y2="20"/>
         </svg>
         <span class="hero-metric-title">Network</span>
-      </div>
-      <div class="hero-metric-value hero-metric-network">
-        <% if (isOffline) { %>
-          <span class="offline-text">Offline</span>
-        <% } else if (currentStats && (currentStats.net_rx_bytes || currentStats.net_tx_bytes)) { %>
-          <div class="network-stats">
-            <span class="net-rx"><span class="net-arrow">↓</span> <%= formatBytesLocal(currentStats.net_rx_bytes || 0) %></span>
-            <span class="net-tx"><span class="net-arrow">↑</span> <%= formatBytesLocal(currentStats.net_tx_bytes || 0) %></span>
-          </div>
-        <% } else { %>
-          <span class="no-data">-</span>
-        <% } %>
-      </div>
-      <div class="hero-metric-details">
-        <% if (currentStats && currentStats.load_1m !== undefined) { %>
-          <span>Load: <%= currentStats.load_1m.toFixed(2) %></span>
-        <% } %>
         <% if (currentStats && currentStats.uptime_seconds) { %>
           <%
             var days = Math.floor(currentStats.uptime_seconds / 86400);
             var hours = Math.floor((currentStats.uptime_seconds % 86400) / 3600);
+            var mins = Math.floor((currentStats.uptime_seconds % 3600) / 60);
           %>
-          <span>Uptime: <%= days %>d <%= hours %>h</span>
+          <span class="hero-metric-uptime" title="Uptime">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <%= days %>d <%= hours %>h
+          </span>
+        <% } %>
+      </div>
+      <div class="hero-metric-value hero-metric-network">
+        <% if (isOffline) { %>
+          <span class="offline-text">Offline</span>
+        <% } else { %>
+          <div class="network-stats">
+            <span class="net-rx"><span class="net-arrow">↓</span> <span class="net-rate">-</span></span>
+            <span class="net-tx"><span class="net-arrow">↑</span> <span class="net-rate">-</span></span>
+          </div>
+        <% } %>
+      </div>
+      <div class="hero-metric-details">
+        <% if (currentStats && currentStats.load_1m !== undefined) { %>
+          <%
+            var l1 = currentStats.load_1m ? currentStats.load_1m.toFixed(2) : '0.00';
+            var l5 = currentStats.load_5m ? currentStats.load_5m.toFixed(2) : '0.00';
+            var l15 = currentStats.load_15m ? currentStats.load_15m.toFixed(2) : '0.00';
+          %>
+          <span>Load: <%= l1 %> / <%= l5 %> / <%= l15 %></span>
+        <% } else { %>
+          <span>Load: -</span>
         <% } %>
       </div>
     </div>

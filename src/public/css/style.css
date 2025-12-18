@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-18T16:35:01.619Z
+   Generated: 2025-12-18T17:10:54.655Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -8002,7 +8002,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: detail-pages.css (1335 lines)
+   FROM: detail-pages.css (1354 lines)
    ============================================================ */
 
 /* =====================================================
@@ -8537,6 +8537,25 @@ a:focus {
 .hero-metric-temp.critical {
   background: var(--color-error-bg);
   color: var(--color-error);
+}
+
+.hero-metric-uptime {
+  margin-left: auto;
+  font-size: var(--font-size-xs, 0.6875rem);
+  font-weight: var(--font-weight-medium, 500);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+  display: -webkit-inline-box;
+  display: inline-flex;
+  -webkit-box-align: center;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.hero-metric-uptime svg {
+  opacity: 0.7;
 }
 
 .hero-metric-value {
