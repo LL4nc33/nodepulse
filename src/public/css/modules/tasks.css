@@ -233,6 +233,27 @@
   max-width: 800px;
 }
 
+/* Pagination */
+.task-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.task-pagination .btn-sm {
+  min-width: 32px;
+}
+
+.task-pagination .pagination-info {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 var(--space-sm);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .task-summary {

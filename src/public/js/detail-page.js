@@ -75,7 +75,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-18T06:05:55.775Z
+   Generated: 2025-12-18T06:13:50.792Z
 */
 
 
@@ -3492,7 +3492,7 @@ if (backupTabBtn && !backupTabBtn.hasAttribute('data-backup-listener')) {
 
 
 // ============================================================
-// FROM: tasks.js (477 lines)
+// FROM: tasks.js (523 lines)
 // ============================================================
 
 // =====================================================
@@ -3509,9 +3509,17 @@ var activeTaskXHR = null;
 var currentTaskUpid = null;
 var taskLogAutoRefreshInterval = null;
 
-// Load task data from API
-function loadTaskData() {
+// Pagination
+var taskPageSize = 10;
+var taskCurrentPage = 1;
+var taskTotalPages = 1;
+
+// Load task data from API (with pagination)
+function loadTaskData(page) {
   if (typeof nodeId === 'undefined') return;
+
+  page = page || taskCurrentPage;
+  taskCurrentPage = page;
 
   // Cancel any pending request
   if (activeTaskXHR) {
@@ -3519,9 +3527,23 @@ function loadTaskData() {
     activeTaskXHR = null;
   }
 
+  // Build URL with pagination
+  var offset = (page - 1) * taskPageSize;
+  var url = '/api/nodes/' + nodeId + '/tasks?limit=' + taskPageSize + '&offset=' + offset;
+
+  // Add filters if set
+  var typeFilter = document.getElementById('task-type-filter');
+  var statusFilter = document.getElementById('task-status-filter');
+  if (typeFilter && typeFilter.value) {
+    url += '&type=' + encodeURIComponent(typeFilter.value);
+  }
+  if (statusFilter && statusFilter.value) {
+    url += '&status=' + encodeURIComponent(statusFilter.value);
+  }
+
   var xhr = new XMLHttpRequest();
   activeTaskXHR = xhr;
-  xhr.open('GET', '/api/nodes/' + nodeId + '/tasks', true);
+  xhr.open('GET', url, true);
   xhr.timeout = 60000;
 
   xhr.onreadystatechange = function() {
@@ -3537,6 +3559,9 @@ function loadTaskData() {
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
         taskData = response.data;
+        // Calculate total pages
+        taskTotalPages = Math.ceil((taskData.counts.total || 0) / taskPageSize);
+        if (taskTotalPages < 1) taskTotalPages = 1;
         renderTaskData();
       } else {
         var errMsg = response.error ? response.error.message : 'Fehler beim Laden';
@@ -3605,22 +3630,25 @@ function renderTaskData() {
     summaryCards[3].querySelector('.summary-value').textContent = taskData.counts.error || 0;
   }
 
-  // Update type filter options
+  // Update type filter options (only if types changed)
   var typeFilter = document.getElementById('task-type-filter');
-  if (typeFilter && taskData.types) {
+  if (typeFilter && taskData.types && taskData.types.length > 0) {
     var currentValue = typeFilter.value;
-    typeFilter.innerHTML = '<option value="">Alle Typen</option>';
-    for (var i = 0; i < taskData.types.length; i++) {
-      var opt = document.createElement('option');
-      opt.value = taskData.types[i];
-      opt.textContent = getTaskTypeLabel(taskData.types[i]);
-      typeFilter.appendChild(opt);
+    // Only rebuild if empty or types changed
+    if (typeFilter.options.length <= 1) {
+      typeFilter.innerHTML = '<option value="">Alle Typen</option>';
+      for (var i = 0; i < taskData.types.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = taskData.types[i];
+        opt.textContent = getTaskTypeLabel(taskData.types[i]);
+        typeFilter.appendChild(opt);
+      }
+      typeFilter.value = currentValue;
     }
-    typeFilter.value = currentValue;
   }
 
-  // Re-render tasks list via filter
-  filterTasks();
+  // Render the tasks list
+  renderTasksList();
 }
 
 // Get task type label
@@ -3684,31 +3712,20 @@ function formatTaskDuration(starttime, endtime) {
   return Math.floor(duration / 3600) + 'h ' + Math.floor((duration % 3600) / 60) + 'm';
 }
 
-// Filter tasks
+// Filter tasks (resets to page 1 and reloads from server)
 function filterTasks() {
-  var searchEl = document.getElementById('task-search');
-  var typeFilterEl = document.getElementById('task-type-filter');
-  var statusFilterEl = document.getElementById('task-status-filter');
-  var listEl = document.getElementById('tasks-list');
+  taskCurrentPage = 1;
+  loadTaskData(1);
+}
 
+// Render tasks list (called after data is loaded)
+function renderTasksList() {
+  var listEl = document.getElementById('tasks-list');
   if (!listEl) return;
 
-  var searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
-  var typeFilter = typeFilterEl ? typeFilterEl.value : '';
-  var statusFilter = statusFilterEl ? statusFilterEl.value : '';
+  var tasks = taskData.tasks || [];
 
-  var filtered = (taskData.tasks || []).filter(function(task) {
-    var taskStatus = getTaskStatusClass(task);
-    var matchesSearch = !searchTerm ||
-      String(task.vmid || '').indexOf(searchTerm) !== -1 ||
-      (task.user && task.user.toLowerCase().indexOf(searchTerm) !== -1) ||
-      (task.task_type && task.task_type.toLowerCase().indexOf(searchTerm) !== -1);
-    var matchesType = !typeFilter || task.task_type === typeFilter;
-    var matchesStatus = !statusFilter || taskStatus === statusFilter;
-    return matchesSearch && matchesType && matchesStatus;
-  });
-
-  if (filtered.length === 0) {
+  if (tasks.length === 0) {
     listEl.innerHTML = '<div class="empty-state compact"><p>Keine Tasks gefunden.</p><p class="text-muted">Starten Sie eine Aktion in Proxmox oder aktualisieren Sie die Liste.</p></div>';
     return;
   }
@@ -3717,8 +3734,8 @@ function filterTasks() {
   html += '<thead><tr><th>Typ</th><th>VMID</th><th>User</th><th>Status</th><th>Gestartet</th><th>Dauer</th><th>Aktionen</th></tr></thead>';
   html += '<tbody>';
 
-  for (var i = 0; i < filtered.length; i++) {
-    var task = filtered[i];
+  for (var i = 0; i < tasks.length; i++) {
+    var task = tasks[i];
     var statusClass = getTaskStatusClass(task);
     var timeStr = formatTaskTimeAgo(task.starttime);
     var fullDate = task.starttime ? new Date(task.starttime * 1000).toLocaleString('de-DE') : '-';
@@ -3754,7 +3771,33 @@ function filterTasks() {
   }
 
   html += '</tbody></table></div>';
+
+  // Add pagination controls
+  html += renderTaskPagination();
+
   listEl.innerHTML = html;
+}
+
+// Render pagination controls
+function renderTaskPagination() {
+  if (taskTotalPages <= 1) return '';
+
+  var html = '<div class="task-pagination">';
+  html += '<button type="button" class="btn btn-sm" onclick="goToTaskPage(1)" ' + (taskCurrentPage <= 1 ? 'disabled' : '') + '>&laquo;</button>';
+  html += '<button type="button" class="btn btn-sm" onclick="goToTaskPage(' + (taskCurrentPage - 1) + ')" ' + (taskCurrentPage <= 1 ? 'disabled' : '') + '>&lsaquo;</button>';
+  html += '<span class="pagination-info">Seite ' + taskCurrentPage + ' von ' + taskTotalPages + '</span>';
+  html += '<button type="button" class="btn btn-sm" onclick="goToTaskPage(' + (taskCurrentPage + 1) + ')" ' + (taskCurrentPage >= taskTotalPages ? 'disabled' : '') + '>&rsaquo;</button>';
+  html += '<button type="button" class="btn btn-sm" onclick="goToTaskPage(' + taskTotalPages + ')" ' + (taskCurrentPage >= taskTotalPages ? 'disabled' : '') + '>&raquo;</button>';
+  html += '</div>';
+  return html;
+}
+
+// Navigate to specific page
+function goToTaskPage(page) {
+  if (page < 1) page = 1;
+  if (page > taskTotalPages) page = taskTotalPages;
+  if (page === taskCurrentPage) return;
+  loadTaskData(page);
 }
 
 // Escape HTML for tasks
@@ -3961,12 +4004,15 @@ function closeTaskModal(modalId) {
 // Initialize on tab click
 // =====================================================
 
+var taskTabInitialized = false;
 var taskTabBtn = document.querySelector('[data-tab="tasks"]');
 if (taskTabBtn && !taskTabBtn.hasAttribute('data-task-listener')) {
   taskTabBtn.addEventListener('click', function() {
-    // Load data if not already loaded
-    if (!taskData.tasks || taskData.tasks.length === 0) {
-      loadTaskData();
+    // Load first page on first tab click
+    if (!taskTabInitialized) {
+      taskTabInitialized = true;
+      taskCurrentPage = 1;
+      loadTaskData(1);
     }
   });
   taskTabBtn.setAttribute('data-task-listener', 'true');

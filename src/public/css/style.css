@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-18T06:05:55.604Z
+   Generated: 2025-12-18T06:13:50.599Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -8937,7 +8937,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: tasks.css (266 lines)
+   FROM: tasks.css (287 lines)
    ============================================================ */
 
 /* =====================================================
@@ -9173,6 +9173,27 @@ a:focus {
 /* Modal Large */
 .modal-lg {
   max-width: 800px;
+}
+
+/* Pagination */
+.task-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.task-pagination .btn-sm {
+  min-width: 32px;
+}
+
+.task-pagination .pagination-info {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 var(--space-sm);
 }
 
 /* Responsive */
