@@ -2031,7 +2031,18 @@ var lvm = {
   },
 
   getVGs: function(nodeId) {
-    return getDb().prepare('SELECT * FROM node_lvm_vgs WHERE node_id = ? ORDER BY vg_name').all(nodeId);
+    // Hole VGs mit Info über registrierte Thin Pools darin
+    return getDb().prepare(`
+      SELECT v.*,
+        (SELECT GROUP_CONCAT(l.registered_storage_id)
+         FROM node_lvm_lvs l
+         WHERE l.node_id = v.node_id AND l.vg_name = v.vg_name
+           AND l.is_thin_pool = 1 AND l.registered_storage_id IS NOT NULL
+        ) as contains_registered_pools
+      FROM node_lvm_vgs v
+      WHERE v.node_id = ?
+      ORDER BY v.vg_name
+    `).all(nodeId);
   },
 
   getVGByName: function(nodeId, vgName) {
@@ -2066,8 +2077,8 @@ var lvm = {
 
     for (var i = 0; i < (lvs || []).length; i++) {
       var lv = lvs[i];
-      // Thin Pool Detection: lv_attr beginnt mit 't' oder 'T'
-      var isThinPool = lv.lv_attr && lv.lv_attr.charAt(0).toLowerCase() === 't' ? 1 : 0;
+      // Thin Pool Detection: lv_attr beginnt mit 't' UND hat kein pool_lv (Thin Volumes haben pool_lv gesetzt)
+      var isThinPool = lv.lv_attr && lv.lv_attr.charAt(0).toLowerCase() === 't' && !lv.pool_lv ? 1 : 0;
       var lvSize = parseLvmBytes(lv.lv_size);
 
       upsertStmt.run(

@@ -116,6 +116,14 @@
                   </svg>
                   <%= vg.registered_storage_id %>
                 </span>
+              <% } else if (vg.contains_registered_pools) { %>
+                <span class="badge badge-info" title="Enthaelt registrierte Thin Pools">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                  </svg>
+                  <%= vg.contains_registered_pools %>
+                </span>
               <% } else { %>
                 <span class="badge badge-neutral">Nicht registriert</span>
               <% } %>
