@@ -660,9 +660,6 @@
   font-family: monospace;
   font-size: 0.875rem;
   color: var(--color-text-muted);
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -671,9 +668,6 @@
   font-family: monospace;
   font-size: 0.8125rem;
   color: var(--color-accent);
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -963,10 +957,6 @@
   font-weight: var(--font-weight-semibold, 600);
   color: var(--color-text);
   font-size: var(--font-size-base, 0.875rem);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 180px;
 }
 
 .container-card-body {
@@ -1003,9 +993,6 @@
   font-size: var(--font-size-sm, 0.8125rem);
   color: var(--color-text);
   font-family: 'SF Mono', Monaco, Consolas, monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .container-card-stats {

@@ -646,10 +646,7 @@
 
 .snap-desc {
   color: var(--color-text-muted);
-  max-width: 250px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Responsive Proxmox */
@@ -657,11 +654,6 @@
   .proxmox-table td,
   .proxmox-table th {
     padding: 0.75rem;
-  }
-
-  .vm-name,
-  .ct-name {
-    max-width: 150px;
   }
 
   .storage-bar {

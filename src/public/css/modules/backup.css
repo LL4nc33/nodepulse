@@ -169,12 +169,9 @@
 
 /* Backup Notes Column */
 .backup-notes {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 /* Backup Type Badges */

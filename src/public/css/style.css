@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-18T08:31:54.428Z
+   Generated: 2025-12-18T11:12:45.581Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -3598,7 +3598,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: components.css (1607 lines)
+   FROM: components.css (1963 lines)
    ============================================================ */
 
 /* =====================================================
@@ -4002,6 +4002,362 @@ a:focus {
   .card-footer,
   .panel-footer {
     padding: 0.875rem 1rem;
+  }
+}
+
+/* =====================================================
+   UNIFIED TAB CONTENT LAYOUT
+   Consistent structure for all tab contents
+   ===================================================== */
+
+/* Tab Content Container */
+.tab-content-wrapper {
+  padding: 0;
+}
+
+/* =====================================================
+   Unified Summary Cards (immer 4 Spalten)
+   ===================================================== */
+
+.summary-row,
+.summary-cards,
+.tab-summary,
+.proxmox-summary,
+.docker-summary,
+.storage-summary,
+.backup-summary,
+.task-summary {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-row > .summary-card,
+.summary-cards > .summary-card,
+.tab-summary > .summary-card,
+.proxmox-summary > .summary-card,
+.docker-summary > .summary-card,
+.storage-summary > .summary-card,
+.backup-summary > .summary-card,
+.task-summary > .summary-card {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 200px;
+  flex: 1 1 200px;
+  min-width: 160px;
+  max-width: calc(25% - 0.75rem);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 12px);
+  padding: 1rem 1.25rem;
+  -webkit-transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease;
+}
+
+.summary-card:hover {
+  border-color: var(--color-border-light);
+}
+
+.summary-card .summary-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text-heading);
+  line-height: 1.2;
+  margin-bottom: 0.25rem;
+}
+
+.summary-card .summary-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Summary Card Status Variants */
+.summary-card.running .summary-value,
+.summary-card.success .summary-value,
+.summary-card.ok .summary-value {
+  color: var(--color-success);
+}
+
+.summary-card.warning .summary-value {
+  color: var(--color-warning);
+}
+
+.summary-card.error .summary-value,
+.summary-card.critical .summary-value {
+  color: var(--color-error);
+}
+
+.summary-card.info .summary-value {
+  color: var(--color-info);
+}
+
+/* Summary Card with Icon */
+.summary-card .summary-icon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 0.5rem;
+  color: var(--color-accent);
+}
+
+/* =====================================================
+   Unified Section Headers
+   ===================================================== */
+
+.section,
+.tab-section,
+.overview-section,
+.proxmox-section,
+.docker-section,
+.storage-section,
+.backup-section,
+.task-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-header,
+.section-title {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  margin-bottom: 0;
+  cursor: pointer;
+  -webkit-transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.section-header:hover,
+.section-title:hover {
+  background: var(--color-bg-hover);
+}
+
+.section-header h3,
+.section-title h3,
+.section-header .title,
+.section-title .title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-heading);
+  margin: 0;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-header h3 svg,
+.section-title h3 svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-accent);
+}
+
+/* Collapse Icon */
+.collapse-icon,
+.section-toggle {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-muted);
+  -webkit-transition: transform 0.2s ease;
+  transition: transform 0.2s ease;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.section.collapsed .collapse-icon,
+.section.collapsed .section-toggle,
+.collapsible.collapsed .collapse-icon,
+.collapsible.collapsed .section-toggle {
+  -webkit-transform: rotate(-90deg);
+  transform: rotate(-90deg);
+}
+
+/* Section Content */
+.section-content,
+.section-body {
+  border: 1px solid var(--color-border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md, 8px) var(--radius-md, 8px);
+  background: var(--color-bg-surface);
+  overflow: hidden;
+}
+
+.section.collapsed .section-content,
+.section.collapsed .section-body,
+.collapsible.collapsed .section-content,
+.collapsible.collapsed .section-body {
+  display: none;
+}
+
+/* Section with Count Badge */
+.section-count {
+  padding: 0.125rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+  border-radius: 10px;
+  margin-left: 0.5rem;
+}
+
+/* =====================================================
+   Tab Actions Bar
+   ===================================================== */
+
+.tab-actions,
+.section-actions {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 1rem;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+.tab-actions-left,
+.tab-actions-right {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* =====================================================
+   Tab Filter Bar
+   ===================================================== */
+
+.tab-filters,
+.filter-bar {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+.tab-filters .filter-input,
+.filter-bar .filter-input {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 200px;
+  flex: 1 1 200px;
+  max-width: 300px;
+}
+
+.tab-filters .filter-select,
+.filter-bar .filter-select {
+  min-width: 150px;
+}
+
+/* =====================================================
+   TEXT OVERFLOW FIX - Niemals abschneiden
+   ===================================================== */
+
+/* Tabellen-Zellen: Text NICHT abschneiden */
+.table td,
+.proxmox-table td,
+.docker-table td,
+.storage-table td,
+.backup-table td,
+.task-table td {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* Spalten die umbrechen duerfen */
+.table td.wrap-text,
+.proxmox-table td.wrap-text,
+.docker-table td.wrap-text {
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Name/Titel Spalten - volle Breite nutzen */
+.cell-name,
+.cell-title,
+.cell-description {
+  min-width: 150px;
+}
+
+/* Status Badges - kompakt */
+.cell-status {
+  width: 100px;
+  min-width: 100px;
+}
+
+/* Actions Spalte - fixierte Breite */
+.cell-actions {
+  width: 120px;
+  min-width: 120px;
+  text-align: right;
+}
+
+/* Responsive: Summary Cards */
+@media (max-width: 900px) {
+  .summary-row > .summary-card,
+  .summary-cards > .summary-card,
+  .tab-summary > .summary-card,
+  .proxmox-summary > .summary-card,
+  .docker-summary > .summary-card,
+  .storage-summary > .summary-card,
+  .backup-summary > .summary-card,
+  .task-summary > .summary-card {
+    max-width: calc(50% - 0.5rem);
+    -webkit-flex: 1 1 calc(50% - 0.5rem);
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+}
+
+@media (max-width: 500px) {
+  .summary-row > .summary-card,
+  .summary-cards > .summary-card,
+  .tab-summary > .summary-card,
+  .proxmox-summary > .summary-card,
+  .docker-summary > .summary-card,
+  .storage-summary > .summary-card,
+  .backup-summary > .summary-card,
+  .task-summary > .summary-card {
+    max-width: 100%;
+    -webkit-flex: 1 1 100%;
+    flex: 1 1 100%;
+  }
+
+  .summary-card .summary-value {
+    font-size: 1.5rem;
   }
 }
 
@@ -5210,7 +5566,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: dashboard.css (2036 lines)
+   FROM: dashboard.css (2028 lines)
    ============================================================ */
 
 /* =====================================================
@@ -5625,8 +5981,6 @@ a:focus {
   color: var(--color-text-heading);
   display: block;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   padding: 0.25rem 0;
 }
 
@@ -6215,9 +6569,6 @@ a:focus {
   color: var(--color-text-muted);
   white-space: nowrap;
   opacity: 0.7;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
 }
 
 /* Hide timestamps in dashboard - they add visual noise */
@@ -6269,9 +6620,6 @@ a:focus {
   color: var(--color-text-muted);
   line-height: 1.2;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
 }
 
 .metric-na {
@@ -8249,7 +8597,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: docker.css (1071 lines)
+   FROM: docker.css (1058 lines)
    ============================================================ */
 
    Docker Management
@@ -8914,9 +9262,6 @@ a:focus {
   font-family: monospace;
   font-size: 0.875rem;
   color: var(--color-text-muted);
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -8925,9 +9270,6 @@ a:focus {
   font-family: monospace;
   font-size: 0.8125rem;
   color: var(--color-accent);
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -9217,10 +9559,6 @@ a:focus {
   font-weight: var(--font-weight-semibold, 600);
   color: var(--color-text);
   font-size: var(--font-size-base, 0.875rem);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 180px;
 }
 
 .container-card-body {
@@ -9257,9 +9595,6 @@ a:focus {
   font-size: var(--font-size-sm, 0.8125rem);
   color: var(--color-text);
   font-family: 'SF Mono', Monaco, Consolas, monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .container-card-stats {
@@ -9325,7 +9660,7 @@ a:focus {
 }
 
 /* ============================================================
-   FROM: proxmox.css (711 lines)
+   FROM: proxmox.css (703 lines)
    ============================================================ */
 
    Proxmox Management
@@ -9976,10 +10311,7 @@ a:focus {
 
 .snap-desc {
   color: var(--color-text-muted);
-  max-width: 250px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Responsive Proxmox */
@@ -9987,11 +10319,6 @@ a:focus {
   .proxmox-table td,
   .proxmox-table th {
     padding: 0.75rem;
-  }
-
-  .vm-name,
-  .ct-name {
-    max-width: 150px;
   }
 
   .storage-bar {
@@ -10604,7 +10931,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: backup.css (260 lines)
+   FROM: backup.css (257 lines)
    ============================================================ */
 
 /* =====================================================
@@ -10778,12 +11105,9 @@ a:focus {
 
 /* Backup Notes Column */
 .backup-notes {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 /* Backup Type Badges */
