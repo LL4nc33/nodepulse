@@ -9,50 +9,18 @@ var backupData = {
   summary: {}
 };
 
-var activeBackupXHR = null;
-
 // Load backup data from API
 function loadBackupData() {
   if (typeof nodeId === 'undefined') return;
 
-  // Cancel any pending request
-  if (activeBackupXHR) {
-    activeBackupXHR.abort();
-    activeBackupXHR = null;
-  }
-
-  var xhr = new XMLHttpRequest();
-  activeBackupXHR = xhr;
-  xhr.open('GET', '/api/nodes/' + nodeId + '/backup', true);
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      activeBackupXHR = null;
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        backupData = response.data;
-        renderBackupData();
-      } else {
-        var errMsg = response.error ? response.error.message : 'Fehler beim Laden';
-        console.error('[Backup] Load error:', errMsg);
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    activeBackupXHR = null;
-    console.error('[Backup] Network error');
-  };
-
-  xhr.send();
+  NP.API.get('/api/nodes/' + nodeId + '/backup', { timeout: 60000 })
+    .then(function(data) {
+      backupData = data;
+      renderBackupData();
+    })
+    .catch(function(error) {
+      console.error('[Backup] Load error:', error.message);
+    });
 }
 
 // Refresh backup data (with loading indicator)
@@ -63,37 +31,22 @@ function refreshBackupData() {
     btn.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/backup/refresh', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 120000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/backup/refresh', null, { timeout: 120000 })
+    .then(function(data) {
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      loadBackupData();
+      window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup-Daten aktualisiert', 'success');
+    })
+    .catch(function(error) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        // Reload data after refresh
-        loadBackupData();
-        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup-Daten aktualisiert', 'success');
-      } else {
-        var errMsg = response.error ? response.error.message : 'Aktualisierung fehlgeschlagen';
-        alert('Fehler: ' + errMsg);
-      }
-    }
-  };
-
-  xhr.send();
+      alert('Fehler: ' + error.message);
+    });
 }
 
 // Render backup data (used for dynamic updates)
@@ -175,7 +128,7 @@ function filterBackups() {
   listEl.innerHTML = html;
 }
 
-// Format backup time as "time ago"
+// Format backup time as "time ago" (backup-specific helper)
 function formatBackupTime(timestamp) {
   if (!timestamp) return '-';
   var now = Math.floor(Date.now() / 1000);
@@ -187,13 +140,7 @@ function formatBackupTime(timestamp) {
   return new Date(timestamp * 1000).toLocaleDateString('de-DE');
 }
 
-// Escape HTML
-function escapeHtml(str) {
-  if (!str) return '';
-  var div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
+// escapeHtml is available from global helpers (main.js)
 
 // Escape for attribute (single quotes)
 function escapeForAttr(str) {
@@ -201,20 +148,8 @@ function escapeForAttr(str) {
   return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
-// Toggle collapsible backup section
-function toggleBackupSection(headerEl) {
-  var section = headerEl.parentElement;
-  var content = section.querySelector('.section-content');
-  var icon = headerEl.querySelector('.collapse-icon');
-
-  if (section.classList.contains('collapsed')) {
-    section.classList.remove('collapsed');
-    if (content) content.style.display = 'block';
-  } else {
-    section.classList.add('collapsed');
-    if (content) content.style.display = 'none';
-  }
-}
+// toggleSection is available from global helpers (main.js)
+// Use window.toggleSection or just toggleSection() directly
 
 // =====================================================
 // Modal Functions
@@ -280,38 +215,24 @@ function submitCreateBackup(event) {
     btn.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/backup/create', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 600000; // 10 min for backup
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/backup/create', data, { timeout: 600000 })
+    .then(function(result) {
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      closeModal('createBackupModal');
+      form.reset();
+      loadBackupData();
+      window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup erfolgreich erstellt', 'success');
+    })
+    .catch(function(error) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeModal('createBackupModal');
-        form.reset();
-        loadBackupData();
-        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup erfolgreich erstellt', 'success');
-      } else {
-        var errMsg = response.error ? response.error.message : 'Backup fehlgeschlagen';
-        alert('Fehler: ' + errMsg);
-      }
-    }
-  };
-
-  xhr.send(JSON.stringify(data));
+      alert('Fehler: ' + error.message);
+    });
 }
 
 function submitRestoreBackup(event) {
@@ -333,37 +254,23 @@ function submitRestoreBackup(event) {
     btn.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/backup/restore', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 1800000; // 30 min for restore
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/backup/restore', data, { timeout: 1800000 })
+    .then(function(result) {
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      closeModal('restoreBackupModal');
+      form.reset();
+      window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Restore erfolgreich', 'success');
+    })
+    .catch(function(error) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeModal('restoreBackupModal');
-        form.reset();
-        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Restore erfolgreich', 'success');
-      } else {
-        var errMsg = response.error ? response.error.message : 'Restore fehlgeschlagen';
-        alert('Fehler: ' + errMsg);
-      }
-    }
-  };
-
-  xhr.send(JSON.stringify(data));
+      alert('Fehler: ' + error.message);
+    });
 }
 
 function submitDeleteBackup(event) {
@@ -384,37 +291,23 @@ function submitDeleteBackup(event) {
     btn.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('DELETE', '/api/nodes/' + nodeId + '/backup/' + encodeURIComponent(volid), true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.delete('/api/nodes/' + nodeId + '/backup/' + encodeURIComponent(volid), { timeout: 60000 })
+    .then(function(result) {
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      closeModal('deleteBackupModal');
+      loadBackupData();
+      window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup gelöscht', 'success');
+    })
+    .catch(function(error) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeModal('deleteBackupModal');
-        loadBackupData();
-        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup gelöscht', 'success');
-      } else {
-        var errMsg = response.error ? response.error.message : 'Löschen fehlgeschlagen';
-        alert('Fehler: ' + errMsg);
-      }
-    }
-  };
-
-  xhr.send(JSON.stringify({ confirm_volid: volid }));
+      alert('Fehler: ' + error.message);
+    });
 }
 
 // =====================================================

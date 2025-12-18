@@ -1,18 +1,4 @@
-// Toggle collapsible section (ES5)
-function toggleSection(headerEl) {
-  var section = headerEl.parentElement;
-  var content = section.querySelector('.section-content');
-
-  if (section.classList.contains('collapsed')) {
-    section.classList.remove('collapsed');
-    content.style.display = 'block';
-  } else {
-    section.classList.add('collapsed');
-    content.style.display = 'none';
-  }
-}
-
-// formatBytes is available as window.NP.UI.formatBytes from main.js
+// formatBytes and toggleSection are available as window.NP.Helpers from main.js
 
 // Tab switching with URL hash persistence
 var tabBtns = document.querySelectorAll('.tab-btn');
@@ -124,41 +110,23 @@ function saveConfig() {
   var endpoint = pendingConfig.type === 'vm' ? 'vms' : 'cts';
   var url = '/api/nodes/' + pendingConfig.nodeId + '/proxmox/' + endpoint + '/' + pendingConfig.vmid + '/config';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('PATCH', url, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-
-      var response;
-      try { response = JSON.parse(xhr.responseText); } catch (e) { response = { success: false }; }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeConfigModal();
-        var resultEl = document.getElementById('proxmox-result');
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Konfiguration gespeichert. Seite wird neu geladen...';
-          resultEl.style.display = 'block';
-        }
-        setTimeout(function() { location.reload(); }, 1500);
-      } else {
-        errorEl.textContent = response.error ? response.error.message : 'Speichern fehlgeschlagen';
-        errorEl.style.display = 'block';
+  NP.API.patch(url, { cores: cores, memory: memory }, { timeout: 60000 })
+    .then(function(response) {
+      closeConfigModal();
+      var resultEl = document.getElementById('proxmox-result');
+      if (resultEl) {
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = 'Konfiguration gespeichert. Seite wird neu geladen...';
+        resultEl.style.display = 'block';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-    errorEl.textContent = 'Netzwerkfehler';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.send(JSON.stringify({ cores: cores, memory: memory }));
+      setTimeout(function() { location.reload(); }, 1500);
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    })
+    .catch(function(error) {
+      errorEl.textContent = error.message || 'Speichern fehlgeschlagen';
+      errorEl.style.display = 'block';
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    });
 }
 
 // Clone Modal
@@ -213,47 +181,23 @@ function startClone() {
     body.hostname = name;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', url, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 600000; // 10 min for clone
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-
-      var response;
-      try { response = JSON.parse(xhr.responseText); } catch (e) { response = { success: false }; }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeCloneModal();
-        var resultEl = document.getElementById('proxmox-result');
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Clone erfolgreich erstellt! Seite wird neu geladen...';
-          resultEl.style.display = 'block';
-        }
-        setTimeout(function() { location.reload(); }, 2000);
-      } else {
-        errorEl.textContent = response.error ? response.error.message : 'Clone fehlgeschlagen';
-        errorEl.style.display = 'block';
+  NP.API.post(url, body, { timeout: 600000 })
+    .then(function(response) {
+      closeCloneModal();
+      var resultEl = document.getElementById('proxmox-result');
+      if (resultEl) {
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = 'Clone erfolgreich erstellt! Seite wird neu geladen...';
+        resultEl.style.display = 'block';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-    errorEl.textContent = 'Netzwerkfehler';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.ontimeout = function() {
-    if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-    errorEl.textContent = 'Timeout - Clone dauert zu lange. Pruefe Proxmox manuell.';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.send(JSON.stringify(body));
+      setTimeout(function() { location.reload(); }, 2000);
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    })
+    .catch(function(error) {
+      errorEl.textContent = error.message || 'Clone fehlgeschlagen';
+      errorEl.style.display = 'block';
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    });
 }
 
 // Template Modal
@@ -292,41 +236,23 @@ function convertToTemplate() {
   var endpoint = pendingTemplate.type === 'vm' ? 'vms' : 'cts';
   var url = '/api/nodes/' + pendingTemplate.nodeId + '/proxmox/' + endpoint + '/' + pendingTemplate.vmid + '/template';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', url, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 120000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-
-      var response;
-      try { response = JSON.parse(xhr.responseText); } catch (e) { response = { success: false }; }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeTemplateModal();
-        var resultEl = document.getElementById('proxmox-result');
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Template erstellt! Seite wird neu geladen...';
-          resultEl.style.display = 'block';
-        }
-        setTimeout(function() { location.reload(); }, 1500);
-      } else {
-        errorEl.textContent = response.error ? response.error.message : 'Konvertierung fehlgeschlagen';
-        errorEl.style.display = 'block';
+  NP.API.post(url, {}, { timeout: 120000 })
+    .then(function(response) {
+      closeTemplateModal();
+      var resultEl = document.getElementById('proxmox-result');
+      if (resultEl) {
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = 'Template erstellt! Seite wird neu geladen...';
+        resultEl.style.display = 'block';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-    errorEl.textContent = 'Netzwerkfehler';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.send('{}');
+      setTimeout(function() { location.reload(); }, 1500);
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    })
+    .catch(function(error) {
+      errorEl.textContent = error.message || 'Konvertierung fehlgeschlagen';
+      errorEl.style.display = 'block';
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    });
 }
 
 // Proxmox functions - uses NP.API and NP.UI

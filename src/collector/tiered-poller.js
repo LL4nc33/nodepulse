@@ -206,7 +206,6 @@ class TieredPoller {
       const commands = [
         'uptime',
         'free -b',
-        'cat /proc/meminfo',
       ];
 
       // Docker stats (if available)

@@ -1,18 +1,4 @@
-// Toggle collapsible section (ES5)
-function toggleSection(headerEl) {
-  var section = headerEl.parentElement;
-  var content = section.querySelector('.section-content');
-
-  if (section.classList.contains('collapsed')) {
-    section.classList.remove('collapsed');
-    content.style.display = 'block';
-  } else {
-    section.classList.add('collapsed');
-    content.style.display = 'none';
-  }
-}
-
-// formatBytes is available as window.NP.UI.formatBytes from main.js
+// formatBytes and toggleSection are available as window.NP.Helpers from main.js
 
 // Tab switching with URL hash persistence
 var tabBtns = document.querySelectorAll('.tab-btn');
@@ -92,51 +78,25 @@ function loadNetworkDiagnostics(nodeId) {
     btn.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  activeNetworkXHR = xhr;
-  xhr.open('GET', '/api/nodes/' + nodeId + '/network', true);
-  xhr.timeout = 120000;
-
-  function resetState() {
-    activeNetworkXHR = null;
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-  }
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      resetState();
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+  NP.API.get('/api/nodes/' + nodeId + '/network', { timeout: 120000 })
+    .then(function(response) {
+      networkData = response.data;
+      renderNetworkDiagnostics();
+      activeNetworkXHR = null;
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        networkData = response.data;
-        renderNetworkDiagnostics();
-      } else {
-        var errMsg = response.error ? response.error.message : 'Fehler beim Laden';
-        contentEl.innerHTML = '<div class="empty-state"><p>' + escapeHtml(errMsg) + '</p><button class="btn btn-secondary" onclick="loadNetworkDiagnostics(' + nodeId + ')">Erneut versuchen</button></div>';
+    })
+    .catch(function(error) {
+      var errMsg = error.message || 'Fehler beim Laden';
+      contentEl.innerHTML = '<div class="empty-state"><p>' + escapeHtml(errMsg) + '</p><button class="btn btn-secondary" onclick="loadNetworkDiagnostics(' + nodeId + ')">Erneut versuchen</button></div>';
+      activeNetworkXHR = null;
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    resetState();
-    contentEl.innerHTML = '<div class="empty-state"><p>Netzwerkfehler</p></div>';
-  };
-
-  xhr.ontimeout = function() {
-    resetState();
-    contentEl.innerHTML = '<div class="empty-state"><p>Timeout</p></div>';
-  };
-
-  xhr.send();
+    });
 }
 
 function renderNetworkDiagnostics() {
@@ -332,59 +292,32 @@ function runPingTest(nodeId) {
   resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Ping läuft...</div>';
   resultEl.style.display = 'block';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/network/ping', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/network/ping', { target: target, count: 4 }, { timeout: 60000 })
+    .then(function(response) {
+      var r = response.data;
+      var html = '<div class="tool-success">';
+      html += '<div class="ping-stats">';
+      html += '<span class="ping-stat"><strong>' + r.transmitted + '</strong> gesendet</span>';
+      html += '<span class="ping-stat"><strong>' + r.received + '</strong> empfangen</span>';
+      html += '<span class="ping-stat ' + (r.loss_percent > 0 ? 'text-error' : '') + '"><strong>' + r.loss_percent + '%</strong> Verlust</span>';
+      if (r.avg_ms !== null) {
+        html += '<span class="ping-stat"><strong>' + r.avg_ms.toFixed(2) + ' ms</strong> avg</span>';
+      }
+      html += '</div>';
+      if (r.min_ms !== null && r.max_ms !== null) {
+        html += '<div class="ping-detail">min/avg/max: ' + r.min_ms.toFixed(2) + ' / ' + r.avg_ms.toFixed(2) + ' / ' + r.max_ms.toFixed(2) + ' ms</div>';
+      }
+      html += '</div>';
+      resultEl.innerHTML = html;
       btn.classList.remove('loading');
       btn.disabled = false;
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        var r = response.data;
-        var html = '<div class="tool-success">';
-        html += '<div class="ping-stats">';
-        html += '<span class="ping-stat"><strong>' + r.transmitted + '</strong> gesendet</span>';
-        html += '<span class="ping-stat"><strong>' + r.received + '</strong> empfangen</span>';
-        html += '<span class="ping-stat ' + (r.loss_percent > 0 ? 'text-error' : '') + '"><strong>' + r.loss_percent + '%</strong> Verlust</span>';
-        if (r.avg_ms !== null) {
-          html += '<span class="ping-stat"><strong>' + r.avg_ms.toFixed(2) + ' ms</strong> avg</span>';
-        }
-        html += '</div>';
-        if (r.min_ms !== null && r.max_ms !== null) {
-          html += '<div class="ping-detail">min/avg/max: ' + r.min_ms.toFixed(2) + ' / ' + r.avg_ms.toFixed(2) + ' / ' + r.max_ms.toFixed(2) + ' ms</div>';
-        }
-        html += '</div>';
-        resultEl.innerHTML = html;
-      } else {
-        var errMsg = response.error ? response.error.message : 'Fehler';
-        resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    resultEl.innerHTML = '<div class="tool-error">Netzwerkfehler</div>';
-  };
-
-  xhr.ontimeout = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    resultEl.innerHTML = '<div class="tool-error">Timeout</div>';
-  };
-
-  xhr.send(JSON.stringify({ target: target, count: 4 }));
+    })
+    .catch(function(error) {
+      var errMsg = error.message || 'Fehler';
+      resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    });
 }
 
 function runDnsLookup(nodeId) {
@@ -406,52 +339,31 @@ function runDnsLookup(nodeId) {
   resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> DNS Lookup...</div>';
   resultEl.style.display = 'block';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/network/dns', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 30000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        var r = response.data;
-        var html = '<div class="' + (r.success ? 'tool-success' : 'tool-error') + '">';
-        html += '<div><strong>' + escapeHtml(r.hostname) + '</strong></div>';
-        if (r.addresses && r.addresses.length > 0) {
-          html += '<div class="dns-addresses">';
-          for (var i = 0; i < r.addresses.length; i++) {
-            html += '<span class="dns-ip">' + escapeHtml(r.addresses[i]) + '</span>';
-          }
-          html += '</div>';
-        } else {
-          html += '<div>Keine Adressen gefunden</div>';
+  NP.API.post('/api/nodes/' + nodeId + '/network/dns', { hostname: hostname }, { timeout: 30000 })
+    .then(function(response) {
+      var r = response.data;
+      var html = '<div class="' + (r.success ? 'tool-success' : 'tool-error') + '">';
+      html += '<div><strong>' + escapeHtml(r.hostname) + '</strong></div>';
+      if (r.addresses && r.addresses.length > 0) {
+        html += '<div class="dns-addresses">';
+        for (var i = 0; i < r.addresses.length; i++) {
+          html += '<span class="dns-ip">' + escapeHtml(r.addresses[i]) + '</span>';
         }
         html += '</div>';
-        resultEl.innerHTML = html;
       } else {
-        var errMsg = response.error ? response.error.message : 'Fehler';
-        resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
+        html += '<div>Keine Adressen gefunden</div>';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    resultEl.innerHTML = '<div class="tool-error">Netzwerkfehler</div>';
-  };
-
-  xhr.send(JSON.stringify({ hostname: hostname }));
+      html += '</div>';
+      resultEl.innerHTML = html;
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    })
+    .catch(function(error) {
+      var errMsg = error.message || 'Fehler';
+      resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    });
 }
 
 function runTraceroute(nodeId) {
@@ -473,59 +385,32 @@ function runTraceroute(nodeId) {
   resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Traceroute läuft (kann 30-60 Sek dauern)...</div>';
   resultEl.style.display = 'block';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/network/traceroute', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 90000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        var r = response.data;
-        var html = '<div class="tool-success">';
-        html += '<div class="trace-header">Traceroute zu <strong>' + escapeHtml(r.target) + '</strong></div>';
-        if (r.hops && r.hops.length > 0) {
-          html += '<div class="trace-hops">';
-          for (var i = 0; i < r.hops.length; i++) {
-            var hop = r.hops[i];
-            html += '<div class="trace-hop"><span class="hop-num">' + hop.hop + '</span><span class="hop-host">' + escapeHtml(hop.host || '*') + '</span><span class="hop-time">' + (hop.time_ms ? hop.time_ms.toFixed(2) + ' ms' : '*') + '</span></div>';
-          }
-          html += '</div>';
-        } else {
-          html += '<pre class="trace-raw">' + escapeHtml(r.raw || 'Keine Daten') + '</pre>';
+  NP.API.post('/api/nodes/' + nodeId + '/network/traceroute', { target: target, maxHops: 20 }, { timeout: 90000 })
+    .then(function(response) {
+      var r = response.data;
+      var html = '<div class="tool-success">';
+      html += '<div class="trace-header">Traceroute zu <strong>' + escapeHtml(r.target) + '</strong></div>';
+      if (r.hops && r.hops.length > 0) {
+        html += '<div class="trace-hops">';
+        for (var i = 0; i < r.hops.length; i++) {
+          var hop = r.hops[i];
+          html += '<div class="trace-hop"><span class="hop-num">' + hop.hop + '</span><span class="hop-host">' + escapeHtml(hop.host || '*') + '</span><span class="hop-time">' + (hop.time_ms ? hop.time_ms.toFixed(2) + ' ms' : '*') + '</span></div>';
         }
         html += '</div>';
-        resultEl.innerHTML = html;
       } else {
-        var errMsg = response.error ? response.error.message : 'Fehler';
-        resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
+        html += '<pre class="trace-raw">' + escapeHtml(r.raw || 'Keine Daten') + '</pre>';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    resultEl.innerHTML = '<div class="tool-error">Netzwerkfehler</div>';
-  };
-
-  xhr.ontimeout = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    resultEl.innerHTML = '<div class="tool-error">Timeout - Traceroute hat zu lange gedauert</div>';
-  };
-
-  xhr.send(JSON.stringify({ target: target, maxHops: 20 }));
+      html += '</div>';
+      resultEl.innerHTML = html;
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    })
+    .catch(function(error) {
+      var errMsg = error.message || 'Fehler';
+      resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    });
 }
 
 // Load network info when network tab is opened

@@ -1,18 +1,4 @@
-// Toggle collapsible section (ES5)
-function toggleSection(headerEl) {
-  var section = headerEl.parentElement;
-  var content = section.querySelector('.section-content');
-
-  if (section.classList.contains('collapsed')) {
-    section.classList.remove('collapsed');
-    content.style.display = 'block';
-  } else {
-    section.classList.add('collapsed');
-    content.style.display = 'none';
-  }
-}
-
-// formatBytes is available as window.NP.UI.formatBytes from main.js
+// formatBytes and toggleSection are available from global helpers (main.js)
 
 // Tab switching with URL hash persistence
 var tabBtns = document.querySelectorAll('.tab-btn');
@@ -89,44 +75,20 @@ function openCreateVmModal(nodeId) {
   if (btn) btn.disabled = true;
   if (error) error.style.display = 'none';
 
-  // Load resources from API
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/api/nodes/' + nodeId + '/proxmox/resources', true);
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.get('/api/nodes/' + nodeId + '/proxmox/resources', { timeout: 60000 })
+    .then(function(response) {
       if (loading) loading.style.display = 'none';
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      populateVmForm(response.data);
+      if (form) form.style.display = 'block';
+      if (btn) btn.disabled = false;
+    })
+    .catch(function(err) {
+      if (loading) loading.style.display = 'none';
+      if (error) {
+        error.textContent = 'Fehler beim Laden der Ressourcen: ' + (err.message || 'Unbekannter Fehler');
+        error.style.display = 'block';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        populateVmForm(response.data);
-        if (form) form.style.display = 'block';
-        if (btn) btn.disabled = false;
-      } else {
-        if (error) {
-          error.textContent = 'Fehler beim Laden der Ressourcen: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-          error.style.display = 'block';
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (loading) loading.style.display = 'none';
-    if (error) {
-      error.textContent = 'Netzwerkfehler beim Laden der Ressourcen';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.send();
+    });
 }
 
 function populateVmForm(data) {
@@ -240,61 +202,26 @@ function submitCreateVm(event) {
     description: document.getElementById('vm-description').value
   };
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + createVmNodeId + '/proxmox/vms/create', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 180000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + createVmNodeId + '/proxmox/vms/create', formData, { timeout: 180000 })
+    .then(function(response) {
+      alert('VM ' + formData.vmid + ' erfolgreich erstellt!');
+      closeCreateVmModal();
+      window.location.reload();
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+    })
+    .catch(function(err) {
+      if (error) {
+        error.textContent = 'Fehler: ' + (err.message || 'Unbekannter Fehler');
+        error.style.display = 'block';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        alert('VM ' + formData.vmid + ' erfolgreich erstellt!');
-        closeCreateVmModal();
-        window.location.reload();
-      } else {
-        if (error) {
-          error.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-          error.style.display = 'block';
-        }
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    if (error) {
-      error.textContent = 'Netzwerkfehler';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    if (error) {
-      error.textContent = 'Timeout (3 Minuten)';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.send(JSON.stringify(formData));
+    });
 }
 
 // CT Creation Functions
@@ -312,44 +239,20 @@ function openCreateCtModal(nodeId) {
   if (btn) btn.disabled = true;
   if (error) error.style.display = 'none';
 
-  // Load resources from API
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/api/nodes/' + nodeId + '/proxmox/resources', true);
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.get('/api/nodes/' + nodeId + '/proxmox/resources', { timeout: 60000 })
+    .then(function(response) {
       if (loading) loading.style.display = 'none';
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      populateCtForm(response.data);
+      if (form) form.style.display = 'block';
+      if (btn) btn.disabled = false;
+    })
+    .catch(function(err) {
+      if (loading) loading.style.display = 'none';
+      if (error) {
+        error.textContent = 'Fehler beim Laden der Ressourcen: ' + (err.message || 'Unbekannter Fehler');
+        error.style.display = 'block';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        populateCtForm(response.data);
-        if (form) form.style.display = 'block';
-        if (btn) btn.disabled = false;
-      } else {
-        if (error) {
-          error.textContent = 'Fehler beim Laden der Ressourcen: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-          error.style.display = 'block';
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (loading) loading.style.display = 'none';
-    if (error) {
-      error.textContent = 'Netzwerkfehler beim Laden der Ressourcen';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.send();
+    });
 }
 
 function populateCtForm(data) {
@@ -495,61 +398,26 @@ function submitCreateCt(event) {
     description: document.getElementById('ct-description').value
   };
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + createCtNodeId + '/proxmox/cts/create', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 180000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + createCtNodeId + '/proxmox/cts/create', formData, { timeout: 180000 })
+    .then(function(response) {
+      alert('CT ' + formData.ctid + ' erfolgreich erstellt!');
+      closeCreateCtModal();
+      window.location.reload();
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+    })
+    .catch(function(err) {
+      if (error) {
+        error.textContent = 'Fehler: ' + (err.message || 'Unbekannter Fehler');
+        error.style.display = 'block';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        alert('CT ' + formData.ctid + ' erfolgreich erstellt!');
-        closeCreateCtModal();
-        window.location.reload();
-      } else {
-        if (error) {
-          error.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-          error.style.display = 'block';
-        }
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    if (error) {
-      error.textContent = 'Netzwerkfehler';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    if (error) {
-      error.textContent = 'Timeout (3 Minuten)';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.send(JSON.stringify(formData));
+    });
 }
 
 // Track active snapshot XHR for cancellation
@@ -615,74 +483,37 @@ function createSnapshot(event, nodeId) {
     btnEl.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  activeSnapshotXHR = xhr;
-  xhr.open('POST', '/api/nodes/' + nodeId + '/proxmox/snapshots', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 300000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      activeSnapshotXHR = null;
-      if (btnEl) {
-        btnEl.classList.remove('loading');
-        btnEl.disabled = false;
-      }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Snapshot erstellt. Seite wird neu geladen...';
-        }
-        setTimeout(function() {
-          window.location.reload();
-        }, 1500);
-      } else {
-        if (resultEl) {
-          resultEl.className = 'alert alert-error';
-          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    activeSnapshotXHR = null;
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Netzwerkfehler';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    activeSnapshotXHR = null;
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Timeout (5 Minuten)';
-    }
-  };
-
-  xhr.send(JSON.stringify({
+  NP.API.post('/api/nodes/' + nodeId + '/proxmox/snapshots', {
     vm_type: vmType,
     vmid: parseInt(vmid, 10),
     snap_name: snapName,
     description: description
-  }));
+  }, { timeout: 300000 })
+    .then(function(response) {
+      activeSnapshotXHR = null;
+      if (resultEl) {
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = 'Snapshot erstellt. Seite wird neu geladen...';
+      }
+      setTimeout(function() {
+        window.location.reload();
+      }, 1500);
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+    })
+    .catch(function(error) {
+      activeSnapshotXHR = null;
+      if (resultEl) {
+        resultEl.className = 'alert alert-error';
+        resultEl.textContent = 'Fehler: ' + (error.message || 'Unbekannter Fehler');
+      }
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+    });
 }
 
 function deleteSnapshot(nodeId, vmType, vmid, snapName) {
@@ -698,52 +529,22 @@ function deleteSnapshot(nodeId, vmType, vmid, snapName) {
     resultEl.style.display = 'block';
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('DELETE', '/api/nodes/' + nodeId + '/proxmox/snapshots/' + encodeURIComponent(vmType) + '/' + encodeURIComponent(vmid) + '/' + encodeURIComponent(snapName), true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 300000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+  NP.API.delete('/api/nodes/' + nodeId + '/proxmox/snapshots/' + encodeURIComponent(vmType) + '/' + encodeURIComponent(vmid) + '/' + encodeURIComponent(snapName), { timeout: 300000 })
+    .then(function(response) {
+      if (resultEl) {
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = 'Snapshot gelöscht. Aktualisiere...';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Snapshot gelöscht. Aktualisiere...';
-        }
-        setTimeout(function() {
-          refreshProxmox(nodeId);
-        }, 1000);
-      } else {
-        if (resultEl) {
-          resultEl.className = 'alert alert-error';
-          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-        }
+      setTimeout(function() {
+        refreshProxmox(nodeId);
+      }, 1000);
+    })
+    .catch(function(error) {
+      if (resultEl) {
+        resultEl.className = 'alert alert-error';
+        resultEl.textContent = 'Fehler: ' + (error.message || 'Unbekannter Fehler');
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Netzwerkfehler';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Timeout (5 Minuten)';
-    }
-  };
-
-  xhr.send();
+    });
 }
 
 // =====================================================

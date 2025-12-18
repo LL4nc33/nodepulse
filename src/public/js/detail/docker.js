@@ -4,21 +4,7 @@ function escapeForJsString(str) {
   return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
-// Toggle collapsible section (ES5)
-function toggleSection(headerEl) {
-  var section = headerEl.parentElement;
-  var content = section.querySelector('.section-content');
-
-  if (section.classList.contains('collapsed')) {
-    section.classList.remove('collapsed');
-    content.style.display = 'block';
-  } else {
-    section.classList.add('collapsed');
-    content.style.display = 'none';
-  }
-}
-
-// formatBytes is available as window.NP.UI.formatBytes from main.js
+// formatBytes and toggleSection are available from global helpers (main.js)
 
 // Tab switching with URL hash persistence
 var tabBtns = document.querySelectorAll('.tab-btn');
@@ -234,9 +220,6 @@ function containerAction(nodeId, containerId, action) {
     });
 }
 
-// Track active logs XHR for cancellation
-var activeLogsXHR = null;
-
 function showLogs(nodeId, containerId, containerName) {
   var modal = document.getElementById('logs-modal');
   var title = document.getElementById('logs-title');
@@ -244,60 +227,23 @@ function showLogs(nodeId, containerId, containerName) {
 
   if (!modal || !content) return;
 
-  // Abort previous XHR if still running
-  if (activeLogsXHR) {
-    activeLogsXHR.abort();
-  }
-
   modal.style.display = 'flex';
   title.textContent = 'Logs: ' + containerName;
   content.textContent = 'Lade Logs...';
 
-  var xhr = new XMLHttpRequest();
-  activeLogsXHR = xhr;
-  xhr.open('GET', '/api/nodes/' + nodeId + '/docker/containers/' + containerId + '/logs?tail=100', true);
-  xhr.timeout = 30000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      activeLogsXHR = null;
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        content.textContent = response.data.logs || '(Keine Logs vorhanden)';
-      } else {
-        content.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    activeLogsXHR = null;
-    content.textContent = 'Netzwerkfehler beim Laden der Logs';
-  };
-
-  xhr.ontimeout = function() {
-    activeLogsXHR = null;
-    content.textContent = 'Timeout beim Laden der Logs';
-  };
-
-  xhr.send();
+  NP.API.get('/api/nodes/' + nodeId + '/docker/containers/' + containerId + '/logs?tail=100', { timeout: 30000 })
+    .then(function(data) {
+      content.textContent = data.logs || '(Keine Logs vorhanden)';
+    })
+    .catch(function(error) {
+      content.textContent = 'Fehler: ' + (error.message || 'Unbekannter Fehler');
+    });
 }
 
 function closeLogs() {
   var modal = document.getElementById('logs-modal');
   if (modal) {
     modal.style.display = 'none';
-  }
-  // Abort active XHR if running
-  if (activeLogsXHR) {
-    activeLogsXHR.abort();
-    activeLogsXHR = null;
   }
 }
 
@@ -333,58 +279,18 @@ function pruneDocker(nodeId, type) {
     menu.classList.remove('open');
   }
 
-  if (resultEl) {
-    resultEl.className = 'alert alert-info';
-    resultEl.textContent = 'Fuehre ' + (typeNames[type] || type) + ' Prune aus...';
-    resultEl.style.display = 'block';
-  }
+  NP.UI.showAlert(resultEl, 'info', 'Fuehre ' + (typeNames[type] || type) + ' Prune aus...');
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/docker/prune/' + type, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 120000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Prune erfolgreich. Aktualisiere...';
-        }
-        setTimeout(function() {
-          refreshDocker(nodeId);
-        }, 1000);
-      } else {
-        if (resultEl) {
-          resultEl.className = 'alert alert-error';
-          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Netzwerkfehler';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Timeout (2 Minuten)';
-    }
-  };
-
-  xhr.send();
+  NP.API.post('/api/nodes/' + nodeId + '/docker/prune/' + type, null, { timeout: 120000 })
+    .then(function(data) {
+      NP.UI.showAlert(resultEl, 'success', 'Prune erfolgreich. Aktualisiere...');
+      setTimeout(function() {
+        refreshDocker(nodeId);
+      }, 1000);
+    })
+    .catch(function(error) {
+      NP.UI.showAlert(resultEl, 'error', 'Fehler: ' + (error.message || 'Unbekannter Fehler'));
+    });
 }
 
 // Close dropdown when clicking outside
@@ -489,72 +395,36 @@ function executeDockerDelete() {
     url += '?force=true';
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('DELETE', url, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.delete(url, { timeout: 60000 })
+    .then(function(data) {
       if (btnEl) {
         btnEl.classList.remove('loading');
         btnEl.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      closeDeleteModal();
+      var resultEl = document.getElementById('docker-result');
+      NP.UI.showAlert(resultEl, 'success', 'Erfolgreich gelöscht. Aktualisiere...');
+      setTimeout(function() {
+        refreshDocker(pendingDelete.nodeId);
+      }, 500);
+    })
+    .catch(function(error) {
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
       }
+      errorEl.textContent = error.message || 'Löschen fehlgeschlagen';
+      errorEl.style.display = 'block';
 
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeDeleteModal();
-        var resultEl = document.getElementById('docker-result');
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Erfolgreich gelöscht. Aktualisiere...';
-          resultEl.style.display = 'block';
-        }
-        setTimeout(function() {
-          refreshDocker(pendingDelete.nodeId);
-        }, 500);
-      } else {
-        var errMsg = response.error ? response.error.message : 'Löschen fehlgeschlagen';
-        errorEl.textContent = errMsg;
-        errorEl.style.display = 'block';
-
-        // Show force option if container is running
-        if (response.error && response.error.code === 'CONTAINER_RUNNING') {
-          document.getElementById('delete-force-option').style.display = 'block';
-        }
-        // Show force option if image is in use
-        if (response.error && response.error.code === 'IMAGE_IN_USE') {
-          document.getElementById('delete-force-option').style.display = 'block';
-        }
+      // Show force option if container is running
+      if (error.code === 'CONTAINER_RUNNING') {
+        document.getElementById('delete-force-option').style.display = 'block';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    errorEl.textContent = 'Netzwerkfehler';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.ontimeout = function() {
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    errorEl.textContent = 'Timeout (60 Sekunden)';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.send();
+      // Show force option if image is in use
+      if (error.code === 'IMAGE_IN_USE') {
+        document.getElementById('delete-force-option').style.display = 'block';
+      }
+    });
 }
 
 // =====================================================

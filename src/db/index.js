@@ -248,11 +248,11 @@ function getDb() {
 }
 
 /**
- * Close the database connection
+ * Close the database connection (async)
  */
-function close() {
+async function close() {
   if (db) {
-    db.close();
+    await db.close();
     db = null;
     initPromise = null;
     console.log('[DB] Database connection closed');

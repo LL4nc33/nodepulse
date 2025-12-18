@@ -115,9 +115,9 @@ class SqlJsWrapper {
   }
 
   /**
-   * Speichern auf Disk
+   * Speichern auf Disk (async)
    */
-  save() {
+  async save() {
     if (!this.isDirty || !this.db || !this.dbPath) return;
 
     try {
@@ -126,8 +126,8 @@ class SqlJsWrapper {
 
       // Atomic write: erst temp file, dann rename
       const tempPath = this.dbPath + '.tmp';
-      fs.writeFileSync(tempPath, buffer);
-      fs.renameSync(tempPath, this.dbPath);
+      await fs.promises.writeFile(tempPath, buffer);
+      await fs.promises.rename(tempPath, this.dbPath);
 
       this.isDirty = false;
       console.log('[DB] Saved to disk');
@@ -149,7 +149,9 @@ class SqlJsWrapper {
   startPeriodicSave() {
     if (this.saveTimer) return;
     this.saveTimer = setInterval(() => {
-      this.save();
+      this.save().catch(function(err) {
+        console.error('[DB] Periodic save failed:', err.message);
+      });
     }, this.saveInterval);
     // Unref damit Node.js beenden kann
     if (this.saveTimer.unref) {
@@ -168,14 +170,14 @@ class SqlJsWrapper {
   }
 
   /**
-   * Schließt die Datenbank
+   * Schließt die Datenbank (async)
    */
-  close() {
+  async close() {
     // Timer stoppen
     this.stopPeriodicSave();
 
     // Final save
-    this.save();
+    await this.save();
 
     // DB schließen
     if (this.db) {

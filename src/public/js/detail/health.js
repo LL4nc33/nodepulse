@@ -24,58 +24,20 @@ function runHealthCheck(nodeId) {
     }
   }
 
-  // Use XMLHttpRequest instead of fetch for ES5 compatibility
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/health/check', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 120000; // 2 minutes
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/health/check', null, { timeout: 120000 })
+    .then(function(data) {
       resetButtons();
-
-      if (xhr.status === 200) {
-        try {
-          var data = JSON.parse(xhr.responseText);
-          if (data.success) {
-            if (window.NP && window.NP.Toast) {
-              window.NP.Toast.show('Health-Check abgeschlossen', 'success');
-            }
-            window.location.reload();
-          } else {
-            if (window.NP && window.NP.Toast) {
-              var errMsg = (data.error && data.error.message) || 'Unbekannter Fehler';
-              window.NP.Toast.show('Health-Check fehlgeschlagen: ' + errMsg, 'error');
-            }
-          }
-        } catch (e) {
-          if (window.NP && window.NP.Toast) {
-            window.NP.Toast.show('Health-Check: Ungültige Server-Antwort', 'error');
-          }
-        }
-      } else {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Health-Check fehlgeschlagen: HTTP ' + xhr.status, 'error');
-        }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Health-Check abgeschlossen', 'success');
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    resetButtons();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Health-Check: Netzwerkfehler', 'error');
-    }
-  };
-
-  xhr.ontimeout = function() {
-    resetButtons();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Health-Check: Timeout (> 2 Min)', 'error');
-    }
-  };
-
-  xhr.send(null);
+      window.location.reload();
+    })
+    .catch(function(error) {
+      resetButtons();
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Health-Check fehlgeschlagen: ' + error.message, 'error');
+      }
+    });
 }
 
 /**
@@ -110,64 +72,27 @@ function runUpgrade(nodeId, evt) {
     window.NP.Toast.show('Upgrade gestartet... Dies kann einige Minuten dauern.', 'info');
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/health/upgrade', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 600000; // 10 minutes for upgrades
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/health/upgrade', null, { timeout: 600000 })
+    .then(function(data) {
       resetButton();
-
-      if (xhr.status === 200) {
-        try {
-          var data = JSON.parse(xhr.responseText);
-          if (data.success && data.data) {
-            var msg = 'Upgrade abgeschlossen';
-            if (data.data.packages_upgraded) {
-              msg += ' (' + data.data.packages_upgraded + ' Pakete)';
-            }
-            if (data.data.reboot_required) {
-              msg += ' - Reboot erforderlich!';
-            }
-            if (window.NP && window.NP.Toast) {
-              window.NP.Toast.show(msg, 'success');
-            }
-            setTimeout(function() { window.location.reload(); }, 2000);
-          } else {
-            if (window.NP && window.NP.Toast) {
-              var errMsg = (data.error && data.error.message) || 'Unbekannter Fehler';
-              window.NP.Toast.show('Upgrade fehlgeschlagen: ' + errMsg, 'error');
-            }
-          }
-        } catch (e) {
-          if (window.NP && window.NP.Toast) {
-            window.NP.Toast.show('Upgrade: Ungültige Server-Antwort', 'error');
-          }
-        }
-      } else {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Upgrade fehlgeschlagen: HTTP ' + xhr.status, 'error');
-        }
+      var msg = 'Upgrade abgeschlossen';
+      if (data.packages_upgraded) {
+        msg += ' (' + data.packages_upgraded + ' Pakete)';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    resetButton();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Upgrade: Netzwerkfehler', 'error');
-    }
-  };
-
-  xhr.ontimeout = function() {
-    resetButton();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Upgrade: Timeout (> 10 Min)', 'error');
-    }
-  };
-
-  xhr.send(null);
+      if (data.reboot_required) {
+        msg += ' - Reboot erforderlich!';
+      }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show(msg, 'success');
+      }
+      setTimeout(function() { window.location.reload(); }, 2000);
+    })
+    .catch(function(error) {
+      resetButton();
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Upgrade fehlgeschlagen: ' + error.message, 'error');
+      }
+    });
 }
 
 /**
@@ -200,55 +125,18 @@ function switchProxmoxRepo(nodeId, mode, evt) {
     }
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/health/repo', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000; // 1 minute
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/health/repo', { mode: mode }, { timeout: 60000 })
+    .then(function(data) {
       resetButton();
-
-      if (xhr.status === 200) {
-        try {
-          var data = JSON.parse(xhr.responseText);
-          if (data.success) {
-            if (window.NP && window.NP.Toast) {
-              window.NP.Toast.show('Repository gewechselt zu ' + modeName, 'success');
-            }
-            setTimeout(function() { window.location.reload(); }, 1500);
-          } else {
-            if (window.NP && window.NP.Toast) {
-              var errMsg = (data.error && data.error.message) || 'Unbekannter Fehler';
-              window.NP.Toast.show('Repository-Wechsel fehlgeschlagen: ' + errMsg, 'error');
-            }
-          }
-        } catch (e) {
-          if (window.NP && window.NP.Toast) {
-            window.NP.Toast.show('Repository-Wechsel: Ungültige Server-Antwort', 'error');
-          }
-        }
-      } else {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Repository-Wechsel fehlgeschlagen: HTTP ' + xhr.status, 'error');
-        }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Repository gewechselt zu ' + modeName, 'success');
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    resetButton();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Repository-Wechsel: Netzwerkfehler', 'error');
-    }
-  };
-
-  xhr.ontimeout = function() {
-    resetButton();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Repository-Wechsel: Timeout', 'error');
-    }
-  };
-
-  xhr.send(JSON.stringify({ mode: mode }));
+      setTimeout(function() { window.location.reload(); }, 1500);
+    })
+    .catch(function(error) {
+      resetButton();
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Repository-Wechsel fehlgeschlagen: ' + error.message, 'error');
+      }
+    });
 }

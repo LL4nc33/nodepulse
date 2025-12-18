@@ -13,6 +13,78 @@
   window.NP = window.NP || {};
 
   // =====================================================
+  // Helpers Namespace - Zentrale Utility-Funktionen
+  // =====================================================
+
+  NP.Helpers = {
+    /**
+     * Escape HTML special characters
+     * @param {string} str - String to escape
+     * @returns {string} Escaped string
+     */
+    escapeHtml: function(str) {
+      if (!str) return '';
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    },
+
+    /**
+     * Format bytes to human-readable string
+     * @param {number} bytes - Bytes to format
+     * @param {number} decimals - Number of decimal places (default: 2)
+     * @returns {string} Formatted string (e.g., "1.5 GB")
+     */
+    formatBytes: function(bytes, decimals) {
+      if (!bytes || bytes === 0) return '0 B';
+      decimals = decimals !== undefined ? decimals : 2;
+      var k = 1024;
+      var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      var i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
+    },
+
+    /**
+     * Toggle collapsible section
+     * @param {HTMLElement} headerEl - Section header element
+     */
+    toggleSection: function(headerEl) {
+      var section = headerEl.parentElement;
+      var content = section.querySelector('.section-content');
+
+      if (section.classList.contains('collapsed')) {
+        section.classList.remove('collapsed');
+        if (content) content.style.display = 'block';
+      } else {
+        section.classList.add('collapsed');
+        if (content) content.style.display = 'none';
+      }
+    },
+
+    /**
+     * Format timestamp as "time ago" (German)
+     * @param {number} timestamp - Unix timestamp in seconds
+     * @returns {string} Formatted string (e.g., "vor 5 Min", "vor 2 Std")
+     */
+    timeAgo: function(timestamp) {
+      if (!timestamp) return '-';
+      var now = Math.floor(Date.now() / 1000);
+      var diff = now - timestamp;
+      if (diff < 60) return 'gerade eben';
+      if (diff < 3600) return 'vor ' + Math.floor(diff / 60) + ' Min';
+      if (diff < 86400) return 'vor ' + Math.floor(diff / 3600) + ' Std';
+      if (diff < 604800) return 'vor ' + Math.floor(diff / 86400) + ' Tage';
+      return new Date(timestamp * 1000).toLocaleDateString('de-DE');
+    }
+  };
+
+  // Globale Shortcuts für Rückwärtskompatibilität
+  window.escapeHtml = NP.Helpers.escapeHtml;
+  window.formatBytes = NP.Helpers.formatBytes;
+  window.toggleSection = NP.Helpers.toggleSection;
+  window.timeAgo = NP.Helpers.timeAgo;
+
+  // =====================================================
   // API Client - Einheitliche Schnittstelle
   // =====================================================
 

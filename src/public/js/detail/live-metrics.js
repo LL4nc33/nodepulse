@@ -26,16 +26,6 @@ var prevNetStats = {
 };
 
 /**
- * Format bytes to human-readable string (ES5)
- */
-function formatBytesLive(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  var i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
-}
-
-/**
  * Format network rate (bytes per second) to human-readable string
  */
 function formatNetRate(bytesPerSec) {
@@ -161,7 +151,7 @@ function updateLiveMetrics() {
         if (memCard && stats.ram_used_bytes) {
           var memDetails = memCard.querySelector('.hero-metric-details span');
           if (memDetails && stats.ram_total_bytes) {
-            memDetails.textContent = formatBytesLive(stats.ram_used_bytes) + ' / ' + formatBytesLive(stats.ram_total_bytes);
+            memDetails.textContent = formatBytes(stats.ram_used_bytes) + ' / ' + formatBytes(stats.ram_total_bytes);
           }
         }
 
@@ -177,7 +167,7 @@ function updateLiveMetrics() {
         if (diskCard && stats.disk_used_bytes && stats.disk_total_bytes) {
           var diskDetails = diskCard.querySelector('.hero-metric-details span');
           if (diskDetails) {
-            diskDetails.textContent = formatBytesLive(stats.disk_used_bytes) + ' / ' + formatBytesLive(stats.disk_total_bytes);
+            diskDetails.textContent = formatBytes(stats.disk_used_bytes) + ' / ' + formatBytes(stats.disk_total_bytes);
           }
         }
 

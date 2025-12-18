@@ -102,9 +102,9 @@ const shutdown = (signal) => {
   scheduler.stop();
 
   // Stop accepting new connections
-  server.close(() => {
+  server.close(async () => {
     console.log('[SHUTDOWN] Server geschlossen');
-    db.close();
+    await db.close();
     process.exit(0);
   });
 

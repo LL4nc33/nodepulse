@@ -1,0 +1,144 @@
+# NodePulse Refactoring Fortschritt
+
+## Status: IN_PROGRESS | Welle: 2
+
+---
+
+## Welle 1 - Cleanup (Parallel)
+
+### CSS Agent
+- [x] style-backup.css gelöscht
+
+### Backend Agent
+- [x] sqljs-wrapper.js: Async I/O
+- [x] tiered-poller.js: Redundante meminfo entfernt
+- [ ] Docker Stats Format komprimiert (SPÄTER - erfordert Parsing-Anpassung)
+
+### Frontend JS Agent
+- [x] NP.Helpers Namespace in main.js erstellt
+  - [x] escapeHtml()
+  - [x] formatBytes()
+  - [x] toggleSection()
+  - [x] timeAgo()
+
+### Templates Agent
+- [x] modals.ejs: XSS Fixes (<%- %> zu <%= %>) - KEINE FIXES ERFORDERLICH
+
+---
+
+## Welle 2 - Refactoring (Koordiniert)
+
+### Backend Agent
+- [ ] db/index.js aufgeteilt in:
+  - [ ] entities/nodes.js
+  - [ ] entities/stats.js
+  - [ ] entities/docker.js
+  - [ ] entities/proxmox.js
+  - [ ] entities/hardware.js
+  - [ ] entities/alerts.js
+  - [ ] entities/health.js
+  - [ ] entities/backups.js
+  - [ ] entities/tasks.js
+  - [ ] helpers/crud-helpers.js
+- [ ] Atomare Stats-Endpoints erstellt
+
+### CSS Agent
+- [x] Unified .card Klasse erstellt (bereits in components.css vorhanden)
+- [x] Duplikate in docker.css entfernt
+- [x] Duplikate in proxmox.css entfernt
+- [x] Duplikate in backup.css entfernt
+- [x] Duplikate in storage.css entfernt
+- [x] layout.css Tags-Duplikat entfernt
+
+### Frontend JS Agent
+- [x] XHR → NP.API Migration
+  - [x] detail/docker.js
+  - [x] detail/network.js
+  - [x] detail/proxmox.js
+  - [x] detail/backup.js
+  - [x] detail/health.js
+  - [x] detail/modals.js
+- [x] Helper-Duplikate entfernt
+  - [x] detail/docker.js - toggleSection() entfernt
+  - [x] detail/live-metrics.js - formatBytesLive() entfernt, formatBytes() aufrufe angepasst
+  - [x] detail/modals.js - toggleSection() entfernt
+  - [x] detail/backup.js - escapeHtml() und toggleBackupSection() entfernt
+  - [x] detail/network.js - toggleSection() entfernt
+  - [x] detail/proxmox.js - toggleSection() entfernt
+
+### Templates Agent
+- [x] settings.js ausgelagert
+- [x] sidebar.js ausgelagert
+- [ ] Partials erstellt
+
+---
+
+## Welle 3 - Integration
+
+- [ ] npm run build:css erfolgreich
+- [ ] npm run build:js erfolgreich
+- [ ] Alle Imports funktionieren
+- [ ] Keine Console Errors
+- [ ] Git Commit erstellt
+
+---
+
+## Änderungslog
+
+| Timestamp | Agent | Datei | Änderung |
+|-----------|-------|-------|----------|
+| 2025-12-18 | Backend Agent | src/db/sqljs-wrapper.js | save() und close() zu async/await konvertiert - fs.writeFileSync → fs.promises.writeFile, fs.renameSync → fs.promises.rename |
+| 2025-12-18 | Backend Agent | src/db/index.js + src/index.js | close() Funktion zu async/await konvertiert + Aufrufe angepasst |
+| 2025-12-18 | Backend Agent | src/collector/tiered-poller.js | Redundanter 'cat /proc/meminfo' Befehl entfernt (free -b liefert gleiche Daten) |
+| 2025-12-18 | Frontend JS Agent | src/public/js/main.js | NP.Helpers Namespace erstellt mit escapeHtml(), formatBytes(), toggleSection(), timeAgo() - Inkl. globaler Shortcuts für Rückwärtskompatibilität |
+| 2025-12-18 | Templates Agent | src/views/partials/node-detail/modals.ejs | XSS-Analyse durchgeführt - bereits sicher, keine unsicheren <%- JSON.stringify %> Stellen gefunden (0 Fixes) |
+| 2025-12-18 | CSS Agent | src/public/css/style-backup.css | Backup-Duplikat gelöscht (14.472 Zeilen) |
+| 2025-12-19 | Frontend JS Agent | src/public/js/detail/docker.js | toggleSection() Funktion entfernt - nutzt jetzt globale Version |
+| 2025-12-19 | Frontend JS Agent | src/public/js/detail/live-metrics.js | formatBytesLive() Funktion entfernt - nutzt jetzt globales formatBytes() |
+| 2025-12-19 | Frontend JS Agent | src/public/js/detail/modals.js | toggleSection() Funktion entfernt - nutzt jetzt globale Version |
+| 2025-12-19 | Frontend JS Agent | src/public/js/detail/backup.js | escapeHtml() und toggleBackupSection() entfernt - nutzen jetzt globale Versionen |
+| 2025-12-19 | CSS Agent | src/public/css/modules/layout.css | Tags-Duplikat entfernt (Zeilen 1900-1983) - bereits in base.css definiert |
+| 2025-12-19 | CSS Agent | src/public/css/modules/docker.css | Summary-Card Basis-Definitionen entfernt - vererbt von components.css |
+| 2025-12-19 | CSS Agent | src/public/css/modules/proxmox.css | Summary-Card Basis-Definitionen entfernt - vererbt von components.css |
+| 2025-12-19 | CSS Agent | src/public/css/modules/backup.css | Summary-Card Basis-Definitionen entfernt - vererbt von components.css |
+| 2025-12-19 | CSS Agent | src/public/css/modules/storage.css | Summary-Card Basis-Definitionen entfernt - vererbt von components.css |
+| 2025-12-19 | Templates Agent | src/views/settings/index.ejs | Inline-JavaScript (124 Zeilen) ausgelagert nach settings.js - EJS-Variablen via settingsPageData Object übergeben |
+| 2025-12-19 | Templates Agent | src/public/js/settings.js | Erstellt - switchSettingsTab(), syncRangeValue/Slider(), clearTOONCache(), updateTOONCacheStats() - Global exposed für onclick handler |
+| 2025-12-19 | Templates Agent | src/views/partials/side-panel.ejs | Inline-JavaScript (38 Zeilen) ausgelagert nach sidebar.js |
+| 2025-12-19 | Templates Agent | src/public/js/sidebar.js | Erstellt - Sidebar-Suche mit "/" Shortcut, ESC-Reset, filterSidebarNodes() |
+| 2025-12-19 | Frontend JS Agent | src/public/js/detail/docker.js | XHR → NP.API Migration - showLogs(), pruneDocker(), executeDockerDelete() migriert (3 Funktionen) |
+| 2025-12-19 | Frontend JS Agent | src/public/js/detail/health.js | XHR → NP.API Migration - runHealthCheck(), runUpgrade(), switchProxmoxRepo() migriert (3 Funktionen) |
+| 2025-12-19 | Frontend JS Agent | src/public/js/detail/backup.js | XHR → NP.API Migration - loadBackupData(), refreshBackupData(), submitCreateBackup(), submitRestoreBackup(), submitDeleteBackup() migriert (5 Funktionen) |
+| 2025-12-19 | Frontend JS Agent | src/public/js/detail/network.js | XHR → NP.API Migration - loadNetworkDiagnostics(), runPingTest(), runDnsLookup(), runTraceroute() migriert (4 Funktionen) + toggleSection() Duplikat entfernt |
+| 2025-12-19 | Frontend JS Agent | src/public/js/detail/proxmox.js | XHR → NP.API Migration - saveConfig(), startClone(), convertToTemplate() migriert (3 Funktionen) + toggleSection() Duplikat entfernt |
+| 2025-12-19 | Frontend JS Agent | src/public/js/detail/modals.js | XHR → NP.API Migration - openCreateVmModal(), submitCreateVm(), openCreateCtModal(), submitCreateCt(), createSnapshot(), deleteSnapshot() migriert (6 Funktionen) |
+| - | - | - | Refactoring gestartet |
+
+---
+
+## Shared State
+
+```json
+{
+  "phase": 1,
+  "activeAgents": [],
+  "completed": [],
+  "inProgress": [],
+  "conflicts": [],
+  "sharedChanges": {}
+}
+```
+
+---
+
+## Konflikte & Entscheidungen
+
+*Hier werden Konflikte dokumentiert die der Projektleiter lösen muss*
+
+---
+
+## Notizen
+
+- ES5-kompatibel bleiben (RPi 2B Support)
+- Kleine atomare Changes bevorzugen
+- Nach jeder Änderung Syntax prüfen
