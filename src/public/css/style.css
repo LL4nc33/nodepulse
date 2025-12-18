@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-18T07:54:04.270Z
+   Generated: 2025-12-18T08:10:32.033Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -977,7 +977,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: layout.css (1953 lines)
+   FROM: layout.css (2011 lines)
    ============================================================ */
 
 /* =====================================================
@@ -2931,6 +2931,64 @@ a:focus {
   padding: 0.125rem 0.375rem;
   border-radius: 10px;
   font-size: 0.6875rem;
+}
+
+/* =====================================================
+   Sidebar Mini Resource Bars (Phase 4.1)
+   ===================================================== */
+
+.node-tree-mini-bars {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.mini-bar {
+  width: 28px;
+  height: 4px;
+  background: var(--color-bg);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.mini-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  -webkit-transition: width 0.3s ease;
+  transition: width 0.3s ease;
+}
+
+.mini-bar-fill.cpu {
+  background: var(--color-accent);
+}
+
+.mini-bar-fill.ram {
+  background: var(--color-info);
+}
+
+.mini-bar-fill.warning {
+  background: var(--color-warning);
+}
+
+.mini-bar-fill.critical {
+  background: var(--color-error);
+}
+
+/* Tooltip for mini bars */
+.mini-bar[title] {
+  cursor: help;
+}
+
+/* Hide mini-bars on very small screens */
+@media (max-width: 280px) {
+  .node-tree-mini-bars {
+    display: none;
+  }
 }
 
 
@@ -8293,7 +8351,7 @@ a:focus {
 /* =====================================================
 
 /* ============================================================
-   FROM: proxmox.css (664 lines)
+   FROM: proxmox.css (711 lines)
    ============================================================ */
 
    Proxmox Management
@@ -8557,6 +8615,53 @@ a:focus {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-transition: color var(--transition-fast, 150ms ease);
+  transition: color var(--transition-fast, 150ms ease);
+}
+
+.proxmox-table th:hover {
+  color: var(--color-text);
+}
+
+/* Sortable Header with Icon */
+.proxmox-table th.sortable {
+  position: relative;
+  padding-right: 1.5rem;
+}
+
+.proxmox-table th.sortable::after {
+  content: '';
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--color-text-muted);
+  opacity: 0.3;
+  -webkit-transition: opacity var(--transition-fast, 150ms ease);
+  transition: opacity var(--transition-fast, 150ms ease);
+}
+
+.proxmox-table th.sortable:hover::after {
+  opacity: 0.6;
+}
+
+.proxmox-table th.sortable.asc::after {
+  border-top: none;
+  border-bottom: 5px solid var(--color-accent);
+  opacity: 1;
+}
+
+.proxmox-table th.sortable.desc::after {
+  border-top: 5px solid var(--color-accent);
+  opacity: 1;
 }
 
 .proxmox-table tbody tr {

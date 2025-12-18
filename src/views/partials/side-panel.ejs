@@ -5,11 +5,26 @@
   var sidebarStats = typeof stats !== 'undefined' ? stats : { total: sidebarNodes.length, online: 0, offline: 0 };
   var sidebarTags = typeof tags !== 'undefined' ? tags : [];
 
+  // Build stats lookup from nodesWithStats (for mini-bars)
+  var nodeStatsMap = {};
+  if (typeof nodesWithStats !== 'undefined' && nodesWithStats) {
+    for (var i = 0; i < nodesWithStats.length; i++) {
+      nodeStatsMap[nodesWithStats[i].id] = nodesWithStats[i];
+    }
+  }
+
+  // Helper to get CSS class for percentage
+  function getBarClass(percent) {
+    if (percent >= 80) return 'critical';
+    if (percent >= 60) return 'warning';
+    return '';
+  }
+
   // Calculate stats if not provided
   if (!sidebarStats.total && sidebarNodes.length > 0) {
     var onlineCount = 0;
-    for (var i = 0; i < sidebarNodes.length; i++) {
-      if (sidebarNodes[i].online) onlineCount++;
+    for (var j = 0; j < sidebarNodes.length; j++) {
+      if (sidebarNodes[j].online) onlineCount++;
     }
     sidebarStats = {
       total: sidebarNodes.length,
@@ -41,6 +56,9 @@
         // Render node tree recursively
         function renderNodeTree(nodeList, level) {
           nodeList.forEach(function(node, index) {
+            var nStats = nodeStatsMap[node.id] || {};
+            var cpuPct = Math.round(nStats.cpu_percent || 0);
+            var ramPct = Math.round(nStats.ram_percent || 0);
         %>
           <li class="node-tree-item">
             <a href="/nodes/<%= node.id %>" class="node-tree-row" data-level="<%= level %>">
@@ -48,6 +66,16 @@
               <span class="node-tree-name"><%= node.name %></span>
               <% if (node.child_count > 0) { %>
                 <span class="node-tree-children-count"><%= node.child_count %></span>
+              <% } %>
+              <% if (node.online && (cpuPct > 0 || ramPct > 0)) { %>
+              <span class="node-tree-mini-bars">
+                <span class="mini-bar" title="CPU: <%= cpuPct %>%">
+                  <span class="mini-bar-fill cpu <%= getBarClass(cpuPct) %>" style="width: <%= cpuPct %>%;"></span>
+                </span>
+                <span class="mini-bar" title="RAM: <%= ramPct %>%">
+                  <span class="mini-bar-fill ram <%= getBarClass(ramPct) %>" style="width: <%= ramPct %>%;"></span>
+                </span>
+              </span>
               <% } %>
             </a>
             <% if (node.children && node.children.length > 0) { %>
@@ -65,11 +93,24 @@
           renderNodeTree(sidebarTree, 0);
         } else {
           sidebarNodes.forEach(function(node) {
+            var nStats = nodeStatsMap[node.id] || {};
+            var cpuPct = Math.round(nStats.cpu_percent || 0);
+            var ramPct = Math.round(nStats.ram_percent || 0);
         %>
           <li class="node-tree-item">
             <a href="/nodes/<%= node.id %>" class="node-tree-row" data-level="0">
               <span class="node-tree-status <%= node.online ? 'online' : 'offline' %>"></span>
               <span class="node-tree-name"><%= node.name %></span>
+              <% if (node.online && (cpuPct > 0 || ramPct > 0)) { %>
+              <span class="node-tree-mini-bars">
+                <span class="mini-bar" title="CPU: <%= cpuPct %>%">
+                  <span class="mini-bar-fill cpu <%= getBarClass(cpuPct) %>" style="width: <%= cpuPct %>%;"></span>
+                </span>
+                <span class="mini-bar" title="RAM: <%= ramPct %>%">
+                  <span class="mini-bar-fill ram <%= getBarClass(ramPct) %>" style="width: <%= ramPct %>%;"></span>
+                </span>
+              </span>
+              <% } %>
             </a>
           </li>
         <%

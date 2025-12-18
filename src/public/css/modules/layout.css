@@ -1950,3 +1950,61 @@
   border-radius: 10px;
   font-size: 0.6875rem;
 }
+
+/* =====================================================
+   Sidebar Mini Resource Bars (Phase 4.1)
+   ===================================================== */
+
+.node-tree-mini-bars {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.mini-bar {
+  width: 28px;
+  height: 4px;
+  background: var(--color-bg);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.mini-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  -webkit-transition: width 0.3s ease;
+  transition: width 0.3s ease;
+}
+
+.mini-bar-fill.cpu {
+  background: var(--color-accent);
+}
+
+.mini-bar-fill.ram {
+  background: var(--color-info);
+}
+
+.mini-bar-fill.warning {
+  background: var(--color-warning);
+}
+
+.mini-bar-fill.critical {
+  background: var(--color-error);
+}
+
+/* Tooltip for mini bars */
+.mini-bar[title] {
+  cursor: help;
+}
+
+/* Hide mini-bars on very small screens */
+@media (max-width: 280px) {
+  .node-tree-mini-bars {
+    display: none;
+  }
+}

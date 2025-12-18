@@ -259,6 +259,53 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-transition: color var(--transition-fast, 150ms ease);
+  transition: color var(--transition-fast, 150ms ease);
+}
+
+.proxmox-table th:hover {
+  color: var(--color-text);
+}
+
+/* Sortable Header with Icon */
+.proxmox-table th.sortable {
+  position: relative;
+  padding-right: 1.5rem;
+}
+
+.proxmox-table th.sortable::after {
+  content: '';
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--color-text-muted);
+  opacity: 0.3;
+  -webkit-transition: opacity var(--transition-fast, 150ms ease);
+  transition: opacity var(--transition-fast, 150ms ease);
+}
+
+.proxmox-table th.sortable:hover::after {
+  opacity: 0.6;
+}
+
+.proxmox-table th.sortable.asc::after {
+  border-top: none;
+  border-bottom: 5px solid var(--color-accent);
+  opacity: 1;
+}
+
+.proxmox-table th.sortable.desc::after {
+  border-top: 5px solid var(--color-accent);
+  opacity: 1;
 }
 
 .proxmox-table tbody tr {

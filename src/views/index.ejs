@@ -32,6 +32,15 @@
           </div>
         </div>
         <% } %>
+        <% if (clusterResources.storage) { %>
+        <div class="resource-metric">
+          <span class="label">Disk</span>
+          <div class="metric-bar-compact">
+            <div class="fill <%= clusterResources.storage > 80 ? 'critical' : (clusterResources.storage > 60 ? 'warning' : 'ok') %>" style="width:<%= clusterResources.storage %>%"></div>
+            <span class="value"><%= clusterResources.storage %>%</span>
+          </div>
+        </div>
+        <% } %>
       </div>
     </div>
     <% } else { %>

@@ -117,6 +117,13 @@ router.get('/', asyncHandler(async (req, res) => {
     ? Math.round((clusterStats.usedDiskBytes / clusterStats.totalDiskBytes) * 100)
     : 0;
 
+  // Compact cluster resources for cluster-bar
+  var clusterResources = {
+    cpu: clusterStats.usedCpuPercent,
+    memory: clusterStats.usedRamPercent,
+    storage: clusterStats.usedDiskPercent
+  };
+
   res.render('index', {
     title: tagFilter ? `Dashboard - ${tagFilter}` : 'Dashboard',
     currentPath: '/',
@@ -127,6 +134,7 @@ router.get('/', asyncHandler(async (req, res) => {
     tagFilter,
     thresholds,
     clusterStats,
+    clusterResources,
     dashboardRefreshInterval: parseIntParam(settings.dashboard_refresh_interval, 5),
     stats: {
       total: nodes.length,
