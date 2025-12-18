@@ -1,19 +1,6 @@
 <!-- Proxmox Tab -->
 <% if (discovery && discovery.is_proxmox_host) { %>
 <div class="tab-content" id="tab-proxmox">
-  <div class="proxmox-header">
-    <h2>Proxmox Management</h2>
-    <div class="proxmox-actions">
-      <button class="btn btn-primary" id="btn-refresh-proxmox" onclick="refreshProxmox(<%= node.id %>)">
-        <span class="btn-text">Aktualisieren</span>
-        <span class="btn-loading"><span class="spinner"></span> Lade...</span>
-      </button>
-      <button class="btn btn-success" onclick="openCreateVmModal(<%= node.id %>)">+ VM erstellen</button>
-      <button class="btn btn-success" onclick="openCreateCtModal(<%= node.id %>)">+ CT erstellen</button>
-      <button class="btn btn-secondary" onclick="toggleSnapshotModal()">Snapshot erstellen</button>
-    </div>
-  </div>
-
   <div id="proxmox-result" class="alert" role="alert" aria-live="polite" style="display: none;"></div>
 
   <% if (!proxmox || (!proxmox.vms.length && !proxmox.cts.length)) { %>
