@@ -75,7 +75,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-18T06:20:26.527Z
+   Generated: 2025-12-18T11:52:41.341Z
 */
 
 
@@ -773,7 +773,7 @@ function confirmTemplate(nodeId, vmType, vmid, name) {
   document.getElementById('template-modal-title').textContent = typeLabel + ' ' + vmid + ' zu Template?';
   var msgEl = document.getElementById('template-modal-message');
   msgEl.innerHTML = '<strong>WARNUNG:</strong> ' + (name || typeLabel + ' ' + vmid) + ' wird zu einem Template konvertiert!<br><br>' +
-    'Diese Aktion kann <strong>NICHT rückgängig</strong> gemacht werden.<br>' +
+    'Diese Aktion kann <strong>NICHT rueckgaengig</strong> gemacht werden.<br>' +
     'Die ' + typeLabel + ' kann danach <strong>NICHT mehr gestartet</strong> werden.';
   document.getElementById('template-modal-error').style.display = 'none';
 
@@ -2329,7 +2329,7 @@ function executeTerminalCommand() {
   };
 
   xhr.onerror = function() {
-    outputDiv.textContent = 'Netzwerkfehler beim Ausführen des Befehls.';
+    outputDiv.textContent = 'Netzwerkfehler beim Ausfuehren des Befehls.';
     outputDiv.className = 'terminal-cmd-output error';
     scrollToBottom();
   };
@@ -2523,7 +2523,7 @@ function loadServices(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -2625,7 +2625,7 @@ function controlService(nodeId, serviceName, action) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+        response = { success: false, error: { message: 'Ungueltige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {

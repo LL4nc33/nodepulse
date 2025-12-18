@@ -1,58 +1,141 @@
-   SERVICES TAB STYLES
+/* =====================================================
+   Services Tab Styles (Systemd Services)
    ===================================================== */
 
-.services-container {
-  background: var(--color-bg);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.services-header {
+/* Summary Cards - Proxmox Style */
+.services-summary {
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
-  -webkit-box-pack: justify;
-  -webkit-justify-content: space-between;
-  justify-content: space-between;
-  -webkit-box-align: center;
-  -webkit-align-items: center;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  background: var(--color-bg-elevated);
-  border-bottom: 1px solid var(--color-border-light);
+  margin-bottom: 1.5rem;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-.services-header h3 {
-  margin: 0;
+.services-summary .summary-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg, 8px);
+  padding: 1rem 1.25rem;
+  text-align: center;
+  min-width: 120px;
+  -webkit-box-flex: 1;
+  -webkit-flex: 1 1 calc(25% - 0.75rem);
+  flex: 1 1 calc(25% - 0.75rem);
+  -webkit-transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.services-summary .summary-card:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* First card highlighted */
+.services-summary .summary-card:nth-child(1) {
+  border-left: 4px solid var(--color-success);
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.08) 0%, var(--color-bg-surface) 20%);
+}
+
+.services-summary .summary-card:nth-child(1) .summary-value {
+  color: var(--color-success);
+}
+
+.services-summary .summary-value {
+  display: block;
+  font-size: var(--font-size-xl, 1.5rem);
+  font-weight: var(--font-weight-bold, 700);
   color: var(--color-text);
-  font-size: 1rem;
+  line-height: 1.2;
 }
 
+.services-summary .summary-label {
+  display: block;
+  font-size: var(--font-size-xs, 0.6875rem);
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Actions Bar - Compact like Proxmox */
+.services-actions {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.services-actions .btn {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.services-actions .btn svg {
+  margin-right: 0.25rem;
+  width: 14px;
+  height: 14px;
+}
+
+/* Filter Bar */
 .services-filter {
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
-  padding: 1rem 1.5rem;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+.services-filter input[type="text"],
+.services-filter input[type="search"],
+.services-filter select,
+.services-filter .form-control {
   background: var(--color-bg-surface);
-  border-bottom: 1px solid var(--color-border);
-  margin-left: -0.5rem;
-  margin-right: -0.5rem;
-}
-
-.services-filter > * {
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
-}
-
-.services-filter input,
-.services-filter select {
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-light);
-  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
   color: var(--color-text);
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9375rem;
-  min-height: 44px;
+  font-size: var(--font-size-sm);
+  min-width: 150px;
+  -webkit-transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.services-filter input[type="text"]:focus,
+.services-filter input[type="search"]:focus,
+.services-filter select:focus,
+.services-filter .form-control:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(95, 163, 50, 0.2);
+}
+
+.services-filter input[type="text"]::placeholder,
+.services-filter input[type="search"]::placeholder,
+.services-filter .form-control::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.services-filter select {
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: var(--space-lg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.services-filter select option {
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .services-filter input {
@@ -62,71 +145,83 @@
   max-width: 300px;
 }
 
-.services-filter select {
-  min-width: 150px;
+/* Services Table Wrapper */
+.services-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
-.services-filter input:focus,
-.services-filter select:focus {
-  outline: none;
-  border-color: var(--color-accent-hover);
-}
-
-.services-list {
-  padding: 1rem 1.5rem;
-}
-
+/* Services Table */
 .services-table {
-  margin: 0;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.services-table th,
+.services-table td {
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .services-table th {
-  background: var(--color-bg-elevated);
-  font-weight: 600;
-  padding: 0.75rem 1rem;
+  background: var(--color-bg-surface);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
 }
 
-.services-table td {
-  padding: 0.75rem 1rem;
-  vertical-align: middle;
+.services-table tbody tr {
+  transition: background var(--transition-fast);
 }
 
+.services-table tbody tr:hover {
+  background: var(--color-bg-surface);
+}
+
+.services-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Service Name */
 .service-name {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-weight: 600;
-  color: var(--color-accent-hover);
+  color: var(--color-accent);
 }
 
+/* Service Description */
 .service-desc {
-  color: var(--color-text-muted);
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
+/* Service Status Badge */
 .service-status {
   display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
 }
 
 .service-status.status-running {
-  background: var(--color-accent-bg);
-  color: var(--color-accent);
+  background: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 .service-status.status-exited {
-  background: var(--color-accent-bg);
-  color: var(--color-text);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
 }
 
 .service-status.status-failed {
   background: var(--color-error-bg);
-  color: var(--color-error-text);
+  color: var(--color-error);
 }
 
 .service-status.status-dead {
@@ -134,37 +229,43 @@
   color: var(--color-warning);
 }
 
+/* Service Actions */
 .service-actions {
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
-  -webkit-flex-wrap: wrap;
-  flex-wrap: wrap;
-  margin-left: -0.25rem;
-  margin-right: -0.25rem;
+  gap: var(--space-xs);
 }
 
-.service-actions > * {
-  margin-left: 0.25rem;
-  margin-right: 0.25rem;
-  margin-bottom: 0.5rem;
+.service-actions .btn {
+  padding: var(--space-xs);
 }
 
-.btn-sm {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
-  min-height: 44px;
+/* Empty State */
+.services-section .empty-state,
+#tab-services .empty-state,
+.services-list .empty-state {
+  background: var(--color-bg-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  text-align: center;
 }
 
-/* .btn-success and .btn-warning are now in base.css */
-
-.services-summary {
-  padding: 0.75rem 0;
-  text-align: right;
-  color: var(--color-text-muted);
+.services-section .empty-state.compact,
+#tab-services .empty-state.compact,
+.services-list .empty-state.compact {
+  padding: var(--space-md);
 }
 
-.loading-placeholder {
+.services-section .empty-state p,
+#tab-services .empty-state p,
+.services-list .empty-state p {
+  margin: 0;
+}
+
+/* Loading Placeholder */
+.services-list .loading-placeholder {
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
@@ -174,65 +275,65 @@
   -webkit-box-pack: center;
   -webkit-justify-content: center;
   justify-content: center;
-  padding: 3rem;
-  color: #b5b5b5;
+  gap: var(--space-sm);
+  padding: var(--space-xl);
+  color: var(--color-text-secondary);
 }
 
-.loading-placeholder > * {
-  margin-right: 1rem;
+/* Legacy Container Support */
+.services-container {
+  background: transparent;
 }
 
-.loading-placeholder > *:last-child {
-  margin-right: 0;
+.services-list {
+  padding: 0;
 }
 
-/* Services Responsive */
-@media (max-width: 768px) {
-  .services-header {
-    -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
-    -webkit-flex-direction: column;
-    flex-direction: column;
-    -webkit-box-align: start;
-    -webkit-align-items: flex-start;
-    align-items: flex-start;
+/* Responsive */
+@media (max-width: 1024px) {
+  .services-summary .summary-card {
+    -webkit-flex: 1 1 calc(50% - 0.75rem);
+    flex: 1 1 calc(50% - 0.75rem);
   }
+}
 
-  .services-header > * {
-    margin-bottom: 1rem;
-  }
-
-  .services-header > *:last-child {
-    margin-bottom: 0;
-  }
-
-  .services-header .btn {
-    width: 100%;
+@media (max-width: 640px) {
+  .services-summary .summary-card {
+    -webkit-flex: 1 1 100%;
+    flex: 1 1 100%;
   }
 
   .services-filter {
     -webkit-box-orient: vertical;
-    -webkit-box-direction: normal;
     -webkit-flex-direction: column;
     flex-direction: column;
   }
 
-  .services-filter input {
-    max-width: 100%;
+  .services-filter input,
+  .services-filter select,
+  .services-filter .form-control {
+    max-width: none;
+    min-width: 100%;
   }
 
-  .services-list {
-    padding: 0.75rem 1rem;
+  .services-actions {
+    -webkit-box-orient: vertical;
+    -webkit-flex-direction: column;
+    flex-direction: column;
   }
 
-  .services-table td,
-  .services-table th {
-    padding: 0.625rem 0.5rem;
+  .services-actions .btn {
+    width: 100%;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+  }
+
+  .services-table-wrapper {
+    border-radius: var(--radius-md);
   }
 
   .service-desc {
     max-width: 150px;
   }
 }
-
-/* =====================================================
