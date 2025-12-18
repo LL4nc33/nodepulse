@@ -148,6 +148,35 @@ router.post('/lvm/refresh', asyncHandler(async function(req, res) {
   }
 }));
 
+// DEBUG: Raw Script Output testen
+router.post('/lvm/debug', asyncHandler(async function(req, res) {
+  var nodeId = parseInt(req.params.nodeId, 10);
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  try {
+    var fs = require('fs');
+    var path = require('path');
+    var ssh = require('../../ssh');
+    var scriptPath = path.join(__dirname, '../../../scripts/lvm-discovery.sh');
+    var script = fs.readFileSync(scriptPath, 'utf8').replace(/\r\n/g, '\n');
+    var result = await ssh.executeScript(node, script, 60000);
+    apiResponse(res, 200, {
+      exitCode: result.exitCode,
+      stdout: result.stdout ? result.stdout.substring(0, 2000) : null,
+      stderr: result.stderr ? result.stderr.substring(0, 500) : null
+    });
+  } catch (err) {
+    apiResponse(res, 503, null, { code: 'DEBUG_ERROR', message: err.message });
+  }
+}));
+
 // =====================================================
 // POST Endpoints (Create Operations)
 // =====================================================
