@@ -431,18 +431,6 @@
             </dl>
           </div>
 
-          <!-- Last Discovery -->
-          <div class="detail-card compact">
-            <h3>Discovery Info</h3>
-            <dl>
-              <dt>Zuletzt gescannt</dt>
-              <dd><%= discovery.discovered_at || '-' %></dd>
-            </dl>
-            <button class="btn btn-secondary btn-sm btn-discover-secondary" onclick="runDiscovery(<%= node.id %>)">
-              <span class="btn-text">Erneut scannen</span>
-              <span class="btn-loading"><span class="spinner"></span></span>
-            </button>
-          </div>
         </div>
       <% } %>
     </div>
