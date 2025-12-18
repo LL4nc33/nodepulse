@@ -225,7 +225,9 @@ router.post('/refresh', asyncHandler(async function(req, res) {
       counts: counts
     });
   } catch (err) {
-    apiResponse(res, 503, null, { code: 'TASK_ERROR', message: err.message });
+    var errMsg = err && err.message ? err.message : String(err) || 'Unbekannter Fehler';
+    console.error('[Tasks API] Refresh error:', errMsg);
+    apiResponse(res, 503, null, { code: 'TASK_ERROR', message: errMsg });
   }
 }));
 

@@ -1079,7 +1079,7 @@ async function runTaskDiscovery(node) {
 
   return {
     tasks: allTasks,
-    counts: db.tasks.getTaskCounts(node.id)
+    counts: db.tasks.getTaskCounts(node.id, node.name)
   };
 }
 
