@@ -113,7 +113,7 @@ function loadNetworkDiagnostics(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -312,7 +312,7 @@ function runPingTest(nodeId) {
 
   btn.classList.add('loading');
   btn.disabled = true;
-  resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Ping laeuft...</div>';
+  resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Ping läuft...</div>';
   resultEl.style.display = 'block';
 
   var xhr = new XMLHttpRequest();
@@ -329,7 +329,7 @@ function runPingTest(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -403,7 +403,7 @@ function runDnsLookup(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -453,7 +453,7 @@ function runTraceroute(nodeId) {
 
   btn.classList.add('loading');
   btn.disabled = true;
-  resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Traceroute laeuft (kann 30-60 Sek dauern)...</div>';
+  resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Traceroute läuft (kann 30-60 Sek dauern)...</div>';
   resultEl.style.display = 'block';
 
   var xhr = new XMLHttpRequest();
@@ -470,7 +470,7 @@ function runTraceroute(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {

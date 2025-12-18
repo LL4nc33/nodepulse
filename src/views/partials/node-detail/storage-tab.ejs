@@ -117,7 +117,7 @@
                   <%= vg.registered_storage_id %>
                 </span>
               <% } else if (vg.contains_registered_pools) { %>
-                <span class="badge badge-info" title="Enthaelt registrierte Thin Pools">
+                <span class="badge badge-info" title="Enthält registrierte Thin Pools">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2L2 7l10 5 10-5-10-5z"/>
                     <path d="M2 17l10 5 10-5"/>
@@ -142,7 +142,7 @@
                   </svg>
                 </button>
               <% } %>
-              <button type="button" class="btn btn-sm btn-danger" onclick="deleteVg('<%= vg.vg_name %>')" title="VG loeschen">
+              <button type="button" class="btn btn-sm btn-danger" onclick="deleteVg('<%= vg.vg_name %>')" title="VG löschen">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                 </svg>
@@ -179,7 +179,7 @@
           <tr>
             <th>Pool Name</th>
             <th>VG</th>
-            <th>Groesse</th>
+            <th>Größe</th>
             <th>Daten %</th>
             <th>Status</th>
             <th>Aktionen</th>
@@ -228,7 +228,7 @@
                   </svg>
                 </button>
               <% } %>
-              <button type="button" class="btn btn-sm btn-danger" onclick="deleteThinPool('<%= pool.vg_name %>', '<%= pool.lv_name %>')" title="Thin Pool loeschen">
+              <button type="button" class="btn btn-sm btn-danger" onclick="deleteThinPool('<%= pool.vg_name %>', '<%= pool.lv_name %>')" title="Thin Pool löschen">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                 </svg>
@@ -265,7 +265,7 @@
             <tr>
               <th>PV Name</th>
               <th>VG</th>
-              <th>Groesse</th>
+              <th>Größe</th>
               <th>Frei</th>
             </tr>
           </thead>
@@ -295,7 +295,7 @@
       <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="6 9 12 15 18 9"/>
       </svg>
-      Verfuegbare Disks
+      Verfügbare Disks
       <span class="count-badge"><%= lvm.available_disks ? lvm.available_disks.length : 0 %></span>
     </h2>
 
@@ -306,7 +306,7 @@
           <thead>
             <tr>
               <th>Device</th>
-              <th>Groesse</th>
+              <th>Größe</th>
               <th>Modell</th>
               <th>Typ</th>
               <th>Partitionen</th>
@@ -356,7 +356,7 @@
             <tr>
               <th>LV Name</th>
               <th>VG</th>
-              <th>Groesse</th>
+              <th>Größe</th>
               <th>Pfad</th>
               <th>Typ</th>
             </tr>
@@ -407,7 +407,7 @@
           <small class="form-hint">Muss mit Buchstabe beginnen. Erlaubt: a-z, 0-9, _, -</small>
         </div>
         <div class="form-group">
-          <label>Devices auswaehlen</label>
+          <label>Devices auswählen</label>
           <div id="vgDeviceList" class="device-checklist">
             <% if (lvm.available_disks && lvm.available_disks.length > 0) { %>
               <% lvm.available_disks.forEach(function(disk) { %>
@@ -420,7 +420,7 @@
                 </label>
               <% }); %>
             <% } else { %>
-              <p class="text-muted">Keine freien Disks verfuegbar.</p>
+              <p class="text-muted">Keine freien Disks verfügbar.</p>
             <% } %>
           </div>
         </div>
@@ -445,7 +445,7 @@
         <div class="form-group">
           <label for="thinPoolVg">Volume Group</label>
           <select id="thinPoolVg" name="vg_name" required class="form-input">
-            <option value="">-- VG auswaehlen --</option>
+            <option value="">-- VG auswählen --</option>
             <% if (lvm.vgs) { lvm.vgs.forEach(function(vg) { %>
               <option value="<%= vg.vg_name %>"><%= vg.vg_name %> (<%= formatBytes(vg.vg_free_bytes || 0) %> frei)</option>
             <% }); } %>
@@ -458,7 +458,7 @@
           <small class="form-hint">Muss mit Buchstabe beginnen.</small>
         </div>
         <div class="form-group">
-          <label for="thinPoolSize">Groesse (% der VG)</label>
+          <label for="thinPoolSize">Größe (% der VG)</label>
           <input type="number" id="thinPoolSize" name="size_percent" value="90" min="10" max="100" class="form-input">
           <small class="form-hint">10-100% des freien VG-Speicherplatzes</small>
         </div>
@@ -512,7 +512,7 @@
 <div id="deleteStorageModal" class="modal" style="display: none;">
   <div class="modal-content modal-danger">
     <div class="modal-header">
-      <h3>Loeschen bestaetigen</h3>
+      <h3>Löschen bestätigen</h3>
       <button type="button" class="modal-close" onclick="closeModal('deleteStorageModal')">&times;</button>
     </div>
     <form id="deleteStorageForm" onsubmit="submitDeleteStorage(event)">
@@ -526,19 +526,19 @@
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
             <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
-          <span id="deleteWarningText">Diese Aktion kann nicht rueckgaengig gemacht werden!</span>
+          <span id="deleteWarningText">Diese Aktion kann nicht rückgängig gemacht werden!</span>
         </div>
 
         <div class="form-group">
-          <label for="confirmName">Namen zur Bestaetigung eingeben</label>
+          <label for="confirmName">Namen zur Bestätigung eingeben</label>
           <input type="text" id="confirmName" name="confirm_name" required class="form-input"
                  placeholder="Namen eingeben">
-          <small class="form-hint" id="confirmHint">Geben Sie den Namen ein um zu bestaetigen.</small>
+          <small class="form-hint" id="confirmHint">Geben Sie den Namen ein um zu bestätigen.</small>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn" onclick="closeModal('deleteStorageModal')">Abbrechen</button>
-        <button type="submit" class="btn btn-danger">Endgueltig loeschen</button>
+        <button type="submit" class="btn btn-danger">Endgültig löschen</button>
       </div>
     </form>
   </div>

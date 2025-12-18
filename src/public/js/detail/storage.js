@@ -101,7 +101,7 @@ function submitCreateVg(event) {
   }
 
   if (deviceCheckboxes.length === 0) {
-    alert('Mindestens ein Device muss ausgewaehlt werden');
+    alert('Mindestens ein Device muss ausgewählt werden');
     return;
   }
 
@@ -151,7 +151,7 @@ function submitCreateThinPool(event) {
   var sizePercent = parseInt(form.size_percent.value, 10);
 
   if (!vgName) {
-    alert('VG muss ausgewaehlt werden');
+    alert('VG muss ausgewählt werden');
     return;
   }
 
@@ -253,9 +253,9 @@ function deleteVg(vgName) {
   document.getElementById('confirmName').value = '';
 
   document.getElementById('deleteWarningText').innerHTML =
-    'Die Volume Group <strong>' + vgName + '</strong> und alle enthaltenen LVs werden unwiderruflich geloescht!';
+    'Die Volume Group <strong>' + vgName + '</strong> und alle enthaltenen LVs werden unwiderruflich gelöscht!';
   document.getElementById('confirmHint').innerHTML =
-    'Geben Sie <strong>' + vgName + '</strong> ein um zu bestaetigen.';
+    'Geben Sie <strong>' + vgName + '</strong> ein um zu bestätigen.';
 
   modal.style.display = 'flex';
 }
@@ -270,9 +270,9 @@ function deleteThinPool(vgName, poolName) {
   document.getElementById('confirmName').value = '';
 
   document.getElementById('deleteWarningText').innerHTML =
-    'Der Thin Pool <strong>' + poolName + '</strong> und alle Thin LVs werden unwiderruflich geloescht!';
+    'Der Thin Pool <strong>' + poolName + '</strong> und alle Thin LVs werden unwiderruflich gelöscht!';
   document.getElementById('confirmHint').innerHTML =
-    'Geben Sie <strong>' + poolName + '</strong> ein um zu bestaetigen.';
+    'Geben Sie <strong>' + poolName + '</strong> ein um zu bestätigen.';
 
   modal.style.display = 'flex';
 }
@@ -316,14 +316,14 @@ function submitDeleteStorage(event) {
       var response = JSON.parse(xhr.responseText);
       alert('Fehler: ' + (response.error ? response.error.message : 'Loeschung fehlgeschlagen'));
       submitBtn.disabled = false;
-      submitBtn.innerHTML = 'Endgueltig loeschen';
+      submitBtn.innerHTML = 'Endgültig löschen';
     }
   };
 
   xhr.onerror = function() {
     alert('Netzwerkfehler');
     submitBtn.disabled = false;
-    submitBtn.innerHTML = 'Endgueltig loeschen';
+    submitBtn.innerHTML = 'Endgültig löschen';
   };
 
   xhr.send(JSON.stringify({

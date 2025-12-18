@@ -12,7 +12,7 @@ const { asyncHandler, apiResponse } = require('./helpers');
 router.get('/', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -35,7 +35,7 @@ router.get('/', asyncHandler(async (req, res) => {
 router.post('/', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Need credentials for SSH connection
@@ -56,7 +56,7 @@ router.post('/', asyncHandler(async (req, res) => {
 router.get('/containers', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -75,18 +75,18 @@ router.post('/containers/:containerId/:action', asyncHandler(async (req, res) =>
   var action = req.params.action;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate containerId (hex only, 12-64 chars) - prevent command injection
   if (!/^[a-f0-9]{12,64}$/i.test(containerId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_CONTAINER_ID', message: 'Ungueltige Container-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_CONTAINER_ID', message: 'Ungültige Container-ID' });
   }
 
   // Validate action
   var validActions = ['start', 'stop', 'restart', 'pause', 'unpause'];
   if (validActions.indexOf(action) === -1) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ACTION', message: 'Ungueltige Aktion. Erlaubt: ' + validActions.join(', ') });
+    return apiResponse(res, 400, null, { code: 'INVALID_ACTION', message: 'Ungültige Aktion. Erlaubt: ' + validActions.join(', ') });
   }
 
   // Need credentials for SSH connection
@@ -122,12 +122,12 @@ router.get('/containers/:containerId/logs', asyncHandler(async (req, res) => {
   var containerId = req.params.containerId;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate containerId (hex only, 12-64 chars) - prevent command injection
   if (!/^[a-f0-9]{12,64}$/i.test(containerId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_CONTAINER_ID', message: 'Ungueltige Container-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_CONTAINER_ID', message: 'Ungültige Container-ID' });
   }
 
   // Need credentials for SSH connection
@@ -158,7 +158,7 @@ router.get('/containers/:containerId/logs', asyncHandler(async (req, res) => {
 router.get('/images', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -174,7 +174,7 @@ router.get('/images', asyncHandler(async (req, res) => {
 router.get('/volumes', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -190,7 +190,7 @@ router.get('/volumes', asyncHandler(async (req, res) => {
 router.get('/networks', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -213,12 +213,12 @@ router.delete('/containers/:containerId', asyncHandler(async (req, res) => {
   var force = req.query.force === 'true';
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate container ID (hex, 12-64 chars)
   if (!/^[a-f0-9]{12,64}$/i.test(containerId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_CONTAINER_ID', message: 'Ungueltige Container-ID (hex, 12-64 Zeichen)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_CONTAINER_ID', message: 'Ungültige Container-ID (hex, 12-64 Zeichen)' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -231,10 +231,10 @@ router.delete('/containers/:containerId', asyncHandler(async (req, res) => {
     var result = await collector.runDockerCommand(node, command, 30000);
 
     if (result.exitCode !== 0) {
-      var errMsg = result.stderr || 'Container konnte nicht geloescht werden';
+      var errMsg = result.stderr || 'Container konnte nicht gelöscht werden';
       // Check for specific errors
       if (errMsg.includes('is running')) {
-        return apiResponse(res, 409, null, { code: 'CONTAINER_RUNNING', message: 'Container laeuft noch. Nutze force=true oder stoppe den Container zuerst.' });
+        return apiResponse(res, 409, null, { code: 'CONTAINER_RUNNING', message: 'Container läuft noch. Nutze force=true oder stoppe den Container zuerst.' });
       }
       return apiResponse(res, 500, null, { code: 'DOCKER_ERROR', message: errMsg });
     }
@@ -263,14 +263,14 @@ router.delete('/images/:imageId', asyncHandler(async (req, res) => {
   var force = req.query.force === 'true';
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate image ID (hex sha256, 12-64 chars) or name:tag format
   var isValidHex = /^[a-f0-9]{12,64}$/i.test(imageId);
   var isValidNameTag = /^[a-z0-9][a-z0-9._\/-]*(:[\w][\w.-]*)?$/i.test(imageId);
   if (!isValidHex && !isValidNameTag) {
-    return apiResponse(res, 400, null, { code: 'INVALID_IMAGE_ID', message: 'Ungueltige Image-ID oder Name:Tag' });
+    return apiResponse(res, 400, null, { code: 'INVALID_IMAGE_ID', message: 'Ungültige Image-ID oder Name:Tag' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -283,9 +283,9 @@ router.delete('/images/:imageId', asyncHandler(async (req, res) => {
     var result = await collector.runDockerCommand(node, command, 60000);
 
     if (result.exitCode !== 0) {
-      var errMsg = result.stderr || 'Image konnte nicht geloescht werden';
+      var errMsg = result.stderr || 'Image konnte nicht gelöscht werden';
       if (errMsg.includes('image is being used') || errMsg.includes('image has dependent')) {
-        return apiResponse(res, 409, null, { code: 'IMAGE_IN_USE', message: 'Image wird von Container(n) verwendet. Nutze force=true fuer forciertes Loeschen.' });
+        return apiResponse(res, 409, null, { code: 'IMAGE_IN_USE', message: 'Image wird von Container(n) verwendet. Nutze force=true für forciertes Löschen.' });
       }
       return apiResponse(res, 500, null, { code: 'DOCKER_ERROR', message: errMsg });
     }
@@ -313,12 +313,12 @@ router.delete('/volumes/:volumeName', asyncHandler(async (req, res) => {
   var volumeName = req.params.volumeName;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate volume name (alphanumeric, underscore, dash, dots)
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(volumeName)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VOLUME_NAME', message: 'Ungueltiger Volume-Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VOLUME_NAME', message: 'Ungültiger Volume-Name' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -332,9 +332,9 @@ router.delete('/volumes/:volumeName', asyncHandler(async (req, res) => {
     var result = await collector.runDockerCommand(node, command, 30000);
 
     if (result.exitCode !== 0) {
-      var errMsg = result.stderr || 'Volume konnte nicht geloescht werden';
+      var errMsg = result.stderr || 'Volume konnte nicht gelöscht werden';
       if (errMsg.includes('volume is in use')) {
-        return apiResponse(res, 409, null, { code: 'VOLUME_IN_USE', message: 'Volume wird von Container(n) verwendet und kann nicht geloescht werden.' });
+        return apiResponse(res, 409, null, { code: 'VOLUME_IN_USE', message: 'Volume wird von Container(n) verwendet und kann nicht gelöscht werden.' });
       }
       return apiResponse(res, 500, null, { code: 'DOCKER_ERROR', message: errMsg });
     }
@@ -361,14 +361,14 @@ router.delete('/networks/:networkId', asyncHandler(async (req, res) => {
   var networkId = req.params.networkId;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate network ID (hex, 12-64 chars) or name format
   var isValidHex = /^[a-f0-9]{12,64}$/i.test(networkId);
   var isValidName = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(networkId);
   if (!isValidHex && !isValidName) {
-    return apiResponse(res, 400, null, { code: 'INVALID_NETWORK_ID', message: 'Ungueltige Network-ID oder Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_NETWORK_ID', message: 'Ungültige Network-ID oder Name' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -381,13 +381,13 @@ router.delete('/networks/:networkId', asyncHandler(async (req, res) => {
     var result = await collector.runDockerCommand(node, command, 30000);
 
     if (result.exitCode !== 0) {
-      var errMsg = result.stderr || 'Network konnte nicht geloescht werden';
+      var errMsg = result.stderr || 'Network konnte nicht gelöscht werden';
       if (errMsg.includes('has active endpoints') || errMsg.includes('network is in use')) {
-        return apiResponse(res, 409, null, { code: 'NETWORK_IN_USE', message: 'Network wird von Container(n) verwendet und kann nicht geloescht werden.' });
+        return apiResponse(res, 409, null, { code: 'NETWORK_IN_USE', message: 'Network wird von Container(n) verwendet und kann nicht gelöscht werden.' });
       }
       // Prevent deletion of default networks
       if (errMsg.includes('bridge') || errMsg.includes('host') || errMsg.includes('none')) {
-        return apiResponse(res, 403, null, { code: 'NETWORK_PROTECTED', message: 'Standard-Netzwerke (bridge, host, none) koennen nicht geloescht werden.' });
+        return apiResponse(res, 403, null, { code: 'NETWORK_PROTECTED', message: 'Standard-Netzwerke (bridge, host, none) koennen nicht gelöscht werden.' });
       }
       return apiResponse(res, 500, null, { code: 'DOCKER_ERROR', message: errMsg });
     }
@@ -414,13 +414,13 @@ router.post('/prune/:type', asyncHandler(async (req, res) => {
   var pruneType = req.params.type;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate prune type
   var validTypes = ['system', 'containers', 'images', 'volumes', 'networks'];
   if (validTypes.indexOf(pruneType) === -1) {
-    return apiResponse(res, 400, null, { code: 'INVALID_TYPE', message: 'Ungueltiger Prune-Typ. Erlaubt: ' + validTypes.join(', ') });
+    return apiResponse(res, 400, null, { code: 'INVALID_TYPE', message: 'Ungültiger Prune-Typ. Erlaubt: ' + validTypes.join(', ') });
   }
 
   // Need credentials for SSH connection

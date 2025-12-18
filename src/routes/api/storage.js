@@ -17,7 +17,7 @@ var VG_NAME_REGEX = /^[a-zA-Z][a-zA-Z0-9_-]{0,62}$/;
 // Device Pfade: Nur erlaubte Geraete
 var DEVICE_PATH_REGEX = /^\/dev\/(sd[a-z]+|nvme\d+n\d+(p\d+)?|vd[a-z]+)$/;
 
-// Storage IDs fuer Proxmox
+// Storage IDs für Proxmox
 var STORAGE_ID_REGEX = /^[a-zA-Z][a-zA-Z0-9_-]{0,31}$/;
 
 function validateVgName(name) {
@@ -35,7 +35,7 @@ function validateStorageId(id) {
   return STORAGE_ID_REGEX.test(id);
 }
 
-// Shell-Escape fuer sichere Befehlsausfuehrung
+// Shell-Escape für sichere Befehlsausfuehrung
 function shellEscape(str) {
   if (!str) return "''";
   return "'" + String(str).replace(/'/g, "'\\''") + "'";
@@ -45,11 +45,11 @@ function shellEscape(str) {
 // GET Endpoints (Read-Only)
 // =====================================================
 
-// Alle LVM Daten fuer einen Node
+// Alle LVM Daten für einen Node
 router.get('/lvm', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -71,7 +71,7 @@ router.get('/lvm', asyncHandler(async function(req, res) {
 router.get('/lvm/vgs', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -86,7 +86,7 @@ router.get('/lvm/vgs', asyncHandler(async function(req, res) {
 router.get('/lvm/thinpools', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -97,11 +97,11 @@ router.get('/lvm/thinpools', asyncHandler(async function(req, res) {
   apiResponse(res, 200, db.lvm.getThinPools(nodeId));
 }));
 
-// Verfuegbare (nicht-registrierte) VGs/Pools
+// Verfügbare (nicht-registrierte) VGs/Pools
 router.get('/lvm/available', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -123,11 +123,11 @@ router.get('/lvm/available', asyncHandler(async function(req, res) {
   });
 }));
 
-// LVM Discovery ausfuehren (Refresh)
+// LVM Discovery ausführen (Refresh)
 router.post('/lvm/refresh', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -159,7 +159,7 @@ router.post('/lvm/vg', asyncHandler(async function(req, res) {
   var devices = req.body.devices; // Array von Device-Pfaden
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validierung: VG Name
@@ -183,7 +183,7 @@ router.post('/lvm/vg', asyncHandler(async function(req, res) {
     if (!validateDevicePath(devices[i])) {
       return apiResponse(res, 400, null, {
         code: 'INVALID_DEVICE',
-        message: 'Ungueltiger Device-Pfad: ' + devices[i]
+        message: 'Ungültiger Device-Pfad: ' + devices[i]
       });
     }
   }
@@ -203,7 +203,7 @@ router.post('/lvm/vg', asyncHandler(async function(req, res) {
       if (pvResult.exitCode !== 0) {
         return apiResponse(res, 500, null, {
           code: 'PV_CREATE_FAILED',
-          message: 'PV erstellen fehlgeschlagen fuer ' + devices[j] + ': ' + (pvResult.stderr || 'Unbekannter Fehler')
+          message: 'PV erstellen fehlgeschlagen für ' + devices[j] + ': ' + (pvResult.stderr || 'Unbekannter Fehler')
         });
       }
     }
@@ -240,12 +240,12 @@ router.post('/lvm/thinpool', asyncHandler(async function(req, res) {
   var sizePercent = parseInt(req.body.size_percent, 10) || 90; // Default: 90% der VG
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validierung: VG Name
   if (!validateVgName(vgName)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VG_NAME', message: 'Ungueltiger VG Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VG_NAME', message: 'Ungültiger VG Name' });
   }
 
   // Validierung: Pool Name
@@ -266,7 +266,7 @@ router.post('/lvm/thinpool', asyncHandler(async function(req, res) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  // Pruefen ob VG existiert
+  // Prüfen ob VG existiert
   var vg = db.lvm.getVGByName(nodeId, vgName);
   if (!vg) {
     return apiResponse(res, 404, null, { code: 'VG_NOT_FOUND', message: 'Volume Group nicht gefunden' });
@@ -307,11 +307,11 @@ router.post('/lvm/register', asyncHandler(async function(req, res) {
   var storageType = req.body.type; // 'lvm' oder 'lvmthin'
   var storageId = req.body.storage_id;
   var vgName = req.body.vg_name;
-  var poolName = req.body.pool_name; // Nur fuer lvmthin
+  var poolName = req.body.pool_name; // Nur für lvmthin
   var content = req.body.content || 'images,rootdir';
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validierung: Storage Type
@@ -329,13 +329,13 @@ router.post('/lvm/register', asyncHandler(async function(req, res) {
 
   // Validierung: VG Name
   if (!validateVgName(vgName)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VG_NAME', message: 'Ungueltiger VG Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VG_NAME', message: 'Ungültiger VG Name' });
   }
 
-  // Validierung: Pool Name (nur fuer lvmthin)
+  // Validierung: Pool Name (nur für lvmthin)
   if (storageType === 'lvmthin') {
     if (!validateVgName(poolName)) {
-      return apiResponse(res, 400, null, { code: 'INVALID_POOL_NAME', message: 'Pool Name erforderlich fuer lvmthin' });
+      return apiResponse(res, 400, null, { code: 'INVALID_POOL_NAME', message: 'Pool Name erforderlich für lvmthin' });
     }
   }
 
@@ -344,7 +344,7 @@ router.post('/lvm/register', asyncHandler(async function(req, res) {
   var contentParts = content.split(',');
   for (var i = 0; i < contentParts.length; i++) {
     if (validContents.indexOf(contentParts[i].trim()) === -1) {
-      return apiResponse(res, 400, null, { code: 'INVALID_CONTENT', message: 'Ungueltiger Content-Typ: ' + contentParts[i] });
+      return apiResponse(res, 400, null, { code: 'INVALID_CONTENT', message: 'Ungültiger Content-Typ: ' + contentParts[i] });
     }
   }
 
@@ -353,7 +353,7 @@ router.post('/lvm/register', asyncHandler(async function(req, res) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  // Pruefen ob Proxmox vorhanden
+  // Prüfen ob Proxmox vorhanden
   var discovery = db.discovery.getForNode(nodeId);
   if (!discovery || !discovery.is_proxmox_host) {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
@@ -404,26 +404,26 @@ router.post('/lvm/register', asyncHandler(async function(req, res) {
 // DELETE Endpoints
 // =====================================================
 
-// VG loeschen (GEFAEHRLICH!)
+// VG löschen (GEFAEHRLICH!)
 router.delete('/lvm/vg/:vgName', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   var vgName = req.params.vgName;
   var confirmName = req.body.confirm_name;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validierung: VG Name
   if (!validateVgName(vgName)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VG_NAME', message: 'Ungueltiger VG Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VG_NAME', message: 'Ungültiger VG Name' });
   }
 
-  // Sicherheits-Bestaetigung
+  // Sicherheits-Bestätigung
   if (confirmName !== vgName) {
     return apiResponse(res, 400, null, {
       code: 'CONFIRMATION_REQUIRED',
-      message: 'Bestaetigung erforderlich: confirm_name muss dem VG Namen entsprechen'
+      message: 'Bestätigung erforderlich: confirm_name muss dem VG Namen entsprechen'
     });
   }
 
@@ -432,7 +432,7 @@ router.delete('/lvm/vg/:vgName', asyncHandler(async function(req, res) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  // Pruefen ob VG in Proxmox registriert ist
+  // Prüfen ob VG in Proxmox registriert ist
   var vg = db.lvm.getVGByName(nodeId, vgName);
   if (vg && vg.registered_storage_id) {
     return apiResponse(res, 400, null, {
@@ -444,18 +444,18 @@ router.delete('/lvm/vg/:vgName', asyncHandler(async function(req, res) {
   try {
     var collector = require('../../collector');
 
-    // 1. Alle LVs in der VG loeschen
+    // 1. Alle LVs in der VG löschen
     var lvRemoveCmd = 'lvremove -y ' + shellEscape(vgName);
     await collector.runCommand(node, lvRemoveCmd, 120000);
 
-    // 2. VG loeschen
+    // 2. VG löschen
     var vgRemoveCmd = 'vgremove -y ' + shellEscape(vgName);
     var result = await collector.runCommand(node, vgRemoveCmd, 60000);
 
     if (result.exitCode !== 0) {
       return apiResponse(res, 500, null, {
         code: 'VG_REMOVE_FAILED',
-        message: 'VG loeschen fehlgeschlagen: ' + (result.stderr || 'Unbekannter Fehler')
+        message: 'VG löschen fehlgeschlagen: ' + (result.stderr || 'Unbekannter Fehler')
       });
     }
 
@@ -464,14 +464,14 @@ router.delete('/lvm/vg/:vgName', asyncHandler(async function(req, res) {
 
     apiResponse(res, 200, {
       vg_name: vgName,
-      message: 'Volume Group erfolgreich geloescht'
+      message: 'Volume Group erfolgreich gelöscht'
     });
   } catch (err) {
     apiResponse(res, 503, null, { code: 'LVM_ERROR', message: err.message });
   }
 }));
 
-// Thin Pool loeschen (GEFAEHRLICH!)
+// Thin Pool löschen (GEFAEHRLICH!)
 router.delete('/lvm/thinpool/:vgName/:poolName', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   var vgName = req.params.vgName;
@@ -479,19 +479,19 @@ router.delete('/lvm/thinpool/:vgName/:poolName', asyncHandler(async function(req
   var confirmName = req.body.confirm_name;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validierung
   if (!validateVgName(vgName) || !validateVgName(poolName)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_NAME', message: 'Ungueltiger VG oder Pool Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_NAME', message: 'Ungültiger VG oder Pool Name' });
   }
 
-  // Sicherheits-Bestaetigung
+  // Sicherheits-Bestätigung
   if (confirmName !== poolName) {
     return apiResponse(res, 400, null, {
       code: 'CONFIRMATION_REQUIRED',
-      message: 'Bestaetigung erforderlich: confirm_name muss dem Pool Namen entsprechen'
+      message: 'Bestätigung erforderlich: confirm_name muss dem Pool Namen entsprechen'
     });
   }
 
@@ -508,7 +508,7 @@ router.delete('/lvm/thinpool/:vgName/:poolName', asyncHandler(async function(req
     if (result.exitCode !== 0) {
       return apiResponse(res, 500, null, {
         code: 'POOL_REMOVE_FAILED',
-        message: 'Thin Pool loeschen fehlgeschlagen: ' + (result.stderr || 'Unbekannter Fehler')
+        message: 'Thin Pool löschen fehlgeschlagen: ' + (result.stderr || 'Unbekannter Fehler')
       });
     }
 
@@ -518,7 +518,7 @@ router.delete('/lvm/thinpool/:vgName/:poolName', asyncHandler(async function(req
     apiResponse(res, 200, {
       vg_name: vgName,
       pool_name: poolName,
-      message: 'Thin Pool erfolgreich geloescht'
+      message: 'Thin Pool erfolgreich gelöscht'
     });
   } catch (err) {
     apiResponse(res, 503, null, { code: 'LVM_ERROR', message: err.message });
@@ -531,11 +531,11 @@ router.delete('/lvm/unregister/:storageId', asyncHandler(async function(req, res
   var storageId = req.params.storageId;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   if (!validateStorageId(storageId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_STORAGE_ID', message: 'Ungueltige Storage ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_STORAGE_ID', message: 'Ungültige Storage ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);

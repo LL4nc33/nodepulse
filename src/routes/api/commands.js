@@ -85,7 +85,7 @@ router.get('/templates/for/:nodeType', asyncHandler(async (req, res) => {
   // Validate node type
   const VALID_NODE_TYPES = ['proxmox-host', 'docker-host', 'bare-metal', 'raspberry-pi', 'all', 'unknown'];
   if (VALID_NODE_TYPES.indexOf(nodeType) === -1) {
-    return apiResponse(res, 400, null, { code: 'INVALID_TYPE', message: 'Ungueltiger Node-Typ' });
+    return apiResponse(res, 400, null, { code: 'INVALID_TYPE', message: 'Ungültiger Node-Typ' });
   }
 
   const templates = db.commands.getTemplatesForNodeType(nodeType);
@@ -104,7 +104,7 @@ router.get('/history', asyncHandler(async (req, res) => {
 router.get('/history/node/:id', asyncHandler(async (req, res) => {
   const nodeId = parseInt(req.params.id, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   const node = db.nodes.getById(nodeId);
@@ -126,7 +126,7 @@ router.post('/execute/:nodeId', asyncHandler(async (req, res) => {
   const templateId = req.body.template_id ? parseInt(req.body.template_id, 10) : null;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   const cmdCheck = validateCommand(command);
@@ -142,7 +142,7 @@ router.post('/execute/:nodeId', asyncHandler(async (req, res) => {
 
   // Check for dangerous shell metacharacters (command injection prevention)
   if (containsDangerousMetachars(command)) {
-    return apiResponse(res, 400, null, { code: 'DANGEROUS_CHARACTERS', message: 'Command enthaelt gefaehrliche Zeichen (;, &&, ||, |, etc.)' });
+    return apiResponse(res, 400, null, { code: 'DANGEROUS_CHARACTERS', message: 'Command enthält gefaehrliche Zeichen (;, &&, ||, |, etc.)' });
   }
 
   // Check for blocked commands
@@ -221,7 +221,7 @@ router.post('/execute/:nodeId', asyncHandler(async (req, res) => {
 router.get('/results/:id', asyncHandler(async (req, res) => {
   const resultId = parseInt(req.params.id, 10);
   if (isNaN(resultId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Result-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Result-ID' });
   }
 
   const result = db.commands.getResultById(resultId);

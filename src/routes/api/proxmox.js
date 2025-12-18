@@ -31,7 +31,7 @@ function shellEscape(str) {
 router.get('/', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -54,7 +54,7 @@ router.get('/', asyncHandler(async (req, res) => {
 router.post('/', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Need credentials for SSH connection
@@ -75,7 +75,7 @@ router.post('/', asyncHandler(async (req, res) => {
 router.get('/vms', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -91,7 +91,7 @@ router.get('/vms', asyncHandler(async (req, res) => {
 router.get('/cts', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -107,7 +107,7 @@ router.get('/cts', asyncHandler(async (req, res) => {
 router.get('/storage', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -123,7 +123,7 @@ router.get('/storage', asyncHandler(async (req, res) => {
 router.get('/snapshots', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -145,7 +145,7 @@ router.post('/vms/:vmid/:action', asyncHandler(async (req, res) => {
   var action = req.params.action;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate vmid as string first (defense in depth)
@@ -156,13 +156,13 @@ router.post('/vms/:vmid/:action', asyncHandler(async (req, res) => {
 
   // Validate vmid range (100-999999)
   if (isNaN(vmid) || vmid < 100 || vmid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungültige VMID (muss 100-999999 sein)' });
   }
 
   // Validate action
   var validActions = ['start', 'stop', 'shutdown', 'reboot', 'reset', 'suspend', 'resume'];
   if (validActions.indexOf(action) === -1) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ACTION', message: 'Ungueltige Aktion. Erlaubt: ' + validActions.join(', ') });
+    return apiResponse(res, 400, null, { code: 'INVALID_ACTION', message: 'Ungültige Aktion. Erlaubt: ' + validActions.join(', ') });
   }
 
   // Need credentials for SSH connection
@@ -198,7 +198,7 @@ router.post('/cts/:ctid/:action', asyncHandler(async (req, res) => {
   var action = req.params.action;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate ctid as string first (defense in depth)
@@ -209,13 +209,13 @@ router.post('/cts/:ctid/:action', asyncHandler(async (req, res) => {
 
   // Validate ctid range (100-999999)
   if (isNaN(ctid) || ctid < 100 || ctid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungueltige CTID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungültige CTID (muss 100-999999 sein)' });
   }
 
   // Validate action
   var validActions = ['start', 'stop', 'shutdown', 'reboot', 'suspend', 'resume'];
   if (validActions.indexOf(action) === -1) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ACTION', message: 'Ungueltige Aktion. Erlaubt: ' + validActions.join(', ') });
+    return apiResponse(res, 400, null, { code: 'INVALID_ACTION', message: 'Ungültige Aktion. Erlaubt: ' + validActions.join(', ') });
   }
 
   // Need credentials for SSH connection
@@ -256,7 +256,7 @@ router.patch('/vms/:vmid/config', asyncHandler(async (req, res) => {
   var memory = req.body.memory;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate vmid
@@ -265,7 +265,7 @@ router.patch('/vms/:vmid/config', asyncHandler(async (req, res) => {
   }
   var vmid = parseInt(req.params.vmid, 10);
   if (vmid < 100 || vmid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungültige VMID (muss 100-999999 sein)' });
   }
 
   // Validate at least one config parameter is provided
@@ -307,7 +307,7 @@ router.patch('/vms/:vmid/config', asyncHandler(async (req, res) => {
     var result = await collector.runProxmoxCommand(node, command, 60000);
 
     if (result.exitCode !== 0) {
-      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Config-Aenderung fehlgeschlagen' });
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Config-Änderung fehlgeschlagen' });
     }
 
     // Refresh Proxmox data
@@ -336,7 +336,7 @@ router.patch('/cts/:ctid/config', asyncHandler(async (req, res) => {
   var memory = req.body.memory;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate ctid
@@ -345,7 +345,7 @@ router.patch('/cts/:ctid/config', asyncHandler(async (req, res) => {
   }
   var ctid = parseInt(req.params.ctid, 10);
   if (ctid < 100 || ctid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungueltige CTID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungültige CTID (muss 100-999999 sein)' });
   }
 
   // Validate at least one config parameter is provided
@@ -387,7 +387,7 @@ router.patch('/cts/:ctid/config', asyncHandler(async (req, res) => {
     var result = await collector.runProxmoxCommand(node, command, 60000);
 
     if (result.exitCode !== 0) {
-      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Config-Aenderung fehlgeschlagen' });
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Config-Änderung fehlgeschlagen' });
     }
 
     // Refresh Proxmox data
@@ -416,7 +416,7 @@ router.post('/vms/:vmid/resize', asyncHandler(async (req, res) => {
   var size = req.body.size;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate vmid
@@ -425,17 +425,17 @@ router.post('/vms/:vmid/resize', asyncHandler(async (req, res) => {
   }
   var vmid = parseInt(req.params.vmid, 10);
   if (vmid < 100 || vmid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungültige VMID (muss 100-999999 sein)' });
   }
 
   // Validate disk parameter (scsi0, virtio0, ide0, etc.)
   if (!disk || !/^(scsi|virtio|ide|sata)\d+$/.test(disk)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_DISK', message: 'disk muss ein gueltiger Disk-Name sein (z.B. scsi0, virtio0)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_DISK', message: 'disk muss ein gültiger Disk-Name sein (z.B. scsi0, virtio0)' });
   }
 
   // Validate size parameter (only +XG or +XM format allowed for safety)
   if (!size || !/^\+\d+[GM]$/i.test(size)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_SIZE', message: 'size muss im Format +XG oder +XM sein (nur Vergroesserung erlaubt!)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_SIZE', message: 'size muss im Format +XG oder +XM sein (nur Vergrößerung erlaubt!)' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -477,7 +477,7 @@ router.post('/cts/:ctid/resize', asyncHandler(async (req, res) => {
   var size = req.body.size;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate ctid
@@ -486,7 +486,7 @@ router.post('/cts/:ctid/resize', asyncHandler(async (req, res) => {
   }
   var ctid = parseInt(req.params.ctid, 10);
   if (ctid < 100 || ctid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungueltige CTID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungültige CTID (muss 100-999999 sein)' });
   }
 
   // Validate disk parameter (rootfs or mpX)
@@ -496,7 +496,7 @@ router.post('/cts/:ctid/resize', asyncHandler(async (req, res) => {
 
   // Validate size parameter (only +XG or +XM format allowed for safety)
   if (!size || !/^\+\d+[GM]$/i.test(size)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_SIZE', message: 'size muss im Format +XG oder +XM sein (nur Vergroesserung erlaubt!)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_SIZE', message: 'size muss im Format +XG oder +XM sein (nur Vergrößerung erlaubt!)' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -543,7 +543,7 @@ router.post('/vms/:vmid/clone', asyncHandler(async (req, res) => {
   var full = req.body.full !== false; // Default to full clone
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate source vmid
@@ -552,7 +552,7 @@ router.post('/vms/:vmid/clone', asyncHandler(async (req, res) => {
   }
   var vmid = parseInt(req.params.vmid, 10);
   if (vmid < 100 || vmid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungültige VMID (muss 100-999999 sein)' });
   }
 
   // Validate newid (required)
@@ -620,7 +620,7 @@ router.post('/cts/:ctid/clone', asyncHandler(async (req, res) => {
   var full = req.body.full !== false; // Default to full clone
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate source ctid
@@ -629,7 +629,7 @@ router.post('/cts/:ctid/clone', asyncHandler(async (req, res) => {
   }
   var ctid = parseInt(req.params.ctid, 10);
   if (ctid < 100 || ctid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungueltige CTID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungültige CTID (muss 100-999999 sein)' });
   }
 
   // Validate newid (required)
@@ -694,7 +694,7 @@ router.post('/vms/:vmid/template', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate vmid
@@ -703,7 +703,7 @@ router.post('/vms/:vmid/template', asyncHandler(async (req, res) => {
   }
   var vmid = parseInt(req.params.vmid, 10);
   if (vmid < 100 || vmid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungültige VMID (muss 100-999999 sein)' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -742,7 +742,7 @@ router.post('/cts/:ctid/template', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate ctid
@@ -751,7 +751,7 @@ router.post('/cts/:ctid/template', asyncHandler(async (req, res) => {
   }
   var ctid = parseInt(req.params.ctid, 10);
   if (ctid < 100 || ctid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungueltige CTID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_CTID', message: 'Ungültige CTID (muss 100-999999 sein)' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -797,7 +797,7 @@ router.post('/snapshots', asyncHandler(async (req, res) => {
   var description = req.body.description || '';
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate vm_type
@@ -814,7 +814,7 @@ router.post('/snapshots', asyncHandler(async (req, res) => {
 
   // Validate vmid range (100-999999)
   if (isNaN(vmid) || vmid < 100 || vmid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID/CTID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungültige VMID/CTID (muss 100-999999 sein)' });
   }
 
   // Validate snap_name (alphanumeric, dash, underscore only, must start with letter)
@@ -883,7 +883,7 @@ router.delete('/snapshots/:vmType/:vmid/:snapName', asyncHandler(async (req, res
   var snapName = req.params.snapName;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate vm_type
@@ -899,12 +899,12 @@ router.delete('/snapshots/:vmType/:vmid/:snapName', asyncHandler(async (req, res
 
   // Validate vmid range (100-999999)
   if (isNaN(vmid) || vmid < 100 || vmid > 999999) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID/CTID (muss 100-999999 sein)' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungültige VMID/CTID (muss 100-999999 sein)' });
   }
 
   // Validate snap_name (alphanumeric, dash, underscore only, must start with letter)
   if (!snapName || !/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(snapName)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_SNAP_NAME', message: 'Ungueltiger Snapshot-Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_SNAP_NAME', message: 'Ungültiger Snapshot-Name' });
   }
 
   // Need credentials for SSH connection
@@ -924,7 +924,7 @@ router.delete('/snapshots/:vmType/:vmid/:snapName', asyncHandler(async (req, res
     var result = await collector.runProxmoxCommand(node, command, 300000);
 
     if (result.exitCode !== 0) {
-      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Snapshot loeschen fehlgeschlagen' });
+      return apiResponse(res, 500, null, { code: 'PROXMOX_ERROR', message: result.stderr || 'Snapshot löschen fehlgeschlagen' });
     }
 
     // Refresh Proxmox data after delete
@@ -949,7 +949,7 @@ router.get('/resources', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -976,7 +976,7 @@ router.get('/isos', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -1002,7 +1002,7 @@ router.get('/templates', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -1028,7 +1028,7 @@ router.get('/storage/available', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -1054,7 +1054,7 @@ router.get('/bridges', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -1080,7 +1080,7 @@ router.get('/nextid', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -1110,7 +1110,7 @@ router.post('/vms/create', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -1160,7 +1160,7 @@ router.post('/vms/create', asyncHandler(async (req, res) => {
 
   // Storage: required
   if (!storage || typeof storage !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(storage)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_STORAGE', message: 'Ungueltiger Storage-Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_STORAGE', message: 'Ungültiger Storage-Name' });
   }
 
   // Cores: 1-128
@@ -1180,13 +1180,13 @@ router.post('/vms/create', asyncHandler(async (req, res) => {
 
   // Disk size: 1-10000 GB
   if (isNaN(diskSize) || diskSize < 1 || diskSize > 10000) {
-    return apiResponse(res, 400, null, { code: 'INVALID_DISK_SIZE', message: 'Disk-Groesse muss zwischen 1 und 10000 GB liegen' });
+    return apiResponse(res, 400, null, { code: 'INVALID_DISK_SIZE', message: 'Disk-Größe muss zwischen 1 und 10000 GB liegen' });
   }
 
   // OS Type
   var validOsTypes = ['l26', 'l24', 'win11', 'win10', 'win8', 'win7', 'wvista', 'wxp', 'w2k8', 'w2k3', 'w2k', 'solaris', 'other'];
   if (!validOsTypes.includes(ostype)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_OSTYPE', message: 'Ungueltiger OS-Typ. Erlaubt: ' + validOsTypes.join(', ') });
+    return apiResponse(res, 400, null, { code: 'INVALID_OSTYPE', message: 'Ungültiger OS-Typ. Erlaubt: ' + validOsTypes.join(', ') });
   }
 
   // BIOS
@@ -1196,13 +1196,13 @@ router.post('/vms/create', asyncHandler(async (req, res) => {
 
   // Network bridge
   if (!/^[a-zA-Z0-9_-]+$/.test(netBridge)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_NET_BRIDGE', message: 'Ungueltiger Network-Bridge Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_NET_BRIDGE', message: 'Ungültiger Network-Bridge Name' });
   }
 
   // Network model
   var validNetModels = ['virtio', 'e1000', 'rtl8139', 'vmxnet3'];
   if (!validNetModels.includes(netModel)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_NET_MODEL', message: 'Ungueltiges Netzwerk-Modell. Erlaubt: ' + validNetModels.join(', ') });
+    return apiResponse(res, 400, null, { code: 'INVALID_NET_MODEL', message: 'Ungültiges Netzwerk-Modell. Erlaubt: ' + validNetModels.join(', ') });
   }
 
   // Description (max 255 chars, safe characters only)
@@ -1210,7 +1210,7 @@ router.post('/vms/create', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung darf maximal 255 Zeichen lang sein' });
   }
   if (description && !/^[a-zA-Z0-9\s\-_.,\u00C0-\u017F]*$/.test(description)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung enthaelt ungueltige Zeichen' });
+    return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung enthält ungültige Zeichen' });
   }
 
   try {
@@ -1274,7 +1274,7 @@ router.post('/cts/create', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -1327,7 +1327,7 @@ router.post('/cts/create', asyncHandler(async (req, res) => {
 
   // Storage: required
   if (!storage || typeof storage !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(storage)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_STORAGE', message: 'Ungueltiger Storage-Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_STORAGE', message: 'Ungültiger Storage-Name' });
   }
 
   // Password or SSH key required
@@ -1357,7 +1357,7 @@ router.post('/cts/create', asyncHandler(async (req, res) => {
 
   // Disk size: 1-10000 GB
   if (isNaN(diskSize) || diskSize < 1 || diskSize > 10000) {
-    return apiResponse(res, 400, null, { code: 'INVALID_DISK_SIZE', message: 'Disk-Groesse muss zwischen 1 und 10000 GB liegen' });
+    return apiResponse(res, 400, null, { code: 'INVALID_DISK_SIZE', message: 'Disk-Größe muss zwischen 1 und 10000 GB liegen' });
   }
 
   // Swap: 0-131072 MB
@@ -1367,7 +1367,7 @@ router.post('/cts/create', asyncHandler(async (req, res) => {
 
   // Network bridge
   if (!/^[a-zA-Z0-9_-]+$/.test(netBridge)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_NET_BRIDGE', message: 'Ungueltiger Network-Bridge Name' });
+    return apiResponse(res, 400, null, { code: 'INVALID_NET_BRIDGE', message: 'Ungültiger Network-Bridge Name' });
   }
 
   // IP config: dhcp or valid CIDR
@@ -1382,7 +1382,7 @@ router.post('/cts/create', asyncHandler(async (req, res) => {
     // Gateway required for static IP
     if (gateway) {
       if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(gateway)) {
-        return apiResponse(res, 400, null, { code: 'INVALID_GATEWAY', message: 'Ungueltige Gateway-IP' });
+        return apiResponse(res, 400, null, { code: 'INVALID_GATEWAY', message: 'Ungültige Gateway-IP' });
       }
       ipPart += ',gw=' + gateway;
     }
@@ -1393,7 +1393,7 @@ router.post('/cts/create', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung darf maximal 255 Zeichen lang sein' });
   }
   if (description && !/^[a-zA-Z0-9\s\-_.,\u00C0-\u017F]*$/.test(description)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung enthaelt ungueltige Zeichen' });
+    return apiResponse(res, 400, null, { code: 'INVALID_DESCRIPTION', message: 'Beschreibung enthält ungültige Zeichen' });
   }
 
   try {

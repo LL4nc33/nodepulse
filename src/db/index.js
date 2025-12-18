@@ -1999,7 +1999,7 @@ var lvm = {
 
   // === Volume Groups ===
   saveVGs: function(nodeId, vgs) {
-    // Nicht loeschen - nur upsert um registered_storage_id zu erhalten
+    // Nicht löschen - nur upsert um registered_storage_id zu erhalten
     var upsertStmt = getDb().prepare(`
       INSERT INTO node_lvm_vgs (node_id, vg_name, vg_size_bytes, vg_free_bytes, vg_used_bytes, pv_count, lv_count, vg_uuid)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -2106,7 +2106,7 @@ var lvm = {
         }
       }
     } else {
-      // Keine LVs mehr - alle loeschen
+      // Keine LVs mehr - alle löschen
       getDb().prepare('DELETE FROM node_lvm_lvs WHERE node_id = ?').run(nodeId);
     }
   },

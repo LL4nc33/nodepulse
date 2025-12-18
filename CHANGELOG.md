@@ -1,6 +1,6 @@
 # Changelog
 
-Alle bemerkenswerten Aenderungen an diesem Projekt werden in dieser Datei dokumentiert.
+Alle bemerkenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
@@ -10,31 +10,31 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
 ### Added - Task History & Logs
 
-- **Tasks Tab** fuer Proxmox-Hosts
+- **Tasks Tab** für Proxmox-Hosts
   - Summary-Cards: Gesamt, Laufend, Erfolgreich, Fehler
   - Tasks-Tabelle mit Typ, VMID, User, Status, Startzeit, Dauer
   - Server-side Pagination (10 pro Seite)
   - Filter nach Task-Typ und Status
   - Task Log Modal mit Live-Updates
-  - Stop-Button fuer laufende Tasks
+  - Stop-Button für laufende Tasks
 
 - **Cluster-weite Task Discovery**
   - Sammelt Tasks von `/cluster/tasks` (alle Nodes)
-  - Filtert nach Node-Name fuer Node-spezifische Ansicht
+  - Filtert nach Node-Name für Node-spezifische Ansicht
   - UPID-basierte Task-Identifikation
 
 - **Task API**
   - `GET /api/nodes/:id/tasks` - Task-Liste mit Pagination
   - `GET /api/nodes/:id/tasks/:upid/log` - Live Task-Log
   - `GET /api/nodes/:id/tasks/:upid/status` - Task Status
-  - `POST /api/nodes/:id/tasks/refresh` - Discovery ausfuehren
+  - `POST /api/nodes/:id/tasks/refresh` - Discovery ausführen
   - `DELETE /api/nodes/:id/tasks/:upid` - Task stoppen
 
 ### Fixed - Storage Tab
 
 - **Thin Pool Erkennung** - VM-Disks werden nicht mehr als Thin Pools angezeigt
 - **VG Status** - Zeigt enthaltene registrierte Thin Pools (z.B. "local-lvm")
-- **Proxmox Storage Config Parser** - Python-basiert fuer robustes Parsing
+- **Proxmox Storage Config Parser** - Python-basiert für robustes Parsing
 - **LV Registration** - UPSERT statt DELETE+INSERT erhält registered_storage_id
 
 ---
@@ -43,18 +43,18 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
 ### Added - Backup & Restore
 
-- **Backup Tab** fuer Proxmox-Hosts
-  - Summary: Backup-Count, Gesamt-Groesse, Storage-Count
+- **Backup Tab** für Proxmox-Hosts
+  - Summary: Backup-Count, Gesamt-Größe, Storage-Count
   - Backup Storages mit Kapazitaet und Auslastung
-  - Backups-Tabelle mit VMID, Typ, Groesse, Alter
+  - Backups-Tabelle mit VMID, Typ, Größe, Alter
   - Backup erstellen (vzdump) mit Mode/Compression Optionen
-  - Backup loeschen mit Bestaetigung
+  - Backup löschen mit Bestätigung
   - VM/CT wiederherstellen
 
 - **Backup API**
   - `GET /api/nodes/:id/backup` - Alle Backup-Daten
   - `POST /api/nodes/:id/backup/create` - Backup erstellen
-  - `DELETE /api/nodes/:id/backup/:volid` - Backup loeschen
+  - `DELETE /api/nodes/:id/backup/:volid` - Backup löschen
   - `POST /api/nodes/:id/backup/restore` - Wiederherstellen
 
 ---
@@ -63,18 +63,18 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 
 ### Added - LVM Storage Management
 
-- **Storage Tab** fuer Proxmox-Hosts
+- **Storage Tab** für Proxmox-Hosts
   - Volume Groups mit Auslastung und Proxmox-Status
   - Thin Pools mit Data-Percent
   - Physical Volumes und Logical Volumes Listen
-  - Verfuegbare Disks fuer VG-Erstellung
+  - Verfügbare Disks für VG-Erstellung
 
 - **Storage Operationen**
   - VG erstellen aus freien Disks
   - Thin Pool in VG erstellen
   - In Proxmox registrieren (lvm/lvmthin)
   - Aus Proxmox entfernen
-  - VG/Thin Pool loeschen (mit Bestaetigung)
+  - VG/Thin Pool löschen (mit Bestätigung)
 
 - **Storage API**
   - `GET /api/nodes/:id/storage/lvm` - Alle LVM-Daten
@@ -104,7 +104,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 ### Fixed - Security & Stability
 
 - **Command Injection Prevention** - Network Target Validation
-- **XSS Fixes** - JSON.stringify() fuer onclick Handler
+- **XSS Fixes** - JSON.stringify() für onclick Handler
 - **Path Traversal Prevention** - Snapshot-Namen Validierung
 - **ES5 Compatibility** - Promise.finally() entfernt (12 Stellen)
 - **SSH Connection Leaks** - Sauberes Cleanup bei stop()
@@ -125,7 +125,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
   - 3-State-Machine: closed → open → half-open
 
 - **Safe Storage Wrapper**
-  - LRU-Eviction fuer Fire HD 10 localStorage
+  - LRU-Eviction für Fire HD 10 localStorage
   - 2 MB Safe-Limit
 
 - **DB-Optimierung**
@@ -145,7 +145,7 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 ### Changed
 
 - **CSS Modularisierung** - 11 Module mit Build-System
-- **JavaScript Modularisierung** - 7 Module fuer detail-page.js
+- **JavaScript Modularisierung** - 7 Module für detail-page.js
 - **API Modularisierung** - 11 Route-Module
 
 ---
@@ -206,15 +206,15 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/).
 - **Projekt Foundation**
   - Express.js Server mit EJS Templates
   - SQLite Datenbank mit better-sqlite3
-  - Server-Side Rendering fuer Fire HD 10 (2017)
+  - Server-Side Rendering für Fire HD 10 (2017)
 
 - **Node Management**
-  - CRUD fuer Server-Nodes
+  - CRUD für Server-Nodes
   - SSH Connection Testing
   - Tag-System
 
 - **Web UI**
-  - Dashboard mit Node-Uebersicht
+  - Dashboard mit Node-Übersicht
   - Responsive Layout
   - ES5-kompatibles JavaScript
 

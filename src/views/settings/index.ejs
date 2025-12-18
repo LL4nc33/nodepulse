@@ -49,14 +49,14 @@
             <input type="checkbox" name="auto_discovery_enabled" <%= settings.auto_discovery_enabled === 'true' ? 'checked' : '' %>>
             <span>Auto-Discovery aktiv</span>
           </label>
-          <small>Automatische Erkennung von Node-Typ und Features beim Hinzufuegen</small>
+          <small>Automatische Erkennung von Node-Typ und Features beim Hinzufügen</small>
         </div>
         <div class="form-group">
           <label class="checkbox-label">
             <input type="checkbox" name="rediscovery_on_connect" <%= settings.rediscovery_on_connect === 'true' ? 'checked' : '' %>>
             <span>Re-Discovery bei Connect</span>
           </label>
-          <small>Discovery erneut ausfuehren wenn Node online geht</small>
+          <small>Discovery erneut ausführen wenn Node online geht</small>
         </div>
       </div>
     </div>
@@ -105,7 +105,7 @@
             <option value="24" <%= !settings.chart_default_hours || settings.chart_default_hours === '24' ? 'selected' : '' %>>24 Stunden</option>
             <option value="168" <%= settings.chart_default_hours === '168' ? 'selected' : '' %>>7 Tage</option>
           </select>
-          <small>Standard-Zeitraum fuer Stats-Charts</small>
+          <small>Standard-Zeitraum für Stats-Charts</small>
         </div>
       </div>
 
@@ -270,10 +270,10 @@
         <div class="form-group">
           <label class="checkbox-label">
             <input type="checkbox" name="use_toon_format" id="use_toon_format" <%= settings.use_toon_format === 'true' ? 'checked' : '' %>>
-            <span>TOON-Format fuer API-Responses aktivieren</span>
+            <span>TOON-Format für API-Responses aktivieren</span>
           </label>
           <small>
-            Kompaktes Format fuer bessere Performance auf Low-End-Geraeten (Raspberry Pi 2B, Fire HD 10 2017).
+            Kompaktes Format für bessere Performance auf Low-End-Geraeten (Raspberry Pi 2B, Fire HD 10 2017).
             <br><strong>Vorteile:</strong> 81% kleinere Responses (16-25 KB → 3-5 KB), 4x schnelleres Parsing (&lt;5ms), 70% weniger Bandbreite
             <br><strong>Kompatibilitaet:</strong> ES5 JavaScript (Chrome 50+, Firefox 52+)
             <br><strong>Hinweis:</strong> JSON bleibt Default, TOON ist opt-in ohne Breaking Changes
@@ -299,7 +299,7 @@
 
   <div class="form-actions">
     <button type="submit" class="btn btn-primary">Speichern</button>
-    <a href="/settings" class="btn btn-secondary">Zuruecksetzen</a>
+    <a href="/settings" class="btn btn-secondary">Zurücksetzen</a>
   </div>
 </form>
 
@@ -372,7 +372,7 @@ function clearTOONCache() {
       alert('TOON-Cache geleert');
     }
   } else {
-    alert('TOON-Parser nicht verfuegbar');
+    alert('TOON-Parser nicht verfügbar');
   }
 }
 

@@ -57,7 +57,7 @@ function loadTaskData(page) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -105,7 +105,7 @@ function refreshTasks() {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -355,7 +355,7 @@ function loadTaskLog(upid) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       var logContent = document.getElementById('taskLogContent');
@@ -365,7 +365,7 @@ function loadTaskLog(upid) {
         for (var i = 0; i < lines.length; i++) {
           logText += lines[i].text + '\n';
         }
-        if (logContent) logContent.textContent = logText || 'Kein Log verfuegbar.';
+        if (logContent) logContent.textContent = logText || 'Kein Log verfügbar.';
       } else {
         var errMsg = response.error ? response.error.message : 'Fehler beim Laden des Logs';
         if (logContent) logContent.textContent = 'Fehler: ' + errMsg;
@@ -390,7 +390,7 @@ function loadTaskStatus(upid) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       var statusEl = document.getElementById('taskLogStatus');
@@ -465,7 +465,7 @@ function stopTask(upid) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {

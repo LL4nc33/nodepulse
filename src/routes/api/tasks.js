@@ -16,7 +16,7 @@ var { asyncHandler, apiResponse } = require('./helpers');
 router.get('/', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -51,7 +51,7 @@ router.get('/', asyncHandler(async function(req, res) {
 router.get('/running', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var runningTasks = db.tasks.getRunningTasks(nodeId);
@@ -64,7 +64,7 @@ router.get('/:upid', asyncHandler(async function(req, res) {
   var upid = req.params.upid;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var task = db.tasks.getTaskByUpid(nodeId, upid);
@@ -83,12 +83,12 @@ router.get('/:upid/log', asyncHandler(async function(req, res) {
   var limit = parseInt(req.query.limit, 10) || 500;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // Validate UPID format (basic check)
   if (!upid || !upid.startsWith('UPID:')) {
-    return apiResponse(res, 400, null, { code: 'INVALID_UPID', message: 'Ungueltige UPID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_UPID', message: 'Ungültige UPID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -122,7 +122,7 @@ router.get('/:upid/log', asyncHandler(async function(req, res) {
     try {
       logData = JSON.parse(result.stdout);
     } catch (e) {
-      return apiResponse(res, 500, null, { code: 'PARSE_ERROR', message: 'Ungueltige Log-Antwort' });
+      return apiResponse(res, 500, null, { code: 'PARSE_ERROR', message: 'Ungültige Log-Antwort' });
     }
 
     // logData is an array of { n: lineNumber, t: text }
@@ -148,11 +148,11 @@ router.get('/:upid/status', asyncHandler(async function(req, res) {
   var upid = req.params.upid;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   if (!upid || !upid.startsWith('UPID:')) {
-    return apiResponse(res, 400, null, { code: 'INVALID_UPID', message: 'Ungueltige UPID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_UPID', message: 'Ungültige UPID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -183,7 +183,7 @@ router.get('/:upid/status', asyncHandler(async function(req, res) {
     try {
       statusData = JSON.parse(result.stdout);
     } catch (e) {
-      return apiResponse(res, 500, null, { code: 'PARSE_ERROR', message: 'Ungueltige Status-Antwort' });
+      return apiResponse(res, 500, null, { code: 'PARSE_ERROR', message: 'Ungültige Status-Antwort' });
     }
 
     apiResponse(res, 200, statusData);
@@ -200,7 +200,7 @@ router.get('/:upid/status', asyncHandler(async function(req, res) {
 router.post('/refresh', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -241,11 +241,11 @@ router.delete('/:upid', asyncHandler(async function(req, res) {
   var upid = req.params.upid;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   if (!upid || !upid.startsWith('UPID:')) {
-    return apiResponse(res, 400, null, { code: 'INVALID_UPID', message: 'Ungueltige UPID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_UPID', message: 'Ungültige UPID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);

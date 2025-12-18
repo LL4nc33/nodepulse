@@ -423,7 +423,7 @@
               <dt>Systemd</dt>
               <dd>
                 <% if (discovery.has_systemd) { %>
-                  <span class="badge badge-ok">Verfuegbar</span>
+                  <span class="badge badge-ok">Verfügbar</span>
                 <% } else { %>
                   <span class="badge badge-neutral">Nein</span>
                 <% } %>
@@ -498,7 +498,7 @@
               <dd><%= health.kernel_version || '-' %></dd>
               <dt>Letzter Boot</dt>
               <dd><%= health.last_boot || '-' %></dd>
-              <dt>Reboot noetig</dt>
+              <dt>Reboot nötig</dt>
               <dd>
                 <% if (health.reboot_required) { %>
                   <span class="badge badge-critical">Ja</span>
@@ -535,7 +535,7 @@
             <h3>Aktionen</h3>
             <div class="button-stack-horizontal">
               <button class="btn btn-secondary btn-sm btn-health-check" onclick="runHealthCheck(<%= node.id %>)">
-                <span class="btn-text">Erneut pruefen</span>
+                <span class="btn-text">Erneut prüfen</span>
                 <span class="btn-loading"><span class="spinner"></span></span>
               </button>
               <% if (health.apt_updates > 0) { %>

@@ -34,7 +34,7 @@ function loadBackupData() {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -79,7 +79,7 @@ function refreshBackupData() {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -143,7 +143,7 @@ function filterBackups() {
   }
 
   var html = '<div class="backup-table-wrapper"><table class="backup-table">';
-  html += '<thead><tr><th>VMID</th><th>Typ</th><th>Storage</th><th>Groesse</th><th>Erstellt</th><th>Notizen</th><th>Aktionen</th></tr></thead>';
+  html += '<thead><tr><th>VMID</th><th>Typ</th><th>Storage</th><th>Größe</th><th>Erstellt</th><th>Notizen</th><th>Aktionen</th></tr></thead>';
   html += '<tbody>';
 
   for (var i = 0; i < filtered.length; i++) {
@@ -165,7 +165,7 @@ function filterBackups() {
     html += '<button type="button" class="btn btn-sm btn-primary" onclick="openRestoreModal(\'' + escapeForAttr(bkp.volid) + '\', \'' + bkp.vmtype + '\', ' + bkp.vmid + ')" title="Wiederherstellen">';
     html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
     html += '</button>';
-    html += '<button type="button" class="btn btn-sm btn-danger" onclick="deleteBackup(\'' + escapeForAttr(bkp.volid) + '\')" title="Loeschen">';
+    html += '<button type="button" class="btn btn-sm btn-danger" onclick="deleteBackup(\'' + escapeForAttr(bkp.volid) + '\')" title="Löschen">';
     html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
     html += '</button>';
     html += '</td></tr>';
@@ -296,7 +296,7 @@ function submitCreateBackup(event) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -349,7 +349,7 @@ function submitRestoreBackup(event) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -400,15 +400,15 @@ function submitDeleteBackup(event) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
         closeModal('deleteBackupModal');
         loadBackupData();
-        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup geloescht', 'success');
+        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup gelöscht', 'success');
       } else {
-        var errMsg = response.error ? response.error.message : 'Loeschen fehlgeschlagen';
+        var errMsg = response.error ? response.error.message : 'Löschen fehlgeschlagen';
         alert('Fehler: ' + errMsg);
       }
     }

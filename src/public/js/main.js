@@ -73,7 +73,7 @@
                 }
               }
             } catch (e) {
-              response = { success: false, error: { code: 'PARSE_ERROR', message: 'Ungueltige Server-Antwort' } };
+              response = { success: false, error: { code: 'PARSE_ERROR', message: 'Ungültige Server-Antwort' } };
             }
 
             if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -115,7 +115,7 @@
     }
   };
 
-  // Legacy AJAX Function fuer Rueckwaertskompatibilitaet
+  // Legacy AJAX Function für Rueckwaertskompatibilitaet
   function ajax(method, url, data, callback, timeout) {
     API.request(method, url, data, { timeout: timeout })
       .then(function(responseData) {
@@ -190,7 +190,7 @@
     },
 
     /**
-     * Loading Overlay fuer Container
+     * Loading Overlay für Container
      */
     showLoading: function(container, message) {
       if (!container) return;
@@ -336,7 +336,7 @@
   window.formatUptime = UI.formatUptime; // For client-side updates
 
   // =====================================================
-  // Tab System - Einheitlich fuer alle Seiten
+  // Tab System - Einheitlich für alle Seiten
   // =====================================================
 
   var Tabs = {
@@ -451,7 +451,7 @@
   window.NP.Tabs = Tabs;
 
   // =====================================================
-  // Node Actions - Einheitliche API fuer Node-Operationen
+  // Node Actions - Einheitliche API für Node-Operationen
   // =====================================================
 
   var NodeActions = {
@@ -495,12 +495,12 @@
     },
 
     /**
-     * Discovery ausfuehren
+     * Discovery ausführen
      */
     runDiscovery: function(nodeId, btnEl) {
       var resultEl = this.resultEl || document.getElementById('test-result');
 
-      UI.showAlert(resultEl, 'info', 'Discovery laeuft... (kann 1-2 Minuten dauern)');
+      UI.showAlert(resultEl, 'info', 'Discovery läuft... (kann 1-2 Minuten dauern)');
       UI.setButtonLoading(btnEl, true);
       UI.setButtonsLoading('.btn-discover-secondary', true);
 
@@ -550,7 +550,7 @@
 
   window.NP.NodeActions = NodeActions;
 
-  // Legacy-Funktionen global verfuegbar machen
+  // Legacy-Funktionen global verfügbar machen
   window.testConnection = function(nodeId) {
     var btn = document.getElementById('btn-test');
     NodeActions.setResultElement('test-result');
@@ -612,18 +612,18 @@
     },
 
     deleteContainer: function(nodeId, containerId, containerName) {
-      if (!confirm('Container "' + containerName + '" wirklich loeschen?')) return;
+      if (!confirm('Container "' + containerName + '" wirklich löschen?')) return;
 
       var resultEl = this.resultEl || document.getElementById('docker-result');
-      UI.showAlert(resultEl, 'info', 'Container wird geloescht...');
+      UI.showAlert(resultEl, 'info', 'Container wird gelöscht...');
 
       API.delete('/api/nodes/' + nodeId + '/docker/containers/' + containerId, { timeout: 30000 })
         .then(function() {
-          UI.showAlert(resultEl, 'success', 'Container geloescht. Seite wird neu geladen...');
+          UI.showAlert(resultEl, 'success', 'Container gelöscht. Seite wird neu geladen...');
           setTimeout(function() { window.location.reload(); }, 1000);
         })
         .catch(function(err) {
-          UI.showAlert(resultEl, 'error', 'Loeschen fehlgeschlagen: ' + err.message);
+          UI.showAlert(resultEl, 'error', 'Löschen fehlgeschlagen: ' + err.message);
         });
     }
   };
@@ -755,7 +755,7 @@
     },
 
     refreshNetwork: function(nodeId, container, btnEl) {
-      UI.showLoading(container, 'Netzwerk-Diagnose wird ausgefuehrt...');
+      UI.showLoading(container, 'Netzwerk-Diagnose wird ausgeführt...');
       UI.setButtonLoading(btnEl, true);
 
       API.get('/api/nodes/' + nodeId + '/network', { timeout: 60000 })
@@ -773,7 +773,7 @@
 
     runPing: function(nodeId, target, outputEl, btnEl) {
       UI.setButtonLoading(btnEl, true);
-      if (outputEl) outputEl.textContent = 'Ping laeuft...';
+      if (outputEl) outputEl.textContent = 'Ping läuft...';
 
       API.post('/api/nodes/' + nodeId + '/network/ping', { target: target }, { timeout: 30000 })
         .then(function(data) {
@@ -790,7 +790,7 @@
 
     runDnsLookup: function(nodeId, hostname, outputEl, btnEl) {
       UI.setButtonLoading(btnEl, true);
-      if (outputEl) outputEl.textContent = 'DNS Lookup laeuft...';
+      if (outputEl) outputEl.textContent = 'DNS Lookup läuft...';
 
       API.post('/api/nodes/' + nodeId + '/network/dns', { hostname: hostname }, { timeout: 15000 })
         .then(function(data) {
@@ -807,7 +807,7 @@
 
     runTraceroute: function(nodeId, target, outputEl, btnEl) {
       UI.setButtonLoading(btnEl, true);
-      if (outputEl) outputEl.textContent = 'Traceroute laeuft... (kann bis zu 60s dauern)';
+      if (outputEl) outputEl.textContent = 'Traceroute läuft... (kann bis zu 60s dauern)';
 
       API.post('/api/nodes/' + nodeId + '/network/traceroute', { target: target }, { timeout: 90000 })
         .then(function(data) {
@@ -989,7 +989,7 @@
     var deleteForm = document.getElementById('delete-form');
     if (deleteForm) {
       deleteForm.addEventListener('submit', function(e) {
-        if (!confirm('Wirklich loeschen? Diese Aktion kann nicht rueckgaengig gemacht werden.')) {
+        if (!confirm('Wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
           e.preventDefault();
         }
       });

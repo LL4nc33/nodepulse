@@ -7,7 +7,7 @@ Stand: 2025-12-18
 
 ## Ueberblick
 
-Dieses Dokument beschreibt das Design-System fuer NodePulse. Das System basiert auf CSS Custom Properties (Variablen) und sorgt fuer konsistentes Styling in der gesamten Anwendung.
+Dieses Dokument beschreibt das Design-System für NodePulse. Das System basiert auf CSS Custom Properties (Variablen) und sorgt für konsistentes Styling in der gesamten Anwendung.
 
 **Inspiriert von:**
 - Proxmox VE (Datacenter-View, Summary-Cards)
@@ -20,7 +20,7 @@ Dieses Dokument beschreibt das Design-System fuer NodePulse. Das System basiert 
 
 ### Spacing Scale
 
-Konsistentes Spacing fuer die gesamte Anwendung:
+Konsistentes Spacing für die gesamte Anwendung:
 
 ```css
 :root {
@@ -149,8 +149,8 @@ Luftige Karten mit Status-Border und Progress-Bars:
 Hierarchische Darstellung mit Expand/Collapse:
 
 - Parent-Nodes mit aggregierten Stats
-- Chevron-Icons fuer Expand/Collapse
-- Indentation fuer Child-Nodes
+- Chevron-Icons für Expand/Collapse
+- Indentation für Child-Nodes
 - State-Persistierung in localStorage
 
 ---
@@ -192,10 +192,10 @@ Das bestehende Farb-System bleibt unveraendert:
 
 ### Progress-Bar
 
-Die Progress-Bar-Komponente ist vereinheitlicht und unterstuetzt 3 Varianten:
+Die Progress-Bar-Komponente ist vereinheitlicht und unterstützt 3 Varianten:
 
 #### Mini (6px Hoehe)
-Fuer Dashboard Listen-View, kompakte Darstellung.
+Für Dashboard Listen-View, kompakte Darstellung.
 
 ```ejs
 <%- include('partials/progress-bar', {
@@ -205,7 +205,7 @@ Fuer Dashboard Listen-View, kompakte Darstellung.
 ```
 
 #### Standard (8px Hoehe)
-Fuer Cards-View, mit optionalen absoluten Werten.
+Für Cards-View, mit optionalen absoluten Werten.
 
 ```ejs
 <%- include('partials/progress-bar', {
@@ -219,7 +219,7 @@ Fuer Cards-View, mit optionalen absoluten Werten.
 ```
 
 #### Large (12px Hoehe)
-Fuer Detail-Pages, mit Label und absoluten Werten.
+Für Detail-Pages, mit Label und absoluten Werten.
 
 ```ejs
 <%- include('partials/progress-bar', {
@@ -241,7 +241,7 @@ Fuer Detail-Pages, mit Label und absoluten Werten.
 |-----------|-----|---------|--------------|
 | `progressValue` | Number | 0 | Wert 0-100 |
 | `variant` | String | 'mini' | 'mini', 'standard', 'large' |
-| `label` | String | '' | Label fuer large Variante |
+| `label` | String | '' | Label für large Variante |
 | `showAbsolute` | Boolean | false | Absolute Werte anzeigen |
 | `usedValue` | Number/String | - | Verwendeter Wert |
 | `totalValue` | Number/String | - | Gesamtwert |
@@ -249,7 +249,7 @@ Fuer Detail-Pages, mit Label und absoluten Werten.
 | `thresholdWarning` | Number | 80 | Warning-Schwelle |
 | `thresholdCritical` | Number | 95 | Critical-Schwelle |
 | `offline` | Boolean | false | Offline-Status |
-| `timestamp` | Number | - | Unix-Timestamp fuer Alter |
+| `timestamp` | Number | - | Unix-Timestamp für Alter |
 
 #### Farbcodierung
 
@@ -313,7 +313,7 @@ npm run build:css  # Baut alle Module zu style.css zusammen
 
 ## Browser-Kompatibilitaet
 
-Optimiert fuer aeltere Browser (Chrome 50+, Fire HD 10 2017):
+Optimiert für aeltere Browser (Chrome 50+, Fire HD 10 2017):
 
 - Flexbox mit `-webkit-` Prefixes
 - Kein CSS Grid

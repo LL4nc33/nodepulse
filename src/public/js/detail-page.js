@@ -275,7 +275,7 @@ function showLogs(nodeId, containerId, containerName) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -360,7 +360,7 @@ function pruneDocker(nodeId, type) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -443,28 +443,28 @@ function confirmDeleteDocker(nodeId, resourceType, resourceId, resourceName, sta
     'networks': 'Network'
   };
 
-  titleEl.textContent = typeNames[resourceType] + ' loeschen?';
+  titleEl.textContent = typeNames[resourceType] + ' löschen?';
 
   var message = '';
   if (resourceType === 'containers') {
-    message = '<strong>' + escapeHtml(resourceName) + '</strong> wird unwiderruflich geloescht.<br>';
+    message = '<strong>' + escapeHtml(resourceName) + '</strong> wird unwiderruflich gelöscht.<br>';
     message += 'Alle Daten im Container gehen verloren.';
     if (state === 'running') {
-      message += '<br><br><span class="text-danger">Container laeuft noch!</span>';
+      message += '<br><br><span class="text-danger">Container läuft noch!</span>';
       forceOption.style.display = 'block';
     }
   } else if (resourceType === 'images') {
-    message = 'Image <strong>' + escapeHtml(resourceName) + '</strong> wird geloescht.<br>';
+    message = 'Image <strong>' + escapeHtml(resourceName) + '</strong> wird gelöscht.<br>';
     message += 'Container die dieses Image nutzen funktionieren weiterhin.';
     forceOption.style.display = 'block'; // Images might be in use
   } else if (resourceType === 'volumes') {
     message = '<span class="text-danger"><strong>WARNUNG:</strong></span> Volume <strong>' + escapeHtml(resourceName) + '</strong> ';
-    message += 'und <strong>ALLE DATEN</strong> darin werden <strong>UNWIDERRUFLICH</strong> geloescht!';
+    message += 'und <strong>ALLE DATEN</strong> darin werden <strong>UNWIDERRUFLICH</strong> gelöscht!';
     if (inUse) {
-      message += '<br><br><span class="text-danger">Volume wird verwendet und kann nicht geloescht werden.</span>';
+      message += '<br><br><span class="text-danger">Volume wird verwendet und kann nicht gelöscht werden.</span>';
     }
   } else if (resourceType === 'networks') {
-    message = 'Network <strong>' + escapeHtml(resourceName) + '</strong> wird geloescht.';
+    message = 'Network <strong>' + escapeHtml(resourceName) + '</strong> wird gelöscht.';
   }
 
   messageEl.innerHTML = message;
@@ -515,7 +515,7 @@ function executeDockerDelete() {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -523,14 +523,14 @@ function executeDockerDelete() {
         var resultEl = document.getElementById('docker-result');
         if (resultEl) {
           resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Erfolgreich geloescht. Aktualisiere...';
+          resultEl.textContent = 'Erfolgreich gelöscht. Aktualisiere...';
           resultEl.style.display = 'block';
         }
         setTimeout(function() {
           refreshDocker(pendingDelete.nodeId);
         }, 500);
       } else {
-        var errMsg = response.error ? response.error.message : 'Loeschen fehlgeschlagen';
+        var errMsg = response.error ? response.error.message : 'Löschen fehlgeschlagen';
         errorEl.textContent = errMsg;
         errorEl.style.display = 'block';
 
@@ -773,7 +773,7 @@ function confirmTemplate(nodeId, vmType, vmid, name) {
   document.getElementById('template-modal-title').textContent = typeLabel + ' ' + vmid + ' zu Template?';
   var msgEl = document.getElementById('template-modal-message');
   msgEl.innerHTML = '<strong>WARNUNG:</strong> ' + (name || typeLabel + ' ' + vmid) + ' wird zu einem Template konvertiert!<br><br>' +
-    'Diese Aktion kann <strong>NICHT rueckgaengig</strong> gemacht werden.<br>' +
+    'Diese Aktion kann <strong>NICHT rückgängig</strong> gemacht werden.<br>' +
     'Die ' + typeLabel + ' kann danach <strong>NICHT mehr gestartet</strong> werden.';
   document.getElementById('template-modal-error').style.display = 'none';
 
@@ -939,7 +939,7 @@ function openCreateVmModal(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -970,7 +970,7 @@ function populateVmForm(data) {
   // Populate ISOs
   var isoSelect = document.getElementById('vm-iso');
   if (isoSelect && data.isos) {
-    isoSelect.innerHTML = '<option value="">-- ISO waehlen --</option>';
+    isoSelect.innerHTML = '<option value="">-- ISO wählen --</option>';
     data.isos.forEach(function(iso) {
       var opt = document.createElement('option');
       opt.value = iso.volid;
@@ -982,7 +982,7 @@ function populateVmForm(data) {
   // Populate Storage (only those supporting images/rootdir)
   var storageSelect = document.getElementById('vm-storage');
   if (storageSelect && data.storage) {
-    storageSelect.innerHTML = '<option value="">-- Storage waehlen --</option>';
+    storageSelect.innerHTML = '<option value="">-- Storage wählen --</option>';
     data.storage.forEach(function(s) {
       if (s.content && (s.content.indexOf('images') > -1 || s.content.indexOf('rootdir') > -1)) {
         var opt = document.createElement('option');
@@ -1093,7 +1093,7 @@ function submitCreateVm(event) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -1162,7 +1162,7 @@ function openCreateCtModal(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -1193,7 +1193,7 @@ function populateCtForm(data) {
   // Populate Templates
   var templateSelect = document.getElementById('ct-template');
   if (templateSelect && data.templates) {
-    templateSelect.innerHTML = '<option value="">-- Template waehlen --</option>';
+    templateSelect.innerHTML = '<option value="">-- Template wählen --</option>';
     data.templates.forEach(function(tpl) {
       var opt = document.createElement('option');
       opt.value = tpl.volid;
@@ -1205,7 +1205,7 @@ function populateCtForm(data) {
   // Populate Storage (only those supporting rootdir)
   var storageSelect = document.getElementById('ct-storage');
   if (storageSelect && data.storage) {
-    storageSelect.innerHTML = '<option value="">-- Storage waehlen --</option>';
+    storageSelect.innerHTML = '<option value="">-- Storage wählen --</option>';
     data.storage.forEach(function(s) {
       if (s.content && s.content.indexOf('rootdir') > -1) {
         var opt = document.createElement('option');
@@ -1348,7 +1348,7 @@ function submitCreateCt(event) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -1470,7 +1470,7 @@ function createSnapshot(event, nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -1546,7 +1546,7 @@ function deleteSnapshot(nodeId, vmType, vmid, snapName) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -2329,7 +2329,7 @@ function executeTerminalCommand() {
   };
 
   xhr.onerror = function() {
-    outputDiv.textContent = 'Netzwerkfehler beim Ausfuehren des Befehls.';
+    outputDiv.textContent = 'Netzwerkfehler beim Ausführen des Befehls.';
     outputDiv.className = 'terminal-cmd-output error';
     scrollToBottom();
   };
@@ -2523,7 +2523,7 @@ function loadServices(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -2625,7 +2625,7 @@ function controlService(nodeId, serviceName, action) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -2774,7 +2774,7 @@ function submitCreateVg(event) {
   }
 
   if (deviceCheckboxes.length === 0) {
-    alert('Mindestens ein Device muss ausgewaehlt werden');
+    alert('Mindestens ein Device muss ausgewählt werden');
     return;
   }
 
@@ -2824,7 +2824,7 @@ function submitCreateThinPool(event) {
   var sizePercent = parseInt(form.size_percent.value, 10);
 
   if (!vgName) {
-    alert('VG muss ausgewaehlt werden');
+    alert('VG muss ausgewählt werden');
     return;
   }
 
@@ -2926,9 +2926,9 @@ function deleteVg(vgName) {
   document.getElementById('confirmName').value = '';
 
   document.getElementById('deleteWarningText').innerHTML =
-    'Die Volume Group <strong>' + vgName + '</strong> und alle enthaltenen LVs werden unwiderruflich geloescht!';
+    'Die Volume Group <strong>' + vgName + '</strong> und alle enthaltenen LVs werden unwiderruflich gelöscht!';
   document.getElementById('confirmHint').innerHTML =
-    'Geben Sie <strong>' + vgName + '</strong> ein um zu bestaetigen.';
+    'Geben Sie <strong>' + vgName + '</strong> ein um zu bestätigen.';
 
   modal.style.display = 'flex';
 }
@@ -2943,9 +2943,9 @@ function deleteThinPool(vgName, poolName) {
   document.getElementById('confirmName').value = '';
 
   document.getElementById('deleteWarningText').innerHTML =
-    'Der Thin Pool <strong>' + poolName + '</strong> und alle Thin LVs werden unwiderruflich geloescht!';
+    'Der Thin Pool <strong>' + poolName + '</strong> und alle Thin LVs werden unwiderruflich gelöscht!';
   document.getElementById('confirmHint').innerHTML =
-    'Geben Sie <strong>' + poolName + '</strong> ein um zu bestaetigen.';
+    'Geben Sie <strong>' + poolName + '</strong> ein um zu bestätigen.';
 
   modal.style.display = 'flex';
 }
@@ -2989,14 +2989,14 @@ function submitDeleteStorage(event) {
       var response = JSON.parse(xhr.responseText);
       alert('Fehler: ' + (response.error ? response.error.message : 'Loeschung fehlgeschlagen'));
       submitBtn.disabled = false;
-      submitBtn.innerHTML = 'Endgueltig loeschen';
+      submitBtn.innerHTML = 'Endgültig löschen';
     }
   };
 
   xhr.onerror = function() {
     alert('Netzwerkfehler');
     submitBtn.disabled = false;
-    submitBtn.innerHTML = 'Endgueltig loeschen';
+    submitBtn.innerHTML = 'Endgültig löschen';
   };
 
   xhr.send(JSON.stringify({
@@ -3092,7 +3092,7 @@ function loadBackupData() {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -3137,7 +3137,7 @@ function refreshBackupData() {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -3201,7 +3201,7 @@ function filterBackups() {
   }
 
   var html = '<div class="backup-table-wrapper"><table class="backup-table">';
-  html += '<thead><tr><th>VMID</th><th>Typ</th><th>Storage</th><th>Groesse</th><th>Erstellt</th><th>Notizen</th><th>Aktionen</th></tr></thead>';
+  html += '<thead><tr><th>VMID</th><th>Typ</th><th>Storage</th><th>Größe</th><th>Erstellt</th><th>Notizen</th><th>Aktionen</th></tr></thead>';
   html += '<tbody>';
 
   for (var i = 0; i < filtered.length; i++) {
@@ -3223,7 +3223,7 @@ function filterBackups() {
     html += '<button type="button" class="btn btn-sm btn-primary" onclick="openRestoreModal(\'' + escapeForAttr(bkp.volid) + '\', \'' + bkp.vmtype + '\', ' + bkp.vmid + ')" title="Wiederherstellen">';
     html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
     html += '</button>';
-    html += '<button type="button" class="btn btn-sm btn-danger" onclick="deleteBackup(\'' + escapeForAttr(bkp.volid) + '\')" title="Loeschen">';
+    html += '<button type="button" class="btn btn-sm btn-danger" onclick="deleteBackup(\'' + escapeForAttr(bkp.volid) + '\')" title="Löschen">';
     html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
     html += '</button>';
     html += '</td></tr>';
@@ -3354,7 +3354,7 @@ function submitCreateBackup(event) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -3407,7 +3407,7 @@ function submitRestoreBackup(event) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -3458,15 +3458,15 @@ function submitDeleteBackup(event) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
         closeModal('deleteBackupModal');
         loadBackupData();
-        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup geloescht', 'success');
+        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup gelöscht', 'success');
       } else {
-        var errMsg = response.error ? response.error.message : 'Loeschen fehlgeschlagen';
+        var errMsg = response.error ? response.error.message : 'Löschen fehlgeschlagen';
         alert('Fehler: ' + errMsg);
       }
     }
@@ -3554,7 +3554,7 @@ function loadTaskData(page) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -3602,7 +3602,7 @@ function refreshTasks() {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -3852,7 +3852,7 @@ function loadTaskLog(upid) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       var logContent = document.getElementById('taskLogContent');
@@ -3862,7 +3862,7 @@ function loadTaskLog(upid) {
         for (var i = 0; i < lines.length; i++) {
           logText += lines[i].text + '\n';
         }
-        if (logContent) logContent.textContent = logText || 'Kein Log verfuegbar.';
+        if (logContent) logContent.textContent = logText || 'Kein Log verfügbar.';
       } else {
         var errMsg = response.error ? response.error.message : 'Fehler beim Laden des Logs';
         if (logContent) logContent.textContent = 'Fehler: ' + errMsg;
@@ -3887,7 +3887,7 @@ function loadTaskStatus(upid) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       var statusEl = document.getElementById('taskLogStatus');
@@ -3962,7 +3962,7 @@ function stopTask(upid) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -4069,7 +4069,7 @@ function loadNetworkDiagnostics(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -4268,7 +4268,7 @@ function runPingTest(nodeId) {
 
   btn.classList.add('loading');
   btn.disabled = true;
-  resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Ping laeuft...</div>';
+  resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Ping läuft...</div>';
   resultEl.style.display = 'block';
 
   var xhr = new XMLHttpRequest();
@@ -4285,7 +4285,7 @@ function runPingTest(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -4359,7 +4359,7 @@ function runDnsLookup(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -4409,7 +4409,7 @@ function runTraceroute(nodeId) {
 
   btn.classList.add('loading');
   btn.disabled = true;
-  resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Traceroute laeuft (kann 30-60 Sek dauern)...</div>';
+  resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Traceroute läuft (kann 30-60 Sek dauern)...</div>';
   resultEl.style.display = 'block';
 
   var xhr = new XMLHttpRequest();
@@ -4426,7 +4426,7 @@ function runTraceroute(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {

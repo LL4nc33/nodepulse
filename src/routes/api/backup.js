@@ -11,11 +11,11 @@ var { asyncHandler, apiResponse } = require('./helpers');
 // GET Endpoints (Read-Only)
 // =====================================================
 
-// Alle Backup-Daten fuer einen Node
+// Alle Backup-Daten für einen Node
 router.get('/', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getById(nodeId);
@@ -35,7 +35,7 @@ router.get('/', asyncHandler(async function(req, res) {
 router.get('/storages', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   apiResponse(res, 200, db.backups.getBackupStorages(nodeId));
@@ -45,7 +45,7 @@ router.get('/storages', asyncHandler(async function(req, res) {
 router.get('/list', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var vmid = req.query.vmid ? parseInt(req.query.vmid, 10) : null;
@@ -67,17 +67,17 @@ router.get('/list', asyncHandler(async function(req, res) {
 router.get('/jobs', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   apiResponse(res, 200, db.backups.getBackupJobs(nodeId));
 }));
 
-// Backup Discovery ausfuehren (Refresh)
+// Backup Discovery ausführen (Refresh)
 router.post('/refresh', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -85,7 +85,7 @@ router.post('/refresh', asyncHandler(async function(req, res) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
-  // Pruefen ob Proxmox Host
+  // Prüfen ob Proxmox Host
   var discovery = db.discovery.getForNode(nodeId);
   if (!discovery || !discovery.is_proxmox_host) {
     return apiResponse(res, 400, null, { code: 'NOT_PROXMOX', message: 'Node ist kein Proxmox-Host' });
@@ -117,11 +117,11 @@ router.post('/create', asyncHandler(async function(req, res) {
   var notes = req.body.notes || '';
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   if (isNaN(vmid) || vmid < 100) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige VMID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungültige VMID' });
   }
 
   // Validierung: Mode
@@ -133,7 +133,7 @@ router.post('/create', asyncHandler(async function(req, res) {
   // Validierung: Compress
   var validCompress = ['zstd', 'gzip', 'lzo', '0'];
   if (validCompress.indexOf(compress) === -1) {
-    return apiResponse(res, 400, null, { code: 'INVALID_COMPRESS', message: 'Ungueltige Kompression' });
+    return apiResponse(res, 400, null, { code: 'INVALID_COMPRESS', message: 'Ungültige Kompression' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -156,7 +156,7 @@ router.post('/create', asyncHandler(async function(req, res) {
       cmd += " --notes-template '" + escapedNotes + "'";
     }
 
-    // Backup ausfuehren (kann lange dauern)
+    // Backup ausführen (kann lange dauern)
     var result = await collector.runCommand(node, cmd, 600000); // 10 Minuten Timeout
 
     if (result.exitCode !== 0) {
@@ -184,26 +184,26 @@ router.post('/create', asyncHandler(async function(req, res) {
 // DELETE Endpoints
 // =====================================================
 
-// Backup loeschen
+// Backup löschen
 router.delete('/:volid', asyncHandler(async function(req, res) {
   var nodeId = parseInt(req.params.nodeId, 10);
   var volid = req.params.volid;
   var confirmVolid = req.body.confirm_volid;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   // volid Format: storage:backup/vzdump-type-vmid-date.vma.zst
   if (!volid || !volid.includes(':')) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VOLID', message: 'Ungueltige Volume ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VOLID', message: 'Ungültige Volume ID' });
   }
 
-  // Sicherheits-Bestaetigung
+  // Sicherheits-Bestätigung
   if (confirmVolid !== volid) {
     return apiResponse(res, 400, null, {
       code: 'CONFIRMATION_REQUIRED',
-      message: 'Bestaetigung erforderlich: confirm_volid muss der Volume ID entsprechen'
+      message: 'Bestätigung erforderlich: confirm_volid muss der Volume ID entsprechen'
     });
   }
 
@@ -224,7 +224,7 @@ router.delete('/:volid', asyncHandler(async function(req, res) {
     if (result.exitCode !== 0) {
       return apiResponse(res, 500, null, {
         code: 'DELETE_FAILED',
-        message: 'Loeschen fehlgeschlagen: ' + (result.stderr || 'Unbekannter Fehler')
+        message: 'Löschen fehlgeschlagen: ' + (result.stderr || 'Unbekannter Fehler')
       });
     }
 
@@ -233,7 +233,7 @@ router.delete('/:volid', asyncHandler(async function(req, res) {
 
     apiResponse(res, 200, {
       volid: volid,
-      message: 'Backup erfolgreich geloescht'
+      message: 'Backup erfolgreich gelöscht'
     });
   } catch (err) {
     apiResponse(res, 503, null, { code: 'BACKUP_ERROR', message: err.message });
@@ -253,15 +253,15 @@ router.post('/restore', asyncHandler(async function(req, res) {
   var startAfterRestore = req.body.start === true;
 
   if (isNaN(nodeId)) {
-    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
   if (!volid || !volid.includes(':')) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VOLID', message: 'Ungueltige Volume ID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VOLID', message: 'Ungültige Volume ID' });
   }
 
   if (isNaN(targetVmid) || targetVmid < 100) {
-    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungueltige Ziel-VMID' });
+    return apiResponse(res, 400, null, { code: 'INVALID_VMID', message: 'Ungültige Ziel-VMID' });
   }
 
   var node = db.nodes.getByIdWithCredentials(nodeId);
@@ -291,7 +291,7 @@ router.post('/restore', asyncHandler(async function(req, res) {
       }
     }
 
-    // Restore ausfuehren (kann lange dauern)
+    // Restore ausführen (kann lange dauern)
     var result = await collector.runCommand(node, restoreCmd, 1800000); // 30 Minuten Timeout
 
     if (result.exitCode !== 0) {

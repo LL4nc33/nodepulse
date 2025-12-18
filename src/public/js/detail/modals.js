@@ -102,7 +102,7 @@ function openCreateVmModal(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -133,7 +133,7 @@ function populateVmForm(data) {
   // Populate ISOs
   var isoSelect = document.getElementById('vm-iso');
   if (isoSelect && data.isos) {
-    isoSelect.innerHTML = '<option value="">-- ISO waehlen --</option>';
+    isoSelect.innerHTML = '<option value="">-- ISO wählen --</option>';
     data.isos.forEach(function(iso) {
       var opt = document.createElement('option');
       opt.value = iso.volid;
@@ -145,7 +145,7 @@ function populateVmForm(data) {
   // Populate Storage (only those supporting images/rootdir)
   var storageSelect = document.getElementById('vm-storage');
   if (storageSelect && data.storage) {
-    storageSelect.innerHTML = '<option value="">-- Storage waehlen --</option>';
+    storageSelect.innerHTML = '<option value="">-- Storage wählen --</option>';
     data.storage.forEach(function(s) {
       if (s.content && (s.content.indexOf('images') > -1 || s.content.indexOf('rootdir') > -1)) {
         var opt = document.createElement('option');
@@ -256,7 +256,7 @@ function submitCreateVm(event) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -325,7 +325,7 @@ function openCreateCtModal(nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -356,7 +356,7 @@ function populateCtForm(data) {
   // Populate Templates
   var templateSelect = document.getElementById('ct-template');
   if (templateSelect && data.templates) {
-    templateSelect.innerHTML = '<option value="">-- Template waehlen --</option>';
+    templateSelect.innerHTML = '<option value="">-- Template wählen --</option>';
     data.templates.forEach(function(tpl) {
       var opt = document.createElement('option');
       opt.value = tpl.volid;
@@ -368,7 +368,7 @@ function populateCtForm(data) {
   // Populate Storage (only those supporting rootdir)
   var storageSelect = document.getElementById('ct-storage');
   if (storageSelect && data.storage) {
-    storageSelect.innerHTML = '<option value="">-- Storage waehlen --</option>';
+    storageSelect.innerHTML = '<option value="">-- Storage wählen --</option>';
     data.storage.forEach(function(s) {
       if (s.content && s.content.indexOf('rootdir') > -1) {
         var opt = document.createElement('option');
@@ -511,7 +511,7 @@ function submitCreateCt(event) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -633,7 +633,7 @@ function createSnapshot(event, nodeId) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -709,7 +709,7 @@ function deleteSnapshot(nodeId, vmType, vmid, snapName) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {

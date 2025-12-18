@@ -265,7 +265,7 @@ function showLogs(nodeId, containerId, containerName) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -350,7 +350,7 @@ function pruneDocker(nodeId, type) {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -433,28 +433,28 @@ function confirmDeleteDocker(nodeId, resourceType, resourceId, resourceName, sta
     'networks': 'Network'
   };
 
-  titleEl.textContent = typeNames[resourceType] + ' loeschen?';
+  titleEl.textContent = typeNames[resourceType] + ' löschen?';
 
   var message = '';
   if (resourceType === 'containers') {
-    message = '<strong>' + escapeHtml(resourceName) + '</strong> wird unwiderruflich geloescht.<br>';
+    message = '<strong>' + escapeHtml(resourceName) + '</strong> wird unwiderruflich gelöscht.<br>';
     message += 'Alle Daten im Container gehen verloren.';
     if (state === 'running') {
-      message += '<br><br><span class="text-danger">Container laeuft noch!</span>';
+      message += '<br><br><span class="text-danger">Container läuft noch!</span>';
       forceOption.style.display = 'block';
     }
   } else if (resourceType === 'images') {
-    message = 'Image <strong>' + escapeHtml(resourceName) + '</strong> wird geloescht.<br>';
+    message = 'Image <strong>' + escapeHtml(resourceName) + '</strong> wird gelöscht.<br>';
     message += 'Container die dieses Image nutzen funktionieren weiterhin.';
     forceOption.style.display = 'block'; // Images might be in use
   } else if (resourceType === 'volumes') {
     message = '<span class="text-danger"><strong>WARNUNG:</strong></span> Volume <strong>' + escapeHtml(resourceName) + '</strong> ';
-    message += 'und <strong>ALLE DATEN</strong> darin werden <strong>UNWIDERRUFLICH</strong> geloescht!';
+    message += 'und <strong>ALLE DATEN</strong> darin werden <strong>UNWIDERRUFLICH</strong> gelöscht!';
     if (inUse) {
-      message += '<br><br><span class="text-danger">Volume wird verwendet und kann nicht geloescht werden.</span>';
+      message += '<br><br><span class="text-danger">Volume wird verwendet und kann nicht gelöscht werden.</span>';
     }
   } else if (resourceType === 'networks') {
-    message = 'Network <strong>' + escapeHtml(resourceName) + '</strong> wird geloescht.';
+    message = 'Network <strong>' + escapeHtml(resourceName) + '</strong> wird gelöscht.';
   }
 
   messageEl.innerHTML = message;
@@ -505,7 +505,7 @@ function executeDockerDelete() {
       try {
         response = JSON.parse(xhr.responseText);
       } catch (e) {
-        response = { success: false, error: { message: 'Ungueltige Antwort' } };
+        response = { success: false, error: { message: 'Ungültige Antwort' } };
       }
 
       if (xhr.status >= 200 && xhr.status < 300 && response.success) {
@@ -513,14 +513,14 @@ function executeDockerDelete() {
         var resultEl = document.getElementById('docker-result');
         if (resultEl) {
           resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Erfolgreich geloescht. Aktualisiere...';
+          resultEl.textContent = 'Erfolgreich gelöscht. Aktualisiere...';
           resultEl.style.display = 'block';
         }
         setTimeout(function() {
           refreshDocker(pendingDelete.nodeId);
         }, 500);
       } else {
-        var errMsg = response.error ? response.error.message : 'Loeschen fehlgeschlagen';
+        var errMsg = response.error ? response.error.message : 'Löschen fehlgeschlagen';
         errorEl.textContent = errMsg;
         errorEl.style.display = 'block';
 

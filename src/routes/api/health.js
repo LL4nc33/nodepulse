@@ -87,7 +87,7 @@ router.post('/check', asyncHandler(async (req, res) => {
       healthData = JSON.parse(result.stdout);
     } catch (e) {
       console.error('[Health] Parse error:', result.stdout);
-      return apiResponse(res, 500, null, 'Ungueltige Antwort vom Health-Check Script');
+      return apiResponse(res, 500, null, 'Ungültige Antwort vom Health-Check Script');
     }
 
     // Save to database
@@ -123,9 +123,9 @@ router.post('/check', asyncHandler(async (req, res) => {
     } else if (err.message.includes('ECONNREFUSED')) {
       errorMessage = 'Verbindung abgelehnt. SSH-Dienst auf dem Node nicht erreichbar.';
     } else if (err.message.includes('ETIMEDOUT') || err.message.includes('timeout')) {
-      errorMessage = 'Verbindungs-Timeout. Node ist moeglicherweise nicht erreichbar.';
+      errorMessage = 'Verbindungs-Timeout. Node ist möglicherweise nicht erreichbar.';
     } else if (err.message.includes('ENOTFOUND') || err.message.includes('getaddrinfo')) {
-      errorMessage = 'Host nicht gefunden. Bitte Hostname/IP in den Node-Einstellungen pruefen.';
+      errorMessage = 'Host nicht gefunden. Bitte Hostname/IP in den Node-Einstellungen prüfen.';
     }
 
     return apiResponse(res, 500, null, errorMessage);
@@ -186,7 +186,7 @@ router.post('/repo', asyncHandler(async (req, res) => {
   }
 
   if (!['enterprise', 'no-subscription'].includes(mode)) {
-    return apiResponse(res, 400, null, 'Ungueltiger Modus. Verwende "enterprise" oder "no-subscription"');
+    return apiResponse(res, 400, null, 'Ungültiger Modus. Verwende "enterprise" oder "no-subscription"');
   }
 
   // Check if node is Proxmox
