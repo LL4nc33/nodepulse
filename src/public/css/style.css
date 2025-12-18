@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-18T11:12:45.581Z
+   Generated: 2025-12-18T11:25:11.059Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -10627,7 +10627,7 @@ a:focus {
 }
 
 .storage-summary .summary-card {
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-md);
@@ -10642,7 +10642,7 @@ a:focus {
 
 .storage-summary .summary-card.highlight {
   border-left: 3px solid var(--color-success);
-  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(16, 185, 129, 0.05) 100%);
+  background: linear-gradient(135deg, var(--color-bg-surface) 0%, rgba(16, 185, 129, 0.05) 100%);
 }
 
 .storage-summary .summary-value {
@@ -10704,7 +10704,7 @@ a:focus {
   cursor: pointer;
   user-select: none;
   padding: var(--space-sm);
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
   border-radius: var(--radius-md);
   transition: var(--transition-fast);
 }
@@ -10745,7 +10745,7 @@ a:focus {
 }
 
 .storage-table th {
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
@@ -10758,7 +10758,7 @@ a:focus {
 }
 
 .storage-table tbody tr:hover {
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
 }
 
 .storage-table tbody tr:last-child td {
@@ -10849,7 +10849,7 @@ a:focus {
 }
 
 .device-checklist .checkbox-item:hover {
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
 }
 
 .device-checklist .checkbox-item input[type="checkbox"] {
@@ -10878,7 +10878,7 @@ a:focus {
 
 /* Empty State in Storage */
 .storage-section .empty-state {
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
@@ -10931,7 +10931,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: backup.css (257 lines)
+   FROM: backup.css (304 lines)
    ============================================================ */
 
 /* =====================================================
@@ -10947,7 +10947,7 @@ a:focus {
 }
 
 .backup-summary .summary-card {
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-md);
@@ -10962,7 +10962,7 @@ a:focus {
 
 .backup-summary .summary-card.highlight {
   border-left: 3px solid var(--color-info);
-  background: linear-gradient(135deg, var(--color-surface) 0%, rgba(59, 130, 246, 0.05) 100%);
+  background: linear-gradient(135deg, var(--color-bg-surface) 0%, rgba(59, 130, 246, 0.05) 100%);
 }
 
 .backup-summary .summary-value {
@@ -11024,7 +11024,7 @@ a:focus {
   cursor: pointer;
   user-select: none;
   padding: var(--space-sm);
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
   border-radius: var(--radius-md);
   transition: var(--transition-fast);
 }
@@ -11047,10 +11047,57 @@ a:focus {
 
 /* Backup Filter */
 .backup-filter {
+  display: -webkit-box;
+  display: -webkit-flex;
   display: flex;
   gap: var(--space-sm);
   margin-bottom: var(--space-md);
+  -webkit-flex-wrap: wrap;
   flex-wrap: wrap;
+}
+
+/* Styled Inputs/Selects for Backup Filter */
+.backup-filter input[type="text"],
+.backup-filter input[type="search"],
+.backup-filter select {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  min-width: 150px;
+  -webkit-transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.backup-filter input[type="text"]:focus,
+.backup-filter input[type="search"]:focus,
+.backup-filter select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(95, 163, 50, 0.2);
+}
+
+.backup-filter input[type="text"]::placeholder,
+.backup-filter input[type="search"]::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.backup-filter select {
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: var(--space-lg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+.backup-filter select option {
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .backup-filter .form-input {
@@ -11077,7 +11124,7 @@ a:focus {
 }
 
 .backup-table th {
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
@@ -11090,7 +11137,7 @@ a:focus {
 }
 
 .backup-table tbody tr:hover {
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
 }
 
 .backup-table tbody tr:last-child td {
@@ -11123,7 +11170,7 @@ a:focus {
 
 /* Empty State */
 .backup-section .empty-state {
-  background: var(--color-surface);
+  background: var(--color-bg-surface);
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
