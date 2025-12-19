@@ -87,7 +87,7 @@
 - [x] Keine Console Errors
 - [x] Pi-Test erfolgreich (192.168.178.63)
 - [x] Script-Pfade korrigiert (/js/ → /static/js/)
-- [ ] Git Commit erstellt
+- [x] Git Commit erstellt (05a3ff0) - 21 files, -1026 Zeilen netto
 
 ---
 
