@@ -27,57 +27,57 @@
     </div>
   </div>
   <div class="page-actions">
-    <button class="btn btn-icon btn-primary" id="btn-test" onclick="testConnection(<%= node.id %>)" title="SSH Test">
-      <span class="btn-text">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8l4 4-4 4"/><line x1="12" y1="16" x2="18" y2="16"/>
+    <div class="page-actions-buttons">
+      <button class="btn btn-icon btn-primary" id="btn-test" onclick="testConnection(<%= node.id %>)" title="SSH Test">
+        <span class="btn-text">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8l4 4-4 4"/><line x1="12" y1="16" x2="18" y2="16"/>
+          </svg>
+        </span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+      <button class="btn btn-icon btn-secondary" id="btn-discover" onclick="runDiscovery(<%= node.id %>)" title="Discovery">
+        <span class="btn-text">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+      <button class="btn btn-icon btn-health-check <%= health && health.apt_updates > 0 ? 'btn-warning' : '' %>" onclick="runHealthCheck(<%= node.id %>)" title="Health Check">
+        <span class="btn-text">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          <% if (health && health.apt_updates > 0) { %>
+            <span class="btn-badge"><%= health.apt_updates %></span>
+          <% } %>
+        </span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+      <button class="btn btn-edit" onclick="openEditPanel()" title="Node bearbeiten">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
         </svg>
-      </span>
-      <span class="btn-loading"><span class="spinner"></span></span>
-    </button>
-    <button class="btn btn-icon btn-secondary" id="btn-discover" onclick="runDiscovery(<%= node.id %>)" title="Discovery">
-      <span class="btn-text">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <span>Bearbeiten</span>
+      </button>
+    </div>
+    <div class="last-scan-info">
+      <span class="scan-item" title="Letzte Discovery">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
+        <%= discovery && discovery.discovered_at ? discovery.discovered_at : 'Nie' %>
       </span>
-      <span class="btn-loading"><span class="spinner"></span></span>
-    </button>
-    <button class="btn btn-icon btn-health-check <%= health && health.apt_updates > 0 ? 'btn-warning' : '' %>" onclick="runHealthCheck(<%= node.id %>)" title="Health Check">
-      <span class="btn-text">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <span class="scan-item" title="Letzter Health Check">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
         </svg>
-        <% if (health && health.apt_updates > 0) { %>
-          <span class="btn-badge"><%= health.apt_updates %></span>
-        <% } %>
+        <%= health && health.checked_at ? health.checked_at : 'Nie' %>
       </span>
-      <span class="btn-loading"><span class="spinner"></span></span>
-    </button>
-    <button class="btn" onclick="openEditPanel()" title="Node bearbeiten">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-      </svg>
-      Bearbeiten
-    </button>
+    </div>
   </div>
-</div>
-
-<!-- Last Scan Info Strip -->
-<div class="last-scan-strip">
-  <span class="scan-info">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    </svg>
-    Discovery: <strong><%= discovery && discovery.discovered_at ? discovery.discovered_at : 'Nie' %></strong>
-  </span>
-  <span class="scan-info">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-    </svg>
-    Health: <strong><%= health && health.checked_at ? health.checked_at : 'Nie' %></strong>
-  </span>
 </div>
 
 <div id="test-result" class="alert" role="alert" aria-live="polite" style="display: none;"></div>

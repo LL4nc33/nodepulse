@@ -313,10 +313,57 @@ button.nav-link {
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-align: end;
+  -webkit-align-items: flex-end;
+  align-items: flex-end;
+  gap: 0.5rem;
 }
 
-.page-actions > * {
-  margin-right: 0.75rem;
+.page-actions-buttons {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  gap: 0.5rem;
+}
+
+
+/* Bearbeiten Button mit Gap */
+.btn-edit {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Last Scan Info unter Buttons */
+.last-scan-info {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  gap: 1rem;
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
+.last-scan-info .scan-item {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.last-scan-info svg {
+  opacity: 0.6;
 }
 
 /* Compact Page Header (Breadcrumb + H1 + Actions in one row) */
