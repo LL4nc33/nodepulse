@@ -1,6 +1,6 @@
 # NodePulse Refactoring Fortschritt
 
-## Status: IN_PROGRESS | Welle: 2
+## Status: COMPLETED | Alle Wellen abgeschlossen
 
 ---
 
@@ -29,18 +29,24 @@
 ## Welle 2 - Refactoring (Koordiniert)
 
 ### Backend Agent
-- [ ] db/index.js aufgeteilt in:
-  - [ ] entities/nodes.js
-  - [ ] entities/stats.js
-  - [ ] entities/docker.js
-  - [ ] entities/proxmox.js
-  - [ ] entities/hardware.js
-  - [ ] entities/alerts.js
-  - [ ] entities/health.js
-  - [ ] entities/backups.js
-  - [ ] entities/tasks.js
-  - [ ] helpers/crud-helpers.js
-- [ ] Atomare Stats-Endpoints erstellt
+- [x] db/index.js aufgeteilt in 15 Entity-Module:
+  - [x] entities/nodes.js (310 Zeilen)
+  - [x] entities/tags.js (77 Zeilen)
+  - [x] entities/settings.js (70 Zeilen)
+  - [x] entities/discovery.js (103 Zeilen)
+  - [x] entities/hardware.js (115 Zeilen)
+  - [x] entities/stats.js (237 Zeilen)
+  - [x] entities/alerts.js (201 Zeilen)
+  - [x] entities/docker.js (241 Zeilen)
+  - [x] entities/proxmox.js (273 Zeilen)
+  - [x] entities/commands.js (152 Zeilen)
+  - [x] entities/health.js (119 Zeilen)
+  - [x] entities/capabilities.js (45 Zeilen)
+  - [x] entities/lvm.js (284 Zeilen)
+  - [x] entities/backups.js (170 Zeilen)
+  - [x] entities/tasks.js (149 Zeilen)
+- [x] db/index.js: 2595 → 315 Zeilen (88% Reduktion)
+- [ ] Atomare Stats-Endpoints (SPÄTER)
 
 ### CSS Agent
 - [x] Unified .card Klasse erstellt (bereits in components.css vorhanden)
@@ -75,10 +81,12 @@
 
 ## Welle 3 - Integration
 
-- [ ] npm run build:css erfolgreich
-- [ ] npm run build:js erfolgreich
-- [ ] Alle Imports funktionieren
-- [ ] Keine Console Errors
+- [x] npm run build:css erfolgreich
+- [x] npm run build:js erfolgreich
+- [x] Alle Imports funktionieren
+- [x] Keine Console Errors
+- [x] Pi-Test erfolgreich (192.168.178.63)
+- [x] Script-Pfade korrigiert (/js/ → /static/js/)
 - [ ] Git Commit erstellt
 
 ---
@@ -112,7 +120,9 @@
 | 2025-12-19 | Frontend JS Agent | src/public/js/detail/network.js | XHR → NP.API Migration - loadNetworkDiagnostics(), runPingTest(), runDnsLookup(), runTraceroute() migriert (4 Funktionen) + toggleSection() Duplikat entfernt |
 | 2025-12-19 | Frontend JS Agent | src/public/js/detail/proxmox.js | XHR → NP.API Migration - saveConfig(), startClone(), convertToTemplate() migriert (3 Funktionen) + toggleSection() Duplikat entfernt |
 | 2025-12-19 | Frontend JS Agent | src/public/js/detail/modals.js | XHR → NP.API Migration - openCreateVmModal(), submitCreateVm(), openCreateCtModal(), submitCreateCt(), createSnapshot(), deleteSnapshot() migriert (6 Funktionen) |
-| - | - | - | Refactoring gestartet |
+| 2025-12-19 | Integration | src/views/partials/side-panel.ejs | Script-Pfad korrigiert: /js/sidebar.js → /static/js/sidebar.js |
+| 2025-12-19 | Integration | src/views/settings/index.ejs | Script-Pfad korrigiert: /js/settings.js → /static/js/settings.js |
+| 2025-12-19 | Integration | Pi-Test | Erfolgreich getestet auf lance@192.168.178.63 - Dashboard, Node-Detail, Docker-Tab funktionieren |
 
 ---
 

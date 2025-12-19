@@ -4,21 +4,7 @@ function escapeForJsString(str) {
   return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
-// Toggle collapsible section (ES5)
-function toggleSection(headerEl) {
-  var section = headerEl.parentElement;
-  var content = section.querySelector('.section-content');
-
-  if (section.classList.contains('collapsed')) {
-    section.classList.remove('collapsed');
-    content.style.display = 'block';
-  } else {
-    section.classList.add('collapsed');
-    content.style.display = 'none';
-  }
-}
-
-// formatBytes is available as window.NP.UI.formatBytes from main.js
+// formatBytes and toggleSection are available from global helpers (main.js)
 
 // Tab switching with URL hash persistence
 var tabBtns = document.querySelectorAll('.tab-btn');
@@ -75,12 +61,12 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-18T17:10:56.181Z
+   Generated: 2025-12-18T23:45:06.324Z
 */
 
 
 // ============================================================
-// FROM: docker.js (485 lines)
+// FROM: docker.js (369 lines)
 // ============================================================
 
 // =====================================================
@@ -244,9 +230,6 @@ function containerAction(nodeId, containerId, action) {
     });
 }
 
-// Track active logs XHR for cancellation
-var activeLogsXHR = null;
-
 function showLogs(nodeId, containerId, containerName) {
   var modal = document.getElementById('logs-modal');
   var title = document.getElementById('logs-title');
@@ -254,60 +237,23 @@ function showLogs(nodeId, containerId, containerName) {
 
   if (!modal || !content) return;
 
-  // Abort previous XHR if still running
-  if (activeLogsXHR) {
-    activeLogsXHR.abort();
-  }
-
   modal.style.display = 'flex';
   title.textContent = 'Logs: ' + containerName;
   content.textContent = 'Lade Logs...';
 
-  var xhr = new XMLHttpRequest();
-  activeLogsXHR = xhr;
-  xhr.open('GET', '/api/nodes/' + nodeId + '/docker/containers/' + containerId + '/logs?tail=100', true);
-  xhr.timeout = 30000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      activeLogsXHR = null;
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        content.textContent = response.data.logs || '(Keine Logs vorhanden)';
-      } else {
-        content.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    activeLogsXHR = null;
-    content.textContent = 'Netzwerkfehler beim Laden der Logs';
-  };
-
-  xhr.ontimeout = function() {
-    activeLogsXHR = null;
-    content.textContent = 'Timeout beim Laden der Logs';
-  };
-
-  xhr.send();
+  NP.API.get('/api/nodes/' + nodeId + '/docker/containers/' + containerId + '/logs?tail=100', { timeout: 30000 })
+    .then(function(data) {
+      content.textContent = data.logs || '(Keine Logs vorhanden)';
+    })
+    .catch(function(error) {
+      content.textContent = 'Fehler: ' + (error.message || 'Unbekannter Fehler');
+    });
 }
 
 function closeLogs() {
   var modal = document.getElementById('logs-modal');
   if (modal) {
     modal.style.display = 'none';
-  }
-  // Abort active XHR if running
-  if (activeLogsXHR) {
-    activeLogsXHR.abort();
-    activeLogsXHR = null;
   }
 }
 
@@ -343,58 +289,18 @@ function pruneDocker(nodeId, type) {
     menu.classList.remove('open');
   }
 
-  if (resultEl) {
-    resultEl.className = 'alert alert-info';
-    resultEl.textContent = 'Fuehre ' + (typeNames[type] || type) + ' Prune aus...';
-    resultEl.style.display = 'block';
-  }
+  NP.UI.showAlert(resultEl, 'info', 'Fuehre ' + (typeNames[type] || type) + ' Prune aus...');
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/docker/prune/' + type, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 120000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Prune erfolgreich. Aktualisiere...';
-        }
-        setTimeout(function() {
-          refreshDocker(nodeId);
-        }, 1000);
-      } else {
-        if (resultEl) {
-          resultEl.className = 'alert alert-error';
-          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Netzwerkfehler';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Timeout (2 Minuten)';
-    }
-  };
-
-  xhr.send();
+  NP.API.post('/api/nodes/' + nodeId + '/docker/prune/' + type, null, { timeout: 120000 })
+    .then(function(data) {
+      NP.UI.showAlert(resultEl, 'success', 'Prune erfolgreich. Aktualisiere...');
+      setTimeout(function() {
+        refreshDocker(nodeId);
+      }, 1000);
+    })
+    .catch(function(error) {
+      NP.UI.showAlert(resultEl, 'error', 'Fehler: ' + (error.message || 'Unbekannter Fehler'));
+    });
 }
 
 // Close dropdown when clicking outside
@@ -499,78 +405,42 @@ function executeDockerDelete() {
     url += '?force=true';
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('DELETE', url, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.delete(url, { timeout: 60000 })
+    .then(function(data) {
       if (btnEl) {
         btnEl.classList.remove('loading');
         btnEl.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      closeDeleteModal();
+      var resultEl = document.getElementById('docker-result');
+      NP.UI.showAlert(resultEl, 'success', 'Erfolgreich gelöscht. Aktualisiere...');
+      setTimeout(function() {
+        refreshDocker(pendingDelete.nodeId);
+      }, 500);
+    })
+    .catch(function(error) {
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
       }
+      errorEl.textContent = error.message || 'Löschen fehlgeschlagen';
+      errorEl.style.display = 'block';
 
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeDeleteModal();
-        var resultEl = document.getElementById('docker-result');
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Erfolgreich gelöscht. Aktualisiere...';
-          resultEl.style.display = 'block';
-        }
-        setTimeout(function() {
-          refreshDocker(pendingDelete.nodeId);
-        }, 500);
-      } else {
-        var errMsg = response.error ? response.error.message : 'Löschen fehlgeschlagen';
-        errorEl.textContent = errMsg;
-        errorEl.style.display = 'block';
-
-        // Show force option if container is running
-        if (response.error && response.error.code === 'CONTAINER_RUNNING') {
-          document.getElementById('delete-force-option').style.display = 'block';
-        }
-        // Show force option if image is in use
-        if (response.error && response.error.code === 'IMAGE_IN_USE') {
-          document.getElementById('delete-force-option').style.display = 'block';
-        }
+      // Show force option if container is running
+      if (error.code === 'CONTAINER_RUNNING') {
+        document.getElementById('delete-force-option').style.display = 'block';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    errorEl.textContent = 'Netzwerkfehler';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.ontimeout = function() {
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    errorEl.textContent = 'Timeout (60 Sekunden)';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.send();
+      // Show force option if image is in use
+      if (error.code === 'IMAGE_IN_USE') {
+        document.getElementById('delete-force-option').style.display = 'block';
+      }
+    });
 }
 
 // =====================================================
 
 // ============================================================
-// FROM: proxmox.js (326 lines)
+// FROM: proxmox.js (266 lines)
 // ============================================================
 
 // =====================================================
@@ -630,41 +500,23 @@ function saveConfig() {
   var endpoint = pendingConfig.type === 'vm' ? 'vms' : 'cts';
   var url = '/api/nodes/' + pendingConfig.nodeId + '/proxmox/' + endpoint + '/' + pendingConfig.vmid + '/config';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('PATCH', url, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-
-      var response;
-      try { response = JSON.parse(xhr.responseText); } catch (e) { response = { success: false }; }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeConfigModal();
-        var resultEl = document.getElementById('proxmox-result');
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Konfiguration gespeichert. Seite wird neu geladen...';
-          resultEl.style.display = 'block';
-        }
-        setTimeout(function() { location.reload(); }, 1500);
-      } else {
-        errorEl.textContent = response.error ? response.error.message : 'Speichern fehlgeschlagen';
-        errorEl.style.display = 'block';
+  NP.API.patch(url, { cores: cores, memory: memory }, { timeout: 60000 })
+    .then(function(response) {
+      closeConfigModal();
+      var resultEl = document.getElementById('proxmox-result');
+      if (resultEl) {
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = 'Konfiguration gespeichert. Seite wird neu geladen...';
+        resultEl.style.display = 'block';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-    errorEl.textContent = 'Netzwerkfehler';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.send(JSON.stringify({ cores: cores, memory: memory }));
+      setTimeout(function() { location.reload(); }, 1500);
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    })
+    .catch(function(error) {
+      errorEl.textContent = error.message || 'Speichern fehlgeschlagen';
+      errorEl.style.display = 'block';
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    });
 }
 
 // Clone Modal
@@ -719,47 +571,23 @@ function startClone() {
     body.hostname = name;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', url, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 600000; // 10 min for clone
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-
-      var response;
-      try { response = JSON.parse(xhr.responseText); } catch (e) { response = { success: false }; }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeCloneModal();
-        var resultEl = document.getElementById('proxmox-result');
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Clone erfolgreich erstellt! Seite wird neu geladen...';
-          resultEl.style.display = 'block';
-        }
-        setTimeout(function() { location.reload(); }, 2000);
-      } else {
-        errorEl.textContent = response.error ? response.error.message : 'Clone fehlgeschlagen';
-        errorEl.style.display = 'block';
+  NP.API.post(url, body, { timeout: 600000 })
+    .then(function(response) {
+      closeCloneModal();
+      var resultEl = document.getElementById('proxmox-result');
+      if (resultEl) {
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = 'Clone erfolgreich erstellt! Seite wird neu geladen...';
+        resultEl.style.display = 'block';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-    errorEl.textContent = 'Netzwerkfehler';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.ontimeout = function() {
-    if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-    errorEl.textContent = 'Timeout - Clone dauert zu lange. Pruefe Proxmox manuell.';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.send(JSON.stringify(body));
+      setTimeout(function() { location.reload(); }, 2000);
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    })
+    .catch(function(error) {
+      errorEl.textContent = error.message || 'Clone fehlgeschlagen';
+      errorEl.style.display = 'block';
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    });
 }
 
 // Template Modal
@@ -798,41 +626,23 @@ function convertToTemplate() {
   var endpoint = pendingTemplate.type === 'vm' ? 'vms' : 'cts';
   var url = '/api/nodes/' + pendingTemplate.nodeId + '/proxmox/' + endpoint + '/' + pendingTemplate.vmid + '/template';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', url, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 120000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-
-      var response;
-      try { response = JSON.parse(xhr.responseText); } catch (e) { response = { success: false }; }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeTemplateModal();
-        var resultEl = document.getElementById('proxmox-result');
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Template erstellt! Seite wird neu geladen...';
-          resultEl.style.display = 'block';
-        }
-        setTimeout(function() { location.reload(); }, 1500);
-      } else {
-        errorEl.textContent = response.error ? response.error.message : 'Konvertierung fehlgeschlagen';
-        errorEl.style.display = 'block';
+  NP.API.post(url, {}, { timeout: 120000 })
+    .then(function(response) {
+      closeTemplateModal();
+      var resultEl = document.getElementById('proxmox-result');
+      if (resultEl) {
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = 'Template erstellt! Seite wird neu geladen...';
+        resultEl.style.display = 'block';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
-    errorEl.textContent = 'Netzwerkfehler';
-    errorEl.style.display = 'block';
-  };
-
-  xhr.send('{}');
+      setTimeout(function() { location.reload(); }, 1500);
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    })
+    .catch(function(error) {
+      errorEl.textContent = error.message || 'Konvertierung fehlgeschlagen';
+      errorEl.style.display = 'block';
+      if (btnEl) { btnEl.classList.remove('loading'); btnEl.disabled = false; }
+    });
 }
 
 // Proxmox functions - uses NP.API and NP.UI
@@ -901,7 +711,7 @@ function proxmoxAction(nodeId, vmType, vmid, action) {
 // =====================================================
 
 // ============================================================
-// FROM: modals.js (680 lines)
+// FROM: modals.js (495 lines)
 // ============================================================
 
 // =====================================================
@@ -926,44 +736,20 @@ function openCreateVmModal(nodeId) {
   if (btn) btn.disabled = true;
   if (error) error.style.display = 'none';
 
-  // Load resources from API
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/api/nodes/' + nodeId + '/proxmox/resources', true);
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.get('/api/nodes/' + nodeId + '/proxmox/resources', { timeout: 60000 })
+    .then(function(response) {
       if (loading) loading.style.display = 'none';
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      populateVmForm(response.data);
+      if (form) form.style.display = 'block';
+      if (btn) btn.disabled = false;
+    })
+    .catch(function(err) {
+      if (loading) loading.style.display = 'none';
+      if (error) {
+        error.textContent = 'Fehler beim Laden der Ressourcen: ' + (err.message || 'Unbekannter Fehler');
+        error.style.display = 'block';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        populateVmForm(response.data);
-        if (form) form.style.display = 'block';
-        if (btn) btn.disabled = false;
-      } else {
-        if (error) {
-          error.textContent = 'Fehler beim Laden der Ressourcen: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-          error.style.display = 'block';
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (loading) loading.style.display = 'none';
-    if (error) {
-      error.textContent = 'Netzwerkfehler beim Laden der Ressourcen';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.send();
+    });
 }
 
 function populateVmForm(data) {
@@ -1077,61 +863,26 @@ function submitCreateVm(event) {
     description: document.getElementById('vm-description').value
   };
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + createVmNodeId + '/proxmox/vms/create', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 180000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + createVmNodeId + '/proxmox/vms/create', formData, { timeout: 180000 })
+    .then(function(response) {
+      alert('VM ' + formData.vmid + ' erfolgreich erstellt!');
+      closeCreateVmModal();
+      window.location.reload();
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+    })
+    .catch(function(err) {
+      if (error) {
+        error.textContent = 'Fehler: ' + (err.message || 'Unbekannter Fehler');
+        error.style.display = 'block';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        alert('VM ' + formData.vmid + ' erfolgreich erstellt!');
-        closeCreateVmModal();
-        window.location.reload();
-      } else {
-        if (error) {
-          error.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-          error.style.display = 'block';
-        }
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    if (error) {
-      error.textContent = 'Netzwerkfehler';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    if (error) {
-      error.textContent = 'Timeout (3 Minuten)';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.send(JSON.stringify(formData));
+    });
 }
 
 // CT Creation Functions
@@ -1149,44 +900,20 @@ function openCreateCtModal(nodeId) {
   if (btn) btn.disabled = true;
   if (error) error.style.display = 'none';
 
-  // Load resources from API
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/api/nodes/' + nodeId + '/proxmox/resources', true);
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.get('/api/nodes/' + nodeId + '/proxmox/resources', { timeout: 60000 })
+    .then(function(response) {
       if (loading) loading.style.display = 'none';
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      populateCtForm(response.data);
+      if (form) form.style.display = 'block';
+      if (btn) btn.disabled = false;
+    })
+    .catch(function(err) {
+      if (loading) loading.style.display = 'none';
+      if (error) {
+        error.textContent = 'Fehler beim Laden der Ressourcen: ' + (err.message || 'Unbekannter Fehler');
+        error.style.display = 'block';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        populateCtForm(response.data);
-        if (form) form.style.display = 'block';
-        if (btn) btn.disabled = false;
-      } else {
-        if (error) {
-          error.textContent = 'Fehler beim Laden der Ressourcen: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-          error.style.display = 'block';
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (loading) loading.style.display = 'none';
-    if (error) {
-      error.textContent = 'Netzwerkfehler beim Laden der Ressourcen';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.send();
+    });
 }
 
 function populateCtForm(data) {
@@ -1332,61 +1059,26 @@ function submitCreateCt(event) {
     description: document.getElementById('ct-description').value
   };
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + createCtNodeId + '/proxmox/cts/create', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 180000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + createCtNodeId + '/proxmox/cts/create', formData, { timeout: 180000 })
+    .then(function(response) {
+      alert('CT ' + formData.ctid + ' erfolgreich erstellt!');
+      closeCreateCtModal();
+      window.location.reload();
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+    })
+    .catch(function(err) {
+      if (error) {
+        error.textContent = 'Fehler: ' + (err.message || 'Unbekannter Fehler');
+        error.style.display = 'block';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        alert('CT ' + formData.ctid + ' erfolgreich erstellt!');
-        closeCreateCtModal();
-        window.location.reload();
-      } else {
-        if (error) {
-          error.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-          error.style.display = 'block';
-        }
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    if (error) {
-      error.textContent = 'Netzwerkfehler';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-    if (error) {
-      error.textContent = 'Timeout (3 Minuten)';
-      error.style.display = 'block';
-    }
-  };
-
-  xhr.send(JSON.stringify(formData));
+    });
 }
 
 // Track active snapshot XHR for cancellation
@@ -1452,74 +1144,37 @@ function createSnapshot(event, nodeId) {
     btnEl.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  activeSnapshotXHR = xhr;
-  xhr.open('POST', '/api/nodes/' + nodeId + '/proxmox/snapshots', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 300000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      activeSnapshotXHR = null;
-      if (btnEl) {
-        btnEl.classList.remove('loading');
-        btnEl.disabled = false;
-      }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Snapshot erstellt. Seite wird neu geladen...';
-        }
-        setTimeout(function() {
-          window.location.reload();
-        }, 1500);
-      } else {
-        if (resultEl) {
-          resultEl.className = 'alert alert-error';
-          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    activeSnapshotXHR = null;
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Netzwerkfehler';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    activeSnapshotXHR = null;
-    if (btnEl) {
-      btnEl.classList.remove('loading');
-      btnEl.disabled = false;
-    }
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Timeout (5 Minuten)';
-    }
-  };
-
-  xhr.send(JSON.stringify({
+  NP.API.post('/api/nodes/' + nodeId + '/proxmox/snapshots', {
     vm_type: vmType,
     vmid: parseInt(vmid, 10),
     snap_name: snapName,
     description: description
-  }));
+  }, { timeout: 300000 })
+    .then(function(response) {
+      activeSnapshotXHR = null;
+      if (resultEl) {
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = 'Snapshot erstellt. Seite wird neu geladen...';
+      }
+      setTimeout(function() {
+        window.location.reload();
+      }, 1500);
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+    })
+    .catch(function(error) {
+      activeSnapshotXHR = null;
+      if (resultEl) {
+        resultEl.className = 'alert alert-error';
+        resultEl.textContent = 'Fehler: ' + (error.message || 'Unbekannter Fehler');
+      }
+      if (btnEl) {
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+      }
+    });
 }
 
 function deleteSnapshot(nodeId, vmType, vmid, snapName) {
@@ -1535,52 +1190,22 @@ function deleteSnapshot(nodeId, vmType, vmid, snapName) {
     resultEl.style.display = 'block';
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('DELETE', '/api/nodes/' + nodeId + '/proxmox/snapshots/' + encodeURIComponent(vmType) + '/' + encodeURIComponent(vmid) + '/' + encodeURIComponent(snapName), true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 300000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+  NP.API.delete('/api/nodes/' + nodeId + '/proxmox/snapshots/' + encodeURIComponent(vmType) + '/' + encodeURIComponent(vmid) + '/' + encodeURIComponent(snapName), { timeout: 300000 })
+    .then(function(response) {
+      if (resultEl) {
+        resultEl.className = 'alert alert-success';
+        resultEl.textContent = 'Snapshot gelöscht. Aktualisiere...';
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        if (resultEl) {
-          resultEl.className = 'alert alert-success';
-          resultEl.textContent = 'Snapshot gelöscht. Aktualisiere...';
-        }
-        setTimeout(function() {
-          refreshProxmox(nodeId);
-        }, 1000);
-      } else {
-        if (resultEl) {
-          resultEl.className = 'alert alert-error';
-          resultEl.textContent = 'Fehler: ' + (response.error ? response.error.message : 'Unbekannter Fehler');
-        }
+      setTimeout(function() {
+        refreshProxmox(nodeId);
+      }, 1000);
+    })
+    .catch(function(error) {
+      if (resultEl) {
+        resultEl.className = 'alert alert-error';
+        resultEl.textContent = 'Fehler: ' + (error.message || 'Unbekannter Fehler');
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Netzwerkfehler';
-    }
-  };
-
-  xhr.ontimeout = function() {
-    if (resultEl) {
-      resultEl.className = 'alert alert-error';
-      resultEl.textContent = 'Timeout (5 Minuten)';
-    }
-  };
-
-  xhr.send();
+    });
 }
 
 // =====================================================
@@ -3075,7 +2700,7 @@ document.addEventListener('click', function(e) {
 
 
 // ============================================================
-// FROM: backup.js (434 lines)
+// FROM: backup.js (327 lines)
 // ============================================================
 
 // =====================================================
@@ -3089,50 +2714,18 @@ var backupData = {
   summary: {}
 };
 
-var activeBackupXHR = null;
-
 // Load backup data from API
 function loadBackupData() {
   if (typeof nodeId === 'undefined') return;
 
-  // Cancel any pending request
-  if (activeBackupXHR) {
-    activeBackupXHR.abort();
-    activeBackupXHR = null;
-  }
-
-  var xhr = new XMLHttpRequest();
-  activeBackupXHR = xhr;
-  xhr.open('GET', '/api/nodes/' + nodeId + '/backup', true);
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      activeBackupXHR = null;
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        backupData = response.data;
-        renderBackupData();
-      } else {
-        var errMsg = response.error ? response.error.message : 'Fehler beim Laden';
-        console.error('[Backup] Load error:', errMsg);
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    activeBackupXHR = null;
-    console.error('[Backup] Network error');
-  };
-
-  xhr.send();
+  NP.API.get('/api/nodes/' + nodeId + '/backup', { timeout: 60000 })
+    .then(function(data) {
+      backupData = data;
+      renderBackupData();
+    })
+    .catch(function(error) {
+      console.error('[Backup] Load error:', error.message);
+    });
 }
 
 // Refresh backup data (with loading indicator)
@@ -3143,37 +2736,22 @@ function refreshBackupData() {
     btn.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/backup/refresh', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 120000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/backup/refresh', null, { timeout: 120000 })
+    .then(function(data) {
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      loadBackupData();
+      window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup-Daten aktualisiert', 'success');
+    })
+    .catch(function(error) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        // Reload data after refresh
-        loadBackupData();
-        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup-Daten aktualisiert', 'success');
-      } else {
-        var errMsg = response.error ? response.error.message : 'Aktualisierung fehlgeschlagen';
-        alert('Fehler: ' + errMsg);
-      }
-    }
-  };
-
-  xhr.send();
+      alert('Fehler: ' + error.message);
+    });
 }
 
 // Render backup data (used for dynamic updates)
@@ -3255,7 +2833,7 @@ function filterBackups() {
   listEl.innerHTML = html;
 }
 
-// Format backup time as "time ago"
+// Format backup time as "time ago" (backup-specific helper)
 function formatBackupTime(timestamp) {
   if (!timestamp) return '-';
   var now = Math.floor(Date.now() / 1000);
@@ -3267,13 +2845,7 @@ function formatBackupTime(timestamp) {
   return new Date(timestamp * 1000).toLocaleDateString('de-DE');
 }
 
-// Escape HTML
-function escapeHtml(str) {
-  if (!str) return '';
-  var div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
+// escapeHtml is available from global helpers (main.js)
 
 // Escape for attribute (single quotes)
 function escapeForAttr(str) {
@@ -3281,20 +2853,8 @@ function escapeForAttr(str) {
   return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
 
-// Toggle collapsible backup section
-function toggleBackupSection(headerEl) {
-  var section = headerEl.parentElement;
-  var content = section.querySelector('.section-content');
-  var icon = headerEl.querySelector('.collapse-icon');
-
-  if (section.classList.contains('collapsed')) {
-    section.classList.remove('collapsed');
-    if (content) content.style.display = 'block';
-  } else {
-    section.classList.add('collapsed');
-    if (content) content.style.display = 'none';
-  }
-}
+// toggleSection is available from global helpers (main.js)
+// Use window.toggleSection or just toggleSection() directly
 
 // =====================================================
 // Modal Functions
@@ -3360,38 +2920,24 @@ function submitCreateBackup(event) {
     btn.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/backup/create', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 600000; // 10 min for backup
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/backup/create', data, { timeout: 600000 })
+    .then(function(result) {
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      closeModal('createBackupModal');
+      form.reset();
+      loadBackupData();
+      window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup erfolgreich erstellt', 'success');
+    })
+    .catch(function(error) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeModal('createBackupModal');
-        form.reset();
-        loadBackupData();
-        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup erfolgreich erstellt', 'success');
-      } else {
-        var errMsg = response.error ? response.error.message : 'Backup fehlgeschlagen';
-        alert('Fehler: ' + errMsg);
-      }
-    }
-  };
-
-  xhr.send(JSON.stringify(data));
+      alert('Fehler: ' + error.message);
+    });
 }
 
 function submitRestoreBackup(event) {
@@ -3413,37 +2959,23 @@ function submitRestoreBackup(event) {
     btn.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/backup/restore', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 1800000; // 30 min for restore
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/backup/restore', data, { timeout: 1800000 })
+    .then(function(result) {
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      closeModal('restoreBackupModal');
+      form.reset();
+      window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Restore erfolgreich', 'success');
+    })
+    .catch(function(error) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeModal('restoreBackupModal');
-        form.reset();
-        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Restore erfolgreich', 'success');
-      } else {
-        var errMsg = response.error ? response.error.message : 'Restore fehlgeschlagen';
-        alert('Fehler: ' + errMsg);
-      }
-    }
-  };
-
-  xhr.send(JSON.stringify(data));
+      alert('Fehler: ' + error.message);
+    });
 }
 
 function submitDeleteBackup(event) {
@@ -3464,37 +2996,23 @@ function submitDeleteBackup(event) {
     btn.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('DELETE', '/api/nodes/' + nodeId + '/backup/' + encodeURIComponent(volid), true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.delete('/api/nodes/' + nodeId + '/backup/' + encodeURIComponent(volid), { timeout: 60000 })
+    .then(function(result) {
       if (btn) {
         btn.classList.remove('loading');
         btn.disabled = false;
       }
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+      closeModal('deleteBackupModal');
+      loadBackupData();
+      window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup gelöscht', 'success');
+    })
+    .catch(function(error) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        closeModal('deleteBackupModal');
-        loadBackupData();
-        window.NP && window.NP.UI && window.NP.UI.showToast && window.NP.UI.showToast('Backup gelöscht', 'success');
-      } else {
-        var errMsg = response.error ? response.error.message : 'Löschen fehlgeschlagen';
-        alert('Fehler: ' + errMsg);
-      }
-    }
-  };
-
-  xhr.send(JSON.stringify({ confirm_volid: volid }));
+      alert('Fehler: ' + error.message);
+    });
 }
 
 // =====================================================
@@ -4042,7 +3560,7 @@ if (taskTabBtn && !taskTabBtn.hasAttribute('data-task-listener')) {
 
 
 // ============================================================
-// FROM: network.js (654 lines)
+// FROM: network.js (553 lines)
 // ============================================================
 
 // =====================================================
@@ -4070,51 +3588,25 @@ function loadNetworkDiagnostics(nodeId) {
     btn.disabled = true;
   }
 
-  var xhr = new XMLHttpRequest();
-  activeNetworkXHR = xhr;
-  xhr.open('GET', '/api/nodes/' + nodeId + '/network', true);
-  xhr.timeout = 120000;
-
-  function resetState() {
-    activeNetworkXHR = null;
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-    }
-  }
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      resetState();
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
+  NP.API.get('/api/nodes/' + nodeId + '/network', { timeout: 120000 })
+    .then(function(response) {
+      networkData = response.data;
+      renderNetworkDiagnostics();
+      activeNetworkXHR = null;
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        networkData = response.data;
-        renderNetworkDiagnostics();
-      } else {
-        var errMsg = response.error ? response.error.message : 'Fehler beim Laden';
-        contentEl.innerHTML = '<div class="empty-state"><p>' + escapeHtml(errMsg) + '</p><button class="btn btn-secondary" onclick="loadNetworkDiagnostics(' + nodeId + ')">Erneut versuchen</button></div>';
+    })
+    .catch(function(error) {
+      var errMsg = error.message || 'Fehler beim Laden';
+      contentEl.innerHTML = '<div class="empty-state"><p>' + escapeHtml(errMsg) + '</p><button class="btn btn-secondary" onclick="loadNetworkDiagnostics(' + nodeId + ')">Erneut versuchen</button></div>';
+      activeNetworkXHR = null;
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    resetState();
-    contentEl.innerHTML = '<div class="empty-state"><p>Netzwerkfehler</p></div>';
-  };
-
-  xhr.ontimeout = function() {
-    resetState();
-    contentEl.innerHTML = '<div class="empty-state"><p>Timeout</p></div>';
-  };
-
-  xhr.send();
+    });
 }
 
 function renderNetworkDiagnostics() {
@@ -4310,59 +3802,32 @@ function runPingTest(nodeId) {
   resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Ping läuft...</div>';
   resultEl.style.display = 'block';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/network/ping', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/network/ping', { target: target, count: 4 }, { timeout: 60000 })
+    .then(function(response) {
+      var r = response.data;
+      var html = '<div class="tool-success">';
+      html += '<div class="ping-stats">';
+      html += '<span class="ping-stat"><strong>' + r.transmitted + '</strong> gesendet</span>';
+      html += '<span class="ping-stat"><strong>' + r.received + '</strong> empfangen</span>';
+      html += '<span class="ping-stat ' + (r.loss_percent > 0 ? 'text-error' : '') + '"><strong>' + r.loss_percent + '%</strong> Verlust</span>';
+      if (r.avg_ms !== null) {
+        html += '<span class="ping-stat"><strong>' + r.avg_ms.toFixed(2) + ' ms</strong> avg</span>';
+      }
+      html += '</div>';
+      if (r.min_ms !== null && r.max_ms !== null) {
+        html += '<div class="ping-detail">min/avg/max: ' + r.min_ms.toFixed(2) + ' / ' + r.avg_ms.toFixed(2) + ' / ' + r.max_ms.toFixed(2) + ' ms</div>';
+      }
+      html += '</div>';
+      resultEl.innerHTML = html;
       btn.classList.remove('loading');
       btn.disabled = false;
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        var r = response.data;
-        var html = '<div class="tool-success">';
-        html += '<div class="ping-stats">';
-        html += '<span class="ping-stat"><strong>' + r.transmitted + '</strong> gesendet</span>';
-        html += '<span class="ping-stat"><strong>' + r.received + '</strong> empfangen</span>';
-        html += '<span class="ping-stat ' + (r.loss_percent > 0 ? 'text-error' : '') + '"><strong>' + r.loss_percent + '%</strong> Verlust</span>';
-        if (r.avg_ms !== null) {
-          html += '<span class="ping-stat"><strong>' + r.avg_ms.toFixed(2) + ' ms</strong> avg</span>';
-        }
-        html += '</div>';
-        if (r.min_ms !== null && r.max_ms !== null) {
-          html += '<div class="ping-detail">min/avg/max: ' + r.min_ms.toFixed(2) + ' / ' + r.avg_ms.toFixed(2) + ' / ' + r.max_ms.toFixed(2) + ' ms</div>';
-        }
-        html += '</div>';
-        resultEl.innerHTML = html;
-      } else {
-        var errMsg = response.error ? response.error.message : 'Fehler';
-        resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    resultEl.innerHTML = '<div class="tool-error">Netzwerkfehler</div>';
-  };
-
-  xhr.ontimeout = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    resultEl.innerHTML = '<div class="tool-error">Timeout</div>';
-  };
-
-  xhr.send(JSON.stringify({ target: target, count: 4 }));
+    })
+    .catch(function(error) {
+      var errMsg = error.message || 'Fehler';
+      resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    });
 }
 
 function runDnsLookup(nodeId) {
@@ -4384,52 +3849,31 @@ function runDnsLookup(nodeId) {
   resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> DNS Lookup...</div>';
   resultEl.style.display = 'block';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/network/dns', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 30000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        var r = response.data;
-        var html = '<div class="' + (r.success ? 'tool-success' : 'tool-error') + '">';
-        html += '<div><strong>' + escapeHtml(r.hostname) + '</strong></div>';
-        if (r.addresses && r.addresses.length > 0) {
-          html += '<div class="dns-addresses">';
-          for (var i = 0; i < r.addresses.length; i++) {
-            html += '<span class="dns-ip">' + escapeHtml(r.addresses[i]) + '</span>';
-          }
-          html += '</div>';
-        } else {
-          html += '<div>Keine Adressen gefunden</div>';
+  NP.API.post('/api/nodes/' + nodeId + '/network/dns', { hostname: hostname }, { timeout: 30000 })
+    .then(function(response) {
+      var r = response.data;
+      var html = '<div class="' + (r.success ? 'tool-success' : 'tool-error') + '">';
+      html += '<div><strong>' + escapeHtml(r.hostname) + '</strong></div>';
+      if (r.addresses && r.addresses.length > 0) {
+        html += '<div class="dns-addresses">';
+        for (var i = 0; i < r.addresses.length; i++) {
+          html += '<span class="dns-ip">' + escapeHtml(r.addresses[i]) + '</span>';
         }
         html += '</div>';
-        resultEl.innerHTML = html;
       } else {
-        var errMsg = response.error ? response.error.message : 'Fehler';
-        resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
+        html += '<div>Keine Adressen gefunden</div>';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    resultEl.innerHTML = '<div class="tool-error">Netzwerkfehler</div>';
-  };
-
-  xhr.send(JSON.stringify({ hostname: hostname }));
+      html += '</div>';
+      resultEl.innerHTML = html;
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    })
+    .catch(function(error) {
+      var errMsg = error.message || 'Fehler';
+      resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    });
 }
 
 function runTraceroute(nodeId) {
@@ -4451,59 +3895,32 @@ function runTraceroute(nodeId) {
   resultEl.innerHTML = '<div class="tool-loading"><span class="spinner"></span> Traceroute läuft (kann 30-60 Sek dauern)...</div>';
   resultEl.style.display = 'block';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/network/traceroute', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 90000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-
-      var response;
-      try {
-        response = JSON.parse(xhr.responseText);
-      } catch (e) {
-        response = { success: false, error: { message: 'Ungültige Antwort' } };
-      }
-
-      if (xhr.status >= 200 && xhr.status < 300 && response.success) {
-        var r = response.data;
-        var html = '<div class="tool-success">';
-        html += '<div class="trace-header">Traceroute zu <strong>' + escapeHtml(r.target) + '</strong></div>';
-        if (r.hops && r.hops.length > 0) {
-          html += '<div class="trace-hops">';
-          for (var i = 0; i < r.hops.length; i++) {
-            var hop = r.hops[i];
-            html += '<div class="trace-hop"><span class="hop-num">' + hop.hop + '</span><span class="hop-host">' + escapeHtml(hop.host || '*') + '</span><span class="hop-time">' + (hop.time_ms ? hop.time_ms.toFixed(2) + ' ms' : '*') + '</span></div>';
-          }
-          html += '</div>';
-        } else {
-          html += '<pre class="trace-raw">' + escapeHtml(r.raw || 'Keine Daten') + '</pre>';
+  NP.API.post('/api/nodes/' + nodeId + '/network/traceroute', { target: target, maxHops: 20 }, { timeout: 90000 })
+    .then(function(response) {
+      var r = response.data;
+      var html = '<div class="tool-success">';
+      html += '<div class="trace-header">Traceroute zu <strong>' + escapeHtml(r.target) + '</strong></div>';
+      if (r.hops && r.hops.length > 0) {
+        html += '<div class="trace-hops">';
+        for (var i = 0; i < r.hops.length; i++) {
+          var hop = r.hops[i];
+          html += '<div class="trace-hop"><span class="hop-num">' + hop.hop + '</span><span class="hop-host">' + escapeHtml(hop.host || '*') + '</span><span class="hop-time">' + (hop.time_ms ? hop.time_ms.toFixed(2) + ' ms' : '*') + '</span></div>';
         }
         html += '</div>';
-        resultEl.innerHTML = html;
       } else {
-        var errMsg = response.error ? response.error.message : 'Fehler';
-        resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
+        html += '<pre class="trace-raw">' + escapeHtml(r.raw || 'Keine Daten') + '</pre>';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    resultEl.innerHTML = '<div class="tool-error">Netzwerkfehler</div>';
-  };
-
-  xhr.ontimeout = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    resultEl.innerHTML = '<div class="tool-error">Timeout - Traceroute hat zu lange gedauert</div>';
-  };
-
-  xhr.send(JSON.stringify({ target: target, maxHops: 20 }));
+      html += '</div>';
+      resultEl.innerHTML = html;
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    })
+    .catch(function(error) {
+      var errMsg = error.message || 'Fehler';
+      resultEl.innerHTML = '<div class="tool-error">' + escapeHtml(errMsg) + '</div>';
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    });
 }
 
 // Load network info when network tab is opened
@@ -4701,7 +4118,7 @@ document.addEventListener('keydown', function(e) {
 
 
 // ============================================================
-// FROM: health.js (255 lines)
+// FROM: health.js (143 lines)
 // ============================================================
 
 // =============================================================================
@@ -4730,58 +4147,20 @@ function runHealthCheck(nodeId) {
     }
   }
 
-  // Use XMLHttpRequest instead of fetch for ES5 compatibility
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/health/check', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 120000; // 2 minutes
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/health/check', null, { timeout: 120000 })
+    .then(function(data) {
       resetButtons();
-
-      if (xhr.status === 200) {
-        try {
-          var data = JSON.parse(xhr.responseText);
-          if (data.success) {
-            if (window.NP && window.NP.Toast) {
-              window.NP.Toast.show('Health-Check abgeschlossen', 'success');
-            }
-            window.location.reload();
-          } else {
-            if (window.NP && window.NP.Toast) {
-              var errMsg = (data.error && data.error.message) || 'Unbekannter Fehler';
-              window.NP.Toast.show('Health-Check fehlgeschlagen: ' + errMsg, 'error');
-            }
-          }
-        } catch (e) {
-          if (window.NP && window.NP.Toast) {
-            window.NP.Toast.show('Health-Check: Ungültige Server-Antwort', 'error');
-          }
-        }
-      } else {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Health-Check fehlgeschlagen: HTTP ' + xhr.status, 'error');
-        }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Health-Check abgeschlossen', 'success');
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    resetButtons();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Health-Check: Netzwerkfehler', 'error');
-    }
-  };
-
-  xhr.ontimeout = function() {
-    resetButtons();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Health-Check: Timeout (> 2 Min)', 'error');
-    }
-  };
-
-  xhr.send(null);
+      window.location.reload();
+    })
+    .catch(function(error) {
+      resetButtons();
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Health-Check fehlgeschlagen: ' + error.message, 'error');
+      }
+    });
 }
 
 /**
@@ -4816,64 +4195,27 @@ function runUpgrade(nodeId, evt) {
     window.NP.Toast.show('Upgrade gestartet... Dies kann einige Minuten dauern.', 'info');
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/health/upgrade', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 600000; // 10 minutes for upgrades
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/health/upgrade', null, { timeout: 600000 })
+    .then(function(data) {
       resetButton();
-
-      if (xhr.status === 200) {
-        try {
-          var data = JSON.parse(xhr.responseText);
-          if (data.success && data.data) {
-            var msg = 'Upgrade abgeschlossen';
-            if (data.data.packages_upgraded) {
-              msg += ' (' + data.data.packages_upgraded + ' Pakete)';
-            }
-            if (data.data.reboot_required) {
-              msg += ' - Reboot erforderlich!';
-            }
-            if (window.NP && window.NP.Toast) {
-              window.NP.Toast.show(msg, 'success');
-            }
-            setTimeout(function() { window.location.reload(); }, 2000);
-          } else {
-            if (window.NP && window.NP.Toast) {
-              var errMsg = (data.error && data.error.message) || 'Unbekannter Fehler';
-              window.NP.Toast.show('Upgrade fehlgeschlagen: ' + errMsg, 'error');
-            }
-          }
-        } catch (e) {
-          if (window.NP && window.NP.Toast) {
-            window.NP.Toast.show('Upgrade: Ungültige Server-Antwort', 'error');
-          }
-        }
-      } else {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Upgrade fehlgeschlagen: HTTP ' + xhr.status, 'error');
-        }
+      var msg = 'Upgrade abgeschlossen';
+      if (data.packages_upgraded) {
+        msg += ' (' + data.packages_upgraded + ' Pakete)';
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    resetButton();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Upgrade: Netzwerkfehler', 'error');
-    }
-  };
-
-  xhr.ontimeout = function() {
-    resetButton();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Upgrade: Timeout (> 10 Min)', 'error');
-    }
-  };
-
-  xhr.send(null);
+      if (data.reboot_required) {
+        msg += ' - Reboot erforderlich!';
+      }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show(msg, 'success');
+      }
+      setTimeout(function() { window.location.reload(); }, 2000);
+    })
+    .catch(function(error) {
+      resetButton();
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Upgrade fehlgeschlagen: ' + error.message, 'error');
+      }
+    });
 }
 
 /**
@@ -4906,62 +4248,25 @@ function switchProxmoxRepo(nodeId, mode, evt) {
     }
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', '/api/nodes/' + nodeId + '/health/repo', true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 60000; // 1 minute
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
+  NP.API.post('/api/nodes/' + nodeId + '/health/repo', { mode: mode }, { timeout: 60000 })
+    .then(function(data) {
       resetButton();
-
-      if (xhr.status === 200) {
-        try {
-          var data = JSON.parse(xhr.responseText);
-          if (data.success) {
-            if (window.NP && window.NP.Toast) {
-              window.NP.Toast.show('Repository gewechselt zu ' + modeName, 'success');
-            }
-            setTimeout(function() { window.location.reload(); }, 1500);
-          } else {
-            if (window.NP && window.NP.Toast) {
-              var errMsg = (data.error && data.error.message) || 'Unbekannter Fehler';
-              window.NP.Toast.show('Repository-Wechsel fehlgeschlagen: ' + errMsg, 'error');
-            }
-          }
-        } catch (e) {
-          if (window.NP && window.NP.Toast) {
-            window.NP.Toast.show('Repository-Wechsel: Ungültige Server-Antwort', 'error');
-          }
-        }
-      } else {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Repository-Wechsel fehlgeschlagen: HTTP ' + xhr.status, 'error');
-        }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Repository gewechselt zu ' + modeName, 'success');
       }
-    }
-  };
-
-  xhr.onerror = function() {
-    resetButton();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Repository-Wechsel: Netzwerkfehler', 'error');
-    }
-  };
-
-  xhr.ontimeout = function() {
-    resetButton();
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Repository-Wechsel: Timeout', 'error');
-    }
-  };
-
-  xhr.send(JSON.stringify({ mode: mode }));
+      setTimeout(function() { window.location.reload(); }, 1500);
+    })
+    .catch(function(error) {
+      resetButton();
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Repository-Wechsel fehlgeschlagen: ' + error.message, 'error');
+      }
+    });
 }
 
 
 // ============================================================
-// FROM: live-metrics.js (436 lines)
+// FROM: live-metrics.js (426 lines)
 // ============================================================
 
 // ============================================================
@@ -4990,16 +4295,6 @@ var prevNetStats = {
   tx_bytes: null,
   timestamp: null
 };
-
-/**
- * Format bytes to human-readable string (ES5)
- */
-function formatBytesLive(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
-  var sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  var i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
-}
 
 /**
  * Format network rate (bytes per second) to human-readable string
@@ -5127,7 +4422,7 @@ function updateLiveMetrics() {
         if (memCard && stats.ram_used_bytes) {
           var memDetails = memCard.querySelector('.hero-metric-details span');
           if (memDetails && stats.ram_total_bytes) {
-            memDetails.textContent = formatBytesLive(stats.ram_used_bytes) + ' / ' + formatBytesLive(stats.ram_total_bytes);
+            memDetails.textContent = formatBytes(stats.ram_used_bytes) + ' / ' + formatBytes(stats.ram_total_bytes);
           }
         }
 
@@ -5143,7 +4438,7 @@ function updateLiveMetrics() {
         if (diskCard && stats.disk_used_bytes && stats.disk_total_bytes) {
           var diskDetails = diskCard.querySelector('.hero-metric-details span');
           if (diskDetails) {
-            diskDetails.textContent = formatBytesLive(stats.disk_used_bytes) + ' / ' + formatBytesLive(stats.disk_total_bytes);
+            diskDetails.textContent = formatBytes(stats.disk_used_bytes) + ' / ' + formatBytes(stats.disk_total_bytes);
           }
         }
 
@@ -5399,197 +4694,4 @@ function addSparklineDataPoint(stats) {
     });
   }
 })();
-
-// =============================================================================
-// EDIT PANEL
-// =============================================================================
-
-/**
- * Open edit panel
- */
-function openEditPanel() {
-  var overlay = document.getElementById('editPanelOverlay');
-  var panel = document.getElementById('editPanel');
-  if (overlay && panel) {
-    overlay.classList.add('open');
-    panel.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-}
-
-/**
- * Close edit panel
- */
-function closeEditPanel() {
-  var overlay = document.getElementById('editPanelOverlay');
-  var panel = document.getElementById('editPanel');
-  if (overlay && panel) {
-    overlay.classList.remove('open');
-    panel.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-}
-
-/**
- * Toggle monitoring on/off button
- */
-function toggleMonitoring() {
-  var btn = document.getElementById('monitoring-toggle');
-  var input = document.getElementById('edit-monitoring_enabled');
-  var textEl = btn ? btn.querySelector('.toggle-text') : null;
-
-  if (!btn || !input) return;
-
-  var isActive = btn.classList.contains('active');
-
-  if (isActive) {
-    // Turn off
-    btn.classList.remove('active');
-    input.value = '0';
-    if (textEl) textEl.textContent = 'AUS';
-  } else {
-    // Turn on
-    btn.classList.add('active');
-    input.value = '1';
-    if (textEl) textEl.textContent = 'AN';
-  }
-}
-
-/**
- * Save node via AJAX
- */
-function saveNode(e) {
-  e.preventDefault();
-
-  var form = document.getElementById('editNodeForm');
-  var btn = document.getElementById('editSaveBtn');
-
-  if (!form || !btn) return;
-
-  // Set loading state
-  btn.classList.add('loading');
-  btn.disabled = true;
-
-  // Collect form data
-  var formData = {
-    name: document.getElementById('edit-name').value,
-    host: document.getElementById('edit-host').value,
-    ssh_user: document.getElementById('edit-ssh_user').value,
-    ssh_port: parseInt(document.getElementById('edit-ssh_port').value, 10) || 22,
-    ssh_password: document.getElementById('edit-ssh_password').value,
-    ssh_key_path: document.getElementById('edit-ssh_key_path').value,
-    monitoring_enabled: document.getElementById('edit-monitoring_enabled').value === '1',
-    monitoring_interval: parseInt(document.getElementById('edit-monitoring_interval').value, 10) || 30,
-    notes: document.getElementById('edit-notes').value
-  };
-
-  // AJAX request
-  var xhr = new XMLHttpRequest();
-  xhr.open('PUT', '/api/nodes/' + nodeId, true);
-  xhr.setRequestHeader('Content-Type', 'application/json');
-  xhr.timeout = 10000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      btn.classList.remove('loading');
-      btn.disabled = false;
-
-      if (xhr.status === 200) {
-        try {
-          var data = JSON.parse(xhr.responseText);
-          if (data.success) {
-            if (window.NP && window.NP.Toast) {
-              window.NP.Toast.show('Node gespeichert', 'success');
-            }
-            closeEditPanel();
-            // Reload to show updated data
-            setTimeout(function() {
-              window.location.reload();
-            }, 500);
-          } else {
-            var errMsg = (data.error && data.error.message) || 'Fehler beim Speichern';
-            if (window.NP && window.NP.Toast) {
-              window.NP.Toast.show(errMsg, 'error');
-            }
-          }
-        } catch (e) {
-          if (window.NP && window.NP.Toast) {
-            window.NP.Toast.show('Ungueltige Server-Antwort', 'error');
-          }
-        }
-      } else {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Fehler: HTTP ' + xhr.status, 'error');
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Netzwerkfehler', 'error');
-    }
-  };
-
-  xhr.ontimeout = function() {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Timeout', 'error');
-    }
-  };
-
-  xhr.send(JSON.stringify(formData));
-}
-
-/**
- * Delete node
- */
-function deleteNode(id, name) {
-  if (!confirm('Bist du sicher, dass du den Node "' + name + '" loeschen moechtest?\n\nAlle zugehoerigen Daten werden ebenfalls geloescht.')) {
-    return;
-  }
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('DELETE', '/api/nodes/' + id, true);
-  xhr.timeout = 10000;
-
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      if (xhr.status === 200) {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Node geloescht', 'success');
-        }
-        // Redirect to nodes list
-        setTimeout(function() {
-          window.location.href = '/nodes';
-        }, 500);
-      } else {
-        if (window.NP && window.NP.Toast) {
-          window.NP.Toast.show('Fehler beim Loeschen: HTTP ' + xhr.status, 'error');
-        }
-      }
-    }
-  };
-
-  xhr.onerror = function() {
-    if (window.NP && window.NP.Toast) {
-      window.NP.Toast.show('Netzwerkfehler', 'error');
-    }
-  };
-
-  xhr.send();
-}
-
-// Close edit panel with Escape key
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' || e.keyCode === 27) {
-    var panel = document.getElementById('editPanel');
-    if (panel && panel.classList.contains('open')) {
-      closeEditPanel();
-    }
-  }
-});
 
