@@ -3589,8 +3589,8 @@ function loadNetworkDiagnostics(nodeId) {
   }
 
   NP.API.get('/api/nodes/' + nodeId + '/network', { timeout: 120000 })
-    .then(function(response) {
-      networkData = response.data;
+    .then(function(data) {
+      networkData = data;
       renderNetworkDiagnostics();
       activeNetworkXHR = null;
       if (btn) {
@@ -4694,4 +4694,97 @@ function addSparklineDataPoint(stats) {
     });
   }
 })();
+
+// ============================================================
+// Edit Panel Functions
+// ============================================================
+
+function openEditPanel() {
+  var panel = document.getElementById('editPanel');
+  var overlay = document.getElementById('editPanelOverlay');
+  if (panel) panel.classList.add('open');
+  if (overlay) overlay.classList.add('open');
+}
+
+function closeEditPanel() {
+  var panel = document.getElementById('editPanel');
+  var overlay = document.getElementById('editPanelOverlay');
+  if (panel) panel.classList.remove('open');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function toggleMonitoring() {
+  var toggle = document.getElementById('monitoring-toggle');
+  var input = document.getElementById('edit-monitoring_enabled');
+  if (!toggle || !input) return;
+
+  var isActive = toggle.classList.contains('active');
+  if (isActive) {
+    toggle.classList.remove('active');
+    input.value = '0';
+    toggle.querySelector('.toggle-text').textContent = 'AUS';
+  } else {
+    toggle.classList.add('active');
+    input.value = '1';
+    toggle.querySelector('.toggle-text').textContent = 'AN';
+  }
+}
+
+function saveNode(event) {
+  event.preventDefault();
+
+  var form = document.getElementById('editNodeForm');
+  var saveBtn = form.querySelector('button[type="submit"]');
+  if (!form || typeof nodeId === 'undefined') return;
+
+  // Collect form data
+  var formData = {
+    name: document.getElementById('edit-name').value.trim(),
+    host: document.getElementById('edit-host').value.trim(),
+    ssh_user: document.getElementById('edit-ssh_user').value.trim(),
+    ssh_port: parseInt(document.getElementById('edit-ssh_port').value, 10) || 22,
+    ssh_key_path: document.getElementById('edit-ssh_key_path').value.trim() || null,
+    monitoring_enabled: document.getElementById('edit-monitoring_enabled').value === '1',
+    monitoring_interval: parseInt(document.getElementById('edit-monitoring_interval').value, 10) || 5,
+    notes: document.getElementById('edit-notes').value.trim() || null
+  };
+
+  // Check for password field
+  var passwordField = document.getElementById('edit-ssh_password');
+  if (passwordField && passwordField.value) {
+    formData.ssh_password = passwordField.value;
+  }
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-small"></span> Speichern...';
+  }
+
+  NP.API.put('/api/nodes/' + nodeId, formData)
+    .then(function(response) {
+      closeEditPanel();
+      NP.UI.toast('Node gespeichert', 'success');
+      // Reload page to show updated data
+      setTimeout(function() {
+        window.location.reload();
+      }, 500);
+    })
+    .catch(function(error) {
+      NP.UI.toast(error.message || 'Speichern fehlgeschlagen', 'error');
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = 'Speichern';
+      }
+    });
+}
+
+// Close edit panel with Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var panel = document.getElementById('editPanel');
+    if (panel && panel.classList.contains('open')) {
+      closeEditPanel();
+    }
+  }
+});
 

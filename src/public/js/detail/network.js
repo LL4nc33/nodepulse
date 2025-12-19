@@ -79,8 +79,8 @@ function loadNetworkDiagnostics(nodeId) {
   }
 
   NP.API.get('/api/nodes/' + nodeId + '/network', { timeout: 120000 })
-    .then(function(response) {
-      networkData = response.data;
+    .then(function(data) {
+      networkData = data;
       renderNetworkDiagnostics();
       activeNetworkXHR = null;
       if (btn) {
