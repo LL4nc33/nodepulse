@@ -24,6 +24,11 @@
         </svg>
         <%= node.monitoring_enabled ? node.monitoring_interval + 's' : 'Aus' %>
       </span>
+      <% if (tags && tags.length > 0) { %>
+        <% tags.forEach(function(tag) { %>
+          <span class="tag-mini" style="background-color: <%= tag.color %>"><%= tag.name %></span>
+        <% }); %>
+      <% } %>
     </div>
   </div>
   <div class="page-actions">

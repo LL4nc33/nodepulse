@@ -204,15 +204,6 @@
     </div>
   </div>
 
-  <!-- Tags Strip (falls vorhanden) -->
-  <% if (tags.length > 0) { %>
-  <div class="tags-strip">
-    <% tags.forEach(function(tag) { %>
-      <span class="tag-mini" style="background-color: <%= tag.color %>"><%= tag.name %></span>
-    <% }); %>
-  </div>
-  <% } %>
-
   <% if (node.notes) { %>
     <div class="notes-strip">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
