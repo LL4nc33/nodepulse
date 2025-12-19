@@ -15,6 +15,16 @@
             aria-label="Status: <%= node.online ? 'Online' : 'Offline' %>"></span>
       <%= node.name %>
     </h1>
+    <div class="node-info-inline">
+      <span class="mono"><%= node.ssh_user %>@<%= node.host %>:<%= node.ssh_port %></span>
+      <span class="node-type-badge"><%= node.node_type || 'Server' %></span>
+      <span class="monitoring-badge <%= node.monitoring_enabled ? 'active' : 'inactive' %>">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <%= node.monitoring_enabled ? node.monitoring_interval + 's' : 'Aus' %>
+      </span>
+    </div>
   </div>
   <div class="page-actions">
     <button class="btn btn-icon btn-primary" id="btn-test" onclick="testConnection(<%= node.id %>)" title="SSH Test">

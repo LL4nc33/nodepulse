@@ -67,8 +67,15 @@
              style="width: <%= isOffline ? 0 : Math.min(cpuPercent || 0, 100) %>%"></div>
       </div>
       <div class="hero-metric-details">
-        <% if (hardware && hardware.cpu_cores) { %>
-          <span><%= hardware.cpu_cores %> Cores</span>
+        <% if (hardware) { %>
+          <% if (hardware.cpu_cores && hardware.cpu_threads) { %>
+            <span><%= hardware.cpu_cores %>C / <%= hardware.cpu_threads %>T</span>
+          <% } else if (hardware.cpu_cores) { %>
+            <span><%= hardware.cpu_cores %> Cores</span>
+          <% } %>
+          <% if (hardware.cpu_max_mhz) { %>
+            <span class="hero-metric-freq"><%= hardware.cpu_max_mhz >= 1000 ? (hardware.cpu_max_mhz / 1000).toFixed(1) + ' GHz' : hardware.cpu_max_mhz + ' MHz' %></span>
+          <% } %>
         <% } %>
         <% if (hardware && hardware.cpu_model) { %>
           <span class="hero-metric-subtext"><%= hardware.cpu_model.substring(0, 30) %></span>
@@ -111,6 +118,9 @@
           <span><%= formatBytesLocal(currentStats.ram_used_bytes) %> / <%= formatBytesLocal(hardware.ram_total_bytes) %></span>
         <% } else if (hardware && hardware.ram_total_bytes) { %>
           <span><%= formatBytesLocal(hardware.ram_total_bytes) %> Total</span>
+        <% } %>
+        <% if (hardware && hardware.ram_type) { %>
+          <span class="hero-metric-subtext"><%= hardware.ram_type %></span>
         <% } %>
       </div>
     </div>
@@ -185,55 +195,23 @@
         <% } %>
       </div>
       <div class="hero-metric-details">
-        <% if (currentStats && currentStats.load_1m !== undefined) { %>
-          <%
-            var l1 = currentStats.load_1m ? currentStats.load_1m.toFixed(2) : '0.00';
-            var l5 = currentStats.load_5m ? currentStats.load_5m.toFixed(2) : '0.00';
-            var l15 = currentStats.load_15m ? currentStats.load_15m.toFixed(2) : '0.00';
-          %>
-          <span>Load: <%= l1 %> / <%= l5 %> / <%= l15 %></span>
-        <% } else { %>
-          <span>Load: -</span>
-        <% } %>
+        <span class="hero-metric-connection">
+          <span class="status-dot <%= node.online ? 'online' : 'offline' %>"></span>
+          <span class="mono"><%= node.host %>:<%= node.ssh_port %></span>
+          <span class="hero-metric-subtext"><%= node.ssh_user %>@</span>
+        </span>
       </div>
     </div>
   </div>
 
-  <!-- Status & Connection Info (Compact) -->
-  <div class="info-strip">
-    <div class="info-item">
-      <span class="info-label">Status</span>
-      <span class="status-badge <%= node.online ? 'online' : 'offline' %>">
-        <%= node.online ? 'Online' : 'Offline' %>
-      </span>
-    </div>
-    <div class="info-item">
-      <span class="info-label">Host</span>
-      <span class="info-value mono"><%= node.host %>:<%= node.ssh_port %></span>
-    </div>
-    <div class="info-item">
-      <span class="info-label">SSH User</span>
-      <span class="info-value"><%= node.ssh_user %></span>
-    </div>
-    <div class="info-item">
-      <span class="info-label">Typ</span>
-      <span class="node-type-badge"><%= node.node_type || 'Server' %></span>
-    </div>
-    <div class="info-item">
-      <span class="info-label">Monitoring</span>
-      <span class="info-value"><%= node.monitoring_enabled ? node.monitoring_interval + 's' : 'Aus' %></span>
-    </div>
-    <% if (tags.length > 0) { %>
-      <div class="info-item tags-inline">
-        <span class="info-label">Tags</span>
-        <div class="tags-compact">
-          <% tags.forEach(function(tag) { %>
-            <span class="tag-mini" style="background-color: <%= tag.color %>"><%= tag.name %></span>
-          <% }); %>
-        </div>
-      </div>
-    <% } %>
+  <!-- Tags Strip (falls vorhanden) -->
+  <% if (tags.length > 0) { %>
+  <div class="tags-strip">
+    <% tags.forEach(function(tag) { %>
+      <span class="tag-mini" style="background-color: <%= tag.color %>"><%= tag.name %></span>
+    <% }); %>
   </div>
+  <% } %>
 
   <% if (node.notes) { %>
     <div class="notes-strip">

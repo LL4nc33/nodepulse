@@ -377,6 +377,59 @@ button.nav-link {
   align-items: center;
 }
 
+/* Node Info Inline (unter Nodename) */
+.node-info-inline {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+.node-info-inline .mono {
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  color: var(--color-text-muted);
+}
+
+.node-info-inline .node-type-badge {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.monitoring-badge {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.monitoring-badge.active {
+  background: rgba(92, 184, 92, 0.15);
+  color: #5fa332;
+}
+
+.monitoring-badge.inactive {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
 .page-actions > *:last-child {
   margin-right: 0;
 }
