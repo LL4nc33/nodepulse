@@ -67,7 +67,8 @@ router.get('/', asyncHandler(async (req, res) => {
  */
 router.post('/check', asyncHandler(async (req, res) => {
   const nodeId = parseInt(req.params.nodeId, 10);
-  const node = db.nodes.getById(nodeId);
+  // Use getByIdWithCredentials for SSH operations!
+  const node = db.nodes.getByIdWithCredentials(nodeId);
 
   if (!node) {
     return apiResponse(res, 404, null, 'Node nicht gefunden');
@@ -207,7 +208,8 @@ router.get('/repo', asyncHandler(async (req, res) => {
 router.post('/repo', asyncHandler(async (req, res) => {
   const nodeId = parseInt(req.params.nodeId, 10);
   const { mode } = req.body;
-  const node = db.nodes.getById(nodeId);
+  // Use getByIdWithCredentials for SSH operations!
+  const node = db.nodes.getByIdWithCredentials(nodeId);
 
   if (!node) {
     return apiResponse(res, 404, null, 'Node nicht gefunden');
@@ -256,7 +258,8 @@ router.post('/repo', asyncHandler(async (req, res) => {
  */
 router.post('/upgrade', asyncHandler(async (req, res) => {
   const nodeId = parseInt(req.params.nodeId, 10);
-  const node = db.nodes.getById(nodeId);
+  // Use getByIdWithCredentials for SSH operations!
+  const node = db.nodes.getByIdWithCredentials(nodeId);
 
   if (!node) {
     return apiResponse(res, 404, null, 'Node nicht gefunden');

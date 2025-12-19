@@ -75,6 +75,34 @@
       if (diff < 86400) return 'vor ' + Math.floor(diff / 3600) + ' Std';
       if (diff < 604800) return 'vor ' + Math.floor(diff / 86400) + ' Tage';
       return new Date(timestamp * 1000).toLocaleDateString('de-DE');
+    },
+
+    /**
+     * Filter PCI devices table by type
+     * @param {HTMLElement} btnEl - Button element clicked
+     * @param {string} type - Device type to filter ('all', 'gpu', 'network', 'storage', 'usb')
+     */
+    filterPCI: function(btnEl, type) {
+      // Update active button
+      var filterBtns = document.querySelectorAll('.pci-filter-btn');
+      for (var i = 0; i < filterBtns.length; i++) {
+        filterBtns[i].classList.remove('active');
+      }
+      if (btnEl) btnEl.classList.add('active');
+
+      // Filter table rows
+      var table = document.getElementById('pci-table');
+      if (!table) return;
+
+      var rows = table.querySelectorAll('tbody tr');
+      for (var j = 0; j < rows.length; j++) {
+        var rowType = rows[j].getAttribute('data-type');
+        if (type === 'all' || rowType === type) {
+          rows[j].classList.remove('hidden');
+        } else {
+          rows[j].classList.add('hidden');
+        }
+      }
     }
   };
 
@@ -83,6 +111,7 @@
   window.formatBytes = NP.Helpers.formatBytes;
   window.toggleSection = NP.Helpers.toggleSection;
   window.timeAgo = NP.Helpers.timeAgo;
+  window.filterPCI = NP.Helpers.filterPCI;
 
   // =====================================================
   // API Client - Einheitliche Schnittstelle

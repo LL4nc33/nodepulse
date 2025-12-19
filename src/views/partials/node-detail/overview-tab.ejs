@@ -216,11 +216,14 @@
     </div>
   <% } %>
 
-  <!-- Hardware Section (Collapsible) -->
+  <!-- Hardware Section (Collapsible with Sub-Sections) -->
   <div class="overview-section collapsible">
     <h2 class="section-header" onclick="toggleSection(this)">
       <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
       Hardware Details
+      <% if (hardware && hardware.is_virtual) { %>
+        <span class="badge badge-info">VM</span>
+      <% } %>
     </h2>
     <div class="section-content">
       <% if (!hardware) { %>
@@ -239,55 +242,295 @@
           try { thermalSensors = JSON.parse(hardware.thermal_json || '[]'); } catch(e) {}
           var powerSensors = [];
           try { powerSensors = JSON.parse(hardware.power_json || '[]'); } catch(e) {}
+          var gpus = [];
+          try { gpus = JSON.parse(hardware.gpu_json || '[]'); } catch(e) {}
+          var memorySlots = [];
+          try { memorySlots = JSON.parse(hardware.memory_slots_json || '[]'); } catch(e) {}
+          var pciDevices = [];
+          try { pciDevices = JSON.parse(hardware.pci_devices_json || '[]'); } catch(e) {}
+          var networks = [];
+          try { networks = JSON.parse(hardware.network_json || '[]'); } catch(e) {}
         %>
-        <div class="hardware-strip">
-          <!-- CPU -->
-          <div class="hardware-strip-item">
-            <span class="hardware-strip-label">CPU</span>
-            <span class="hardware-strip-value"><%= hardware.cpu_model || '-' %></span>
-            <span class="hardware-strip-sub"><%= hardware.cpu_cores || '-' %>/<%= hardware.cpu_threads || '-' %> Cores · <%= hardware.cpu_arch || '-' %></span>
+
+        <!-- CPU Sub-Section -->
+        <details class="hardware-subsection" open>
+          <summary class="hardware-subsection-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/>
+              <line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/>
+              <line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/>
+            </svg>
+            <span class="subsection-title">CPU</span>
+            <span class="subsection-summary"><%= hardware.cpu_model || '-' %></span>
+          </summary>
+          <div class="hardware-subsection-content">
+            <table class="hardware-table">
+              <tr><td>Modell</td><td><%= hardware.cpu_model || '-' %></td></tr>
+              <tr><td>Hersteller</td><td><%= hardware.cpu_vendor || '-' %></td></tr>
+              <tr><td>Cores / Threads</td><td><%= hardware.cpu_cores || '-' %> / <%= hardware.cpu_threads || '-' %></td></tr>
+              <tr>
+                <td>Frequenz</td>
+                <td>
+                  <% if (hardware.cpu_cur_mhz) { %>
+                    <span class="freq-current"><%= hardware.cpu_cur_mhz >= 1000 ? (hardware.cpu_cur_mhz / 1000).toFixed(2) + ' GHz' : hardware.cpu_cur_mhz + ' MHz' %></span>
+                    <span class="freq-range">(Min: <%= hardware.cpu_min_mhz ? (hardware.cpu_min_mhz >= 1000 ? (hardware.cpu_min_mhz / 1000).toFixed(1) : hardware.cpu_min_mhz) : '-' %> / Max: <%= hardware.cpu_max_mhz ? (hardware.cpu_max_mhz >= 1000 ? (hardware.cpu_max_mhz / 1000).toFixed(1) : hardware.cpu_max_mhz) : '-' %> GHz)</span>
+                  <% } else if (hardware.cpu_max_mhz) { %>
+                    <%= hardware.cpu_max_mhz >= 1000 ? (hardware.cpu_max_mhz / 1000).toFixed(1) + ' GHz' : hardware.cpu_max_mhz + ' MHz' %>
+                  <% } else { %>-<% } %>
+                </td>
+              </tr>
+              <tr><td>Architektur</td><td><%= hardware.cpu_arch || '-' %></td></tr>
+              <tr><td>Cache</td><td>L1: <%= hardware.cpu_cache_l1 || '-' %> · L2: <%= hardware.cpu_cache_l2 || '-' %> · L3: <%= hardware.cpu_cache_l3 || '-' %></td></tr>
+              <% if (hardware.cpu_stepping || hardware.cpu_microcode) { %>
+              <tr><td>Stepping / Microcode</td><td><%= hardware.cpu_stepping || '-' %> / <%= hardware.cpu_microcode || '-' %></td></tr>
+              <% } %>
+              <tr><td>Virtualisierung</td><td><%= hardware.cpu_virt_support === 'vmx' ? 'Intel VT-x' : (hardware.cpu_virt_support === 'svm' ? 'AMD-V' : (hardware.cpu_virt_support || 'Nicht verfuegbar')) %></td></tr>
+              <% if (hardware.cpu_flags) { %>
+              <tr><td>Features</td><td class="cpu-flags"><%= hardware.cpu_flags %></td></tr>
+              <% } %>
+            </table>
           </div>
-          <!-- RAM -->
-          <div class="hardware-strip-item">
-            <span class="hardware-strip-label">RAM</span>
-            <span class="hardware-strip-value"><%= hardware.ram_total_bytes ? formatBytesLocal(hardware.ram_total_bytes) : '-' %></span>
-            <span class="hardware-strip-sub"><%= hardware.ram_type || 'DDR' %></span>
+        </details>
+
+        <!-- RAM Sub-Section -->
+        <details class="hardware-subsection">
+          <summary class="hardware-subsection-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="6" width="20" height="12" rx="2"/>
+              <line x1="6" y1="10" x2="6" y2="14"/><line x1="10" y1="10" x2="10" y2="14"/>
+              <line x1="14" y1="10" x2="14" y2="14"/><line x1="18" y1="10" x2="18" y2="14"/>
+            </svg>
+            <span class="subsection-title">RAM</span>
+            <span class="subsection-summary"><%= hardware.ram_total_bytes ? formatBytesLocal(hardware.ram_total_bytes) : '-' %> <%= hardware.ram_type || '' %></span>
+          </summary>
+          <div class="hardware-subsection-content">
+            <table class="hardware-table">
+              <tr><td>Gesamt</td><td><%= hardware.ram_total_bytes ? formatBytesLocal(hardware.ram_total_bytes) : '-' %></td></tr>
+              <tr><td>Typ</td><td><%= hardware.ram_type || '-' %></td></tr>
+              <tr><td>Geschwindigkeit</td><td><%= hardware.ram_speed_mhz ? hardware.ram_speed_mhz + ' MHz' : '-' %></td></tr>
+              <tr><td>Swap</td><td><%= hardware.swap_total_bytes ? formatBytesLocal(hardware.swap_total_bytes) : '-' %></td></tr>
+            </table>
+            <% if (memorySlots.length > 0) { %>
+            <h4 class="hardware-table-title">Speicher-Slots</h4>
+            <table class="hardware-table hardware-table-striped">
+              <thead>
+                <tr><th>Slot</th><th>Groesse</th><th>Typ</th><th>Speed</th><th>Hersteller</th><th>Part#</th></tr>
+              </thead>
+              <tbody>
+                <% memorySlots.forEach(function(slot) { %>
+                <tr class="<%= !slot.installed ? 'slot-empty' : '' %>">
+                  <td><%= slot.locator || 'Slot ' + slot.slot %></td>
+                  <% if (slot.installed) { %>
+                    <td><%= slot.size_bytes ? formatBytesLocal(slot.size_bytes) : '-' %></td>
+                    <td><%= slot.type || '-' %></td>
+                    <td><%= slot.speed_mhz ? slot.speed_mhz + ' MHz' : '-' %></td>
+                    <td><%= slot.manufacturer || '-' %></td>
+                    <td class="mono"><%= slot.part_number ? slot.part_number.substring(0, 16) : '-' %></td>
+                  <% } else { %>
+                    <td colspan="5" class="text-muted">Leer</td>
+                  <% } %>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+            <% } %>
           </div>
-          <!-- Disks -->
-          <div class="hardware-strip-item">
-            <span class="hardware-strip-label">Storage</span>
-            <span class="hardware-strip-value"><%= disks.length %> Disk<%= disks.length !== 1 ? 's' : '' %></span>
-            <span class="hardware-strip-sub"><% if (disks.length > 0) { %><%= disks.slice(0, 3).map(function(d) { return d.name || d.NAME; }).join(', ') %><% if (disks.length > 3) { %>, …<% } %><% } else { %>-<% } %></span>
+        </details>
+
+        <!-- Storage Sub-Section -->
+        <details class="hardware-subsection">
+          <summary class="hardware-subsection-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+            <span class="subsection-title">Storage</span>
+            <span class="subsection-summary"><%= disks.length %> Disk<%= disks.length !== 1 ? 's' : '' %></span>
+          </summary>
+          <div class="hardware-subsection-content">
+            <% if (disks.length === 0) { %>
+              <p class="text-muted">Keine Disks gefunden</p>
+            <% } else { %>
+              <% disks.forEach(function(disk) { %>
+              <div class="disk-card">
+                <div class="disk-card-header">
+                  <span class="disk-name"><%= disk.name %></span>
+                  <span class="disk-type badge <%= disk.type === 'NVMe' ? 'badge-info' : (disk.type === 'SSD' ? 'badge-ok' : 'badge-neutral') %>"><%= disk.type || 'HDD' %></span>
+                  <span class="disk-size"><%= disk.size_bytes ? formatBytesLocal(disk.size_bytes) : '-' %></span>
+                </div>
+                <div class="disk-card-details">
+                  <span class="disk-model"><%= disk.model || 'Unbekanntes Modell' %></span>
+                  <% if (disk.transport) { %><span class="disk-transport"><%= disk.transport.toUpperCase() %></span><% } %>
+                </div>
+                <% if (disk.smart_status || disk.power_on_hours || disk.temp_c || disk.wear_level_pct !== null) { %>
+                <div class="disk-smart">
+                  <% if (disk.smart_health) { %>
+                    <span class="smart-badge <%= disk.smart_health === 'Healthy' ? 'ok' : 'critical' %>">
+                      <%= disk.smart_health %>
+                    </span>
+                  <% } %>
+                  <% if (disk.temp_c) { %>
+                    <span class="smart-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg> <%= disk.temp_c %>&deg;C</span>
+                  <% } %>
+                  <% if (disk.power_on_hours) { %>
+                    <span class="smart-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> <%= disk.power_on_hours.toLocaleString ? disk.power_on_hours.toLocaleString() : disk.power_on_hours %>h</span>
+                  <% } %>
+                  <% if (disk.wear_level_pct !== null && disk.wear_level_pct !== undefined) { %>
+                    <span class="smart-item wear <%= disk.wear_level_pct < 20 ? 'critical' : (disk.wear_level_pct < 50 ? 'warning' : 'ok') %>">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      Wear: <%= disk.wear_level_pct %>%
+                    </span>
+                  <% } %>
+                  <% if (disk.reallocated_sectors && disk.reallocated_sectors > 0) { %>
+                    <span class="smart-item warning">Reallocated: <%= disk.reallocated_sectors %></span>
+                  <% } %>
+                </div>
+                <% } %>
+              </div>
+              <% }); %>
+            <% } %>
           </div>
-          <!-- System -->
-          <div class="hardware-strip-item">
-            <span class="hardware-strip-label">System</span>
-            <span class="hardware-strip-value"><%= hardware.system_manufacturer || '-' %></span>
-            <span class="hardware-strip-sub"><%= hardware.system_product || '-' %></span>
+        </details>
+
+        <!-- GPU Sub-Section (if available) -->
+        <% if (gpus.length > 0) { %>
+        <details class="hardware-subsection">
+          <summary class="hardware-subsection-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="6" width="20" height="12" rx="2"/>
+              <path d="M12 12h.01"/>
+            </svg>
+            <span class="subsection-title">GPU</span>
+            <span class="subsection-summary"><%= gpus.length %> GPU<%= gpus.length !== 1 ? 's' : '' %></span>
+          </summary>
+          <div class="hardware-subsection-content">
+            <table class="hardware-table hardware-table-striped">
+              <thead>
+                <tr><th>Slot</th><th>Beschreibung</th><th>IDs</th><th>Treiber</th><th>IOMMU</th></tr>
+              </thead>
+              <tbody>
+                <% gpus.forEach(function(gpu) { %>
+                <tr>
+                  <td class="mono"><%= gpu.slot || '-' %></td>
+                  <td><%= gpu.description || '-' %></td>
+                  <td class="mono"><%= gpu.vendor_device_id || '-' %></td>
+                  <td><%= gpu.driver || '-' %></td>
+                  <td><%= gpu.iommu_group !== null ? 'Group ' + gpu.iommu_group : '-' %></td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
           </div>
-          <% if (thermalSensors.length > 0) { %>
-          <!-- Temps -->
-          <div class="hardware-strip-item">
-            <span class="hardware-strip-label">Temps</span>
-            <span class="hardware-strip-value hardware-strip-temps">
-              <% thermalSensors.slice(0, 3).forEach(function(sensor) { %>
+        </details>
+        <% } %>
+
+        <!-- PCI Devices Sub-Section -->
+        <% if (pciDevices.length > 0) { %>
+        <details class="hardware-subsection">
+          <summary class="hardware-subsection-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+              <path d="M16 3h-8v4h8z"/>
+            </svg>
+            <span class="subsection-title">PCI/PCIe</span>
+            <span class="subsection-summary"><%= pciDevices.length %> Devices</span>
+          </summary>
+          <div class="hardware-subsection-content">
+            <div class="pci-filter">
+              <button class="pci-filter-btn active" onclick="filterPCI(this, 'all')">Alle</button>
+              <button class="pci-filter-btn" onclick="filterPCI(this, 'gpu')">GPU</button>
+              <button class="pci-filter-btn" onclick="filterPCI(this, 'network')">Network</button>
+              <button class="pci-filter-btn" onclick="filterPCI(this, 'storage')">Storage</button>
+              <button class="pci-filter-btn" onclick="filterPCI(this, 'usb')">USB</button>
+            </div>
+            <table class="hardware-table hardware-table-striped pci-table" id="pci-table">
+              <thead>
+                <tr><th>Slot</th><th>Typ</th><th>Beschreibung</th><th>Vendor:Device</th><th>Treiber</th></tr>
+              </thead>
+              <tbody>
+                <% pciDevices.forEach(function(pci) { %>
+                <tr data-type="<%= pci.type %>">
+                  <td class="mono"><%= pci.slot || '-' %></td>
+                  <td><span class="pci-type-badge <%= pci.type %>"><%= pci.type %></span></td>
+                  <td><%= pci.description ? pci.description.substring(0, 40) : pci.class %></td>
+                  <td class="mono"><%= pci.vendor_id %>:<%= pci.device_id %></td>
+                  <td><%= pci.driver || '-' %></td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </details>
+        <% } %>
+
+        <!-- System/Mainboard Sub-Section -->
+        <details class="hardware-subsection">
+          <summary class="hardware-subsection-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h4v4H7z"/><path d="M13 7h4"/><path d="M13 11h4"/><path d="M7 15h10"/>
+            </svg>
+            <span class="subsection-title">System</span>
+            <span class="subsection-summary"><%= hardware.system_manufacturer || '-' %> <%= hardware.system_product || '' %></span>
+          </summary>
+          <div class="hardware-subsection-content">
+            <table class="hardware-table">
+              <tr><td>Hersteller</td><td><%= hardware.system_manufacturer || '-' %></td></tr>
+              <tr><td>Produkt</td><td><%= hardware.system_product || '-' %></td></tr>
+              <tr><td>Seriennummer</td><td class="mono"><%= hardware.system_serial || '-' %></td></tr>
+              <tr><td>BIOS Version</td><td><%= hardware.bios_version || '-' %></td></tr>
+              <tr><td>Boot Mode</td><td><%= hardware.boot_mode || '-' %></td></tr>
+              <% if (hardware.is_virtual) { %>
+              <tr><td>Virtualisierung</td><td><span class="badge badge-info"><%= hardware.virt_type || 'VM' %></span></td></tr>
+              <% } %>
+            </table>
+          </div>
+        </details>
+
+        <!-- Thermal & Power Sub-Section -->
+        <% if (thermalSensors.length > 0 || powerSensors.length > 0) { %>
+        <details class="hardware-subsection">
+          <summary class="hardware-subsection-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/>
+            </svg>
+            <span class="subsection-title">Thermal & Power</span>
+            <span class="subsection-summary">
+              <% if (thermalSensors.length > 0 && thermalSensors[0].temp_c) { %><%= thermalSensors[0].temp_c.toFixed(0) %>&deg;C<% } %>
+              <% if (powerSensors.length > 0 && powerSensors[0].power_w) { %> · <%= powerSensors[0].power_w.toFixed(0) %>W<% } %>
+            </span>
+          </summary>
+          <div class="hardware-subsection-content">
+            <% if (thermalSensors.length > 0) { %>
+            <h4 class="hardware-table-title">Temperatursensoren</h4>
+            <div class="thermal-grid">
+              <% thermalSensors.forEach(function(sensor) { %>
                 <% if (sensor.temp_c !== null && sensor.temp_c !== undefined) { %>
-                  <span class="temp-chip <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : 'ok') %>" title="<%= sensor.label || sensor.name %>"><%= sensor.temp_c.toFixed(0) %>&deg;</span>
+                <div class="thermal-sensor <%= sensor.temp_c >= 80 ? 'critical' : (sensor.temp_c >= 60 ? 'warning' : 'ok') %>">
+                  <span class="thermal-value"><%= sensor.temp_c.toFixed(0) %>&deg;</span>
+                  <span class="thermal-label"><%= sensor.label || sensor.name %></span>
+                </div>
                 <% } %>
               <% }); %>
-            </span>
-            <span class="hardware-strip-sub"><%= thermalSensors.slice(0, 3).map(function(s) { return (s.label || s.name || '').substring(0, 6); }).join(' · ') %></span>
+            </div>
+            <% } %>
+            <% if (powerSensors.length > 0) { %>
+            <h4 class="hardware-table-title">Stromverbrauch</h4>
+            <table class="hardware-table">
+              <% powerSensors.forEach(function(sensor) { %>
+                <% if (sensor.power_w) { %>
+                <tr>
+                  <td><%= sensor.label || sensor.name %></td>
+                  <td><%= sensor.power_w.toFixed(1) %> W</td>
+                </tr>
+                <% } %>
+              <% }); %>
+            </table>
+            <% } %>
           </div>
-          <% } %>
-          <% if (powerSensors.length > 0) { %>
-          <!-- Power -->
-          <div class="hardware-strip-item">
-            <span class="hardware-strip-label">Power</span>
-            <span class="hardware-strip-value"><%= powerSensors[0].power_w ? powerSensors[0].power_w.toFixed(0) + ' W' : '-' %></span>
-            <span class="hardware-strip-sub"><%= (powerSensors[0].label || powerSensors[0].name || 'Total').substring(0, 10) %></span>
-          </div>
-          <% } %>
-        </div>
+        </details>
+        <% } %>
+
       <% } %>
     </div>
   </div>
@@ -589,6 +832,54 @@
             <div class="health-check-status ok"></div>
           </div>
         </div>
+
+        <!-- Package List (collapsed by default) -->
+        <% if (health.apt_packages_json) {
+          var aptPackages = [];
+          try { aptPackages = JSON.parse(health.apt_packages_json || '[]'); } catch(e) {}
+          if (aptPackages.length > 0) {
+            var securityCount = aptPackages.filter(function(p) { return p.is_security; }).length;
+        %>
+        <details class="health-details packages-details">
+          <summary>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            <%= aptPackages.length %> Packages verfuegbar
+            <% if (securityCount > 0) { %>
+              <span class="badge badge-critical"><%= securityCount %> Security</span>
+            <% } %>
+          </summary>
+          <div class="packages-list">
+            <% aptPackages.forEach(function(pkg) { %>
+              <div class="package-item <%= pkg.is_security ? 'security' : '' %>">
+                <span class="package-icon">
+                  <% if (pkg.is_security) { %>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                  <% } else { %>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    </svg>
+                  <% } %>
+                </span>
+                <span class="package-name"><%= pkg.name %></span>
+                <span class="package-version">
+                  <span class="version-old"><%= (pkg.old_version || '').substring(0, 15) %></span>
+                  <span class="version-arrow">→</span>
+                  <span class="version-new"><%= (pkg.new_version || '').substring(0, 15) %></span>
+                </span>
+                <% if (pkg.is_security) { %>
+                  <span class="badge badge-critical badge-sm">SEC</span>
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+        </details>
+        <% }} %>
 
         <!-- System Details (collapsed by default) -->
         <details class="health-details">

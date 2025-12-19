@@ -240,6 +240,53 @@ async function init() {
       throw err;
     }
 
+    // Migration 9: Extended Hardware Details (CPU, RAM Slots, PCI Devices)
+    try {
+      const hwCols = db.prepare("PRAGMA table_info(node_hardware)").all();
+
+      // CPU extended fields
+      const hasCpuStepping = hwCols.some(col => col.name === 'cpu_stepping');
+      if (!hasCpuStepping) {
+        console.log('[DB] Migration: Adding extended hardware columns...');
+        db.exec(`
+          ALTER TABLE node_hardware ADD COLUMN cpu_stepping TEXT;
+          ALTER TABLE node_hardware ADD COLUMN cpu_microcode TEXT;
+          ALTER TABLE node_hardware ADD COLUMN cpu_min_mhz REAL;
+          ALTER TABLE node_hardware ADD COLUMN cpu_cur_mhz REAL;
+          ALTER TABLE node_hardware ADD COLUMN cpu_flags TEXT;
+          ALTER TABLE node_hardware ADD COLUMN cpu_bugs TEXT;
+        `);
+        console.log('[DB] Migration: Added CPU extended columns');
+      }
+
+      // VM detection
+      const hasIsVirtual = hwCols.some(col => col.name === 'is_virtual');
+      if (!hasIsVirtual) {
+        db.exec(`
+          ALTER TABLE node_hardware ADD COLUMN is_virtual INTEGER DEFAULT 0;
+          ALTER TABLE node_hardware ADD COLUMN virt_type TEXT;
+        `);
+        console.log('[DB] Migration: Added virtualization detection columns');
+      }
+
+      // RAM slots (JSON array with detailed slot info)
+      const hasMemorySlots = hwCols.some(col => col.name === 'memory_slots_json');
+      if (!hasMemorySlots) {
+        db.exec('ALTER TABLE node_hardware ADD COLUMN memory_slots_json TEXT');
+        console.log('[DB] Migration: Added memory_slots_json column');
+      }
+
+      // PCI devices (JSON array)
+      const hasPciDevices = hwCols.some(col => col.name === 'pci_devices_json');
+      if (!hasPciDevices) {
+        db.exec('ALTER TABLE node_hardware ADD COLUMN pci_devices_json TEXT');
+        console.log('[DB] Migration: Added pci_devices_json column');
+      }
+    } catch (err) {
+      console.error('[DB] Migration error (extended hardware):', err.message);
+      // Don't throw - allow app to continue with reduced functionality
+    }
+
     // Run seed data
     const seedPath = path.join(__dirname, 'seed.sql');
     const seed = fs.readFileSync(seedPath, 'utf8');
