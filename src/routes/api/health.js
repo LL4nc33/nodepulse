@@ -281,7 +281,12 @@ router.post('/upgrade', asyncHandler(async (req, res) => {
       result = await ssh.executeScript(node, script, 600000); // 10 min timeout
     } else {
       // Generic apt upgrade script - fully non-interactive
-      // Uses sudo for non-root users
+      // Uses sudo with password for non-root users
+      // Escape password for shell (single quotes, escape existing single quotes)
+      const escapedPassword = node.ssh_password
+        ? node.ssh_password.replace(/'/g, "'\\''")
+        : '';
+
       const upgradeScript = `#!/bin/bash
 # Vollständig nicht-interaktiv
 export DEBIAN_FRONTEND=noninteractive
@@ -290,15 +295,19 @@ export NEEDRESTART_SUSPEND=1
 export APT_LISTCHANGES_FRONTEND=none
 export UCF_FORCE_CONFFOLD=1
 
-# Use sudo if not root
-if [ "$(id -u)" -ne 0 ]; then
-  SUDO="sudo -E"
-else
-  SUDO=""
-fi
+# Sudo helper function - uses password if available
+do_sudo() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  elif [ -n '${escapedPassword}' ]; then
+    echo '${escapedPassword}' | sudo -S -E "$@" 2>/dev/null
+  else
+    sudo -E "$@"
+  fi
+}
 
 # Update package lists
-$SUDO apt-get update -qq 2>&1
+do_sudo apt-get update -qq 2>&1
 
 # Count upgradable packages
 UPGRADABLE=$(apt list --upgradable 2>/dev/null | grep -c "upgradable" || echo "0")
@@ -308,7 +317,7 @@ if [ "$UPGRADABLE" -eq 0 ]; then
 fi
 
 # Run upgrade with all non-interactive options
-yes | $SUDO apt-get -y -qq \\
+yes | do_sudo apt-get -y -qq \\
   -o Dpkg::Options::="--force-confdef" \\
   -o Dpkg::Options::="--force-confold" \\
   -o Dpkg::Options::="--force-confnew" \\
@@ -318,8 +327,8 @@ yes | $SUDO apt-get -y -qq \\
   dist-upgrade 2>&1
 
 # Cleanup
-yes | $SUDO apt-get -y -qq autoremove 2>&1
-$SUDO apt-get -y -qq autoclean 2>&1
+yes | do_sudo apt-get -y -qq autoremove 2>&1
+do_sudo apt-get -y -qq autoclean 2>&1
 
 # Check if reboot required
 REBOOT="false"
