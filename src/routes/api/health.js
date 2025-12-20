@@ -281,6 +281,7 @@ router.post('/upgrade', asyncHandler(async (req, res) => {
       result = await ssh.executeScript(node, script, 600000); // 10 min timeout
     } else {
       // Generic apt upgrade script - fully non-interactive
+      // Uses sudo for non-root users
       const upgradeScript = `#!/bin/bash
 # Vollständig nicht-interaktiv
 export DEBIAN_FRONTEND=noninteractive
@@ -289,8 +290,15 @@ export NEEDRESTART_SUSPEND=1
 export APT_LISTCHANGES_FRONTEND=none
 export UCF_FORCE_CONFFOLD=1
 
+# Use sudo if not root
+if [ "$(id -u)" -ne 0 ]; then
+  SUDO="sudo -E"
+else
+  SUDO=""
+fi
+
 # Update package lists
-apt-get update -qq 2>&1
+$SUDO apt-get update -qq 2>&1
 
 # Count upgradable packages
 UPGRADABLE=$(apt list --upgradable 2>/dev/null | grep -c "upgradable" || echo "0")
@@ -300,7 +308,7 @@ if [ "$UPGRADABLE" -eq 0 ]; then
 fi
 
 # Run upgrade with all non-interactive options
-yes | apt-get -y -qq \\
+yes | $SUDO apt-get -y -qq \\
   -o Dpkg::Options::="--force-confdef" \\
   -o Dpkg::Options::="--force-confold" \\
   -o Dpkg::Options::="--force-confnew" \\
@@ -310,8 +318,8 @@ yes | apt-get -y -qq \\
   dist-upgrade 2>&1
 
 # Cleanup
-yes | apt-get -y -qq autoremove 2>&1
-apt-get -y -qq autoclean 2>&1
+yes | $SUDO apt-get -y -qq autoremove 2>&1
+$SUDO apt-get -y -qq autoclean 2>&1
 
 # Check if reboot required
 REBOOT="false"
