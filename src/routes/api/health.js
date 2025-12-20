@@ -280,19 +280,40 @@ router.post('/upgrade', asyncHandler(async (req, res) => {
       const script = 'ACTION="upgrade"\n' + PROXMOX_REPO_SCRIPT;
       result = await ssh.executeScript(node, script, 600000); // 10 min timeout
     } else {
-      // Generic apt upgrade script
+      // Generic apt upgrade script - fully non-interactive
       const upgradeScript = `#!/bin/bash
+# Vollständig nicht-interaktiv
 export DEBIAN_FRONTEND=noninteractive
 export NEEDRESTART_MODE=a
+export NEEDRESTART_SUSPEND=1
+export APT_LISTCHANGES_FRONTEND=none
+export UCF_FORCE_CONFFOLD=1
+
+# Update package lists
 apt-get update -qq 2>&1
+
+# Count upgradable packages
 UPGRADABLE=$(apt list --upgradable 2>/dev/null | grep -c "upgradable" || echo "0")
 if [ "$UPGRADABLE" -eq 0 ]; then
   echo '{"success": true, "message": "System ist bereits aktuell", "packages_upgraded": 0}'
   exit 0
 fi
-apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade 2>&1
-apt-get -y autoremove 2>&1
-apt-get -y autoclean 2>&1
+
+# Run upgrade with all non-interactive options
+yes | apt-get -y -qq \\
+  -o Dpkg::Options::="--force-confdef" \\
+  -o Dpkg::Options::="--force-confold" \\
+  -o Dpkg::Options::="--force-confnew" \\
+  --allow-downgrades \\
+  --allow-remove-essential \\
+  --allow-change-held-packages \\
+  dist-upgrade 2>&1
+
+# Cleanup
+yes | apt-get -y -qq autoremove 2>&1
+apt-get -y -qq autoclean 2>&1
+
+# Check if reboot required
 REBOOT="false"
 [ -f /var/run/reboot-required ] && REBOOT="true"
 echo "{\\"success\\": true, \\"packages_upgraded\\": $UPGRADABLE, \\"reboot_required\\": $REBOOT}"
