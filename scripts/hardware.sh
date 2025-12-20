@@ -99,8 +99,16 @@ echo "},"
 echo "\"cpu\": {"
 CPU_MODEL=$(grep 'model name' /proc/cpuinfo 2>/dev/null | head -1 | cut -d: -f2 | xargs || echo "unknown")
 CPU_VENDOR=$(grep 'vendor_id' /proc/cpuinfo 2>/dev/null | head -1 | cut -d: -f2 | xargs || echo "unknown")
-CPU_CORES=$(nproc --all 2>/dev/null || echo 1)
-CPU_THREADS=$(grep -c processor /proc/cpuinfo 2>/dev/null || echo 1)
+# Physische Cores über lscpu (Cores per Socket × Sockets)
+CPU_CORES=$(lscpu 2>/dev/null | awk '/^Core\(s\) per socket:/ {cores=$4} /^Socket\(s\):/ {sockets=$2} END {print (cores && sockets) ? cores*sockets : 1}')
+# Fallback: Unique core_ids aus sysfs
+if [ "$CPU_CORES" -eq 0 ] 2>/dev/null || [ -z "$CPU_CORES" ]; then
+    CPU_CORES=$(cat /sys/devices/system/cpu/cpu*/topology/core_id 2>/dev/null | sort -u | wc -l)
+fi
+[ -z "$CPU_CORES" ] || [ "$CPU_CORES" -eq 0 ] && CPU_CORES=1
+
+# Threads = logische CPUs (Hyperthreading)
+CPU_THREADS=$(nproc --all 2>/dev/null || grep -c ^processor /proc/cpuinfo 2>/dev/null || echo 1)
 CPU_MAX_MHZ=$(lscpu 2>/dev/null | grep 'CPU max MHz' | awk '{print $4}')
 CPU_ARCH=$(uname -m)
 VIRT_FLAG=$(grep -oE '(vmx|svm)' /proc/cpuinfo 2>/dev/null | head -1 || echo "none")

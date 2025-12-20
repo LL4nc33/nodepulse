@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-20T20:38:58.283Z
+   Generated: 2025-12-20T21:29:55.443Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -8856,7 +8856,7 @@ button.node-tree-row {
 
 
 /* ============================================================
-   FROM: detail-pages.css (1895 lines)
+   FROM: detail-pages.css (1900 lines)
    ============================================================ */
 
 /* =====================================================
@@ -9510,11 +9510,9 @@ button.node-tree-row {
   display: -webkit-box;
   display: -webkit-flex;
   display: flex;
-  -webkit-box-orient: vertical;
-  -webkit-box-direction: normal;
-  -webkit-flex-direction: column;
-  flex-direction: column;
-  gap: 0.25rem;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
   font-size: var(--font-size-xs, 0.6875rem);
   color: var(--color-text-muted);
 }
@@ -9523,6 +9521,13 @@ button.node-tree-row {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Trennzeichen zwischen Hero-Details */
+.hero-metric-details > span:not(:last-child)::after {
+  content: ' · ';
+  color: var(--color-text-muted);
+  opacity: 0.5;
 }
 
 /* CPU Frequency Badge */
@@ -11775,7 +11780,7 @@ button.node-tree-row {
 }
 
 /* ============================================================
-   FROM: proxmox.css (659 lines)
+   FROM: proxmox.css (662 lines)
    ============================================================ */
 
    Proxmox Management
@@ -11868,6 +11873,9 @@ button.node-tree-row {
   -webkit-align-items: center;
   align-items: center;
   gap: 0.5rem;
+  -webkit-box-pack: start;
+  -webkit-justify-content: flex-start;
+  justify-content: flex-start;
   -webkit-transition: background 0.2s ease;
   transition: background 0.2s ease;
   font-size: 1rem;
