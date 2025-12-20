@@ -23,7 +23,7 @@
 <% if (nodes.length === 0) { %>
   <div class="empty-state">
     <p>Keine Nodes vorhanden.</p>
-    <a href="/nodes/add" class="btn btn-primary">Node hinzufuegen</a>
+    <button type="button" onclick="openAddNodePanel()" class="btn btn-primary">Node hinzufuegen</button>
   </div>
 <% } else { %>
   <div class="monitoring-grid" id="monitoring-grid">

@@ -4788,3 +4788,21 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
+// Delete node function
+function deleteNode(id, name) {
+  if (!confirm('Bist du sicher, dass du den Node "' + name + '" loeschen moechtest?\n\nAlle zugehoerigen Daten (Stats, Hardware-Info, Discovery) werden ebenfalls geloescht.')) {
+    return;
+  }
+
+  NP.API.delete('/api/nodes/' + id)
+    .then(function() {
+      NP.UI.toast('Node "' + name + '" geloescht', 'success');
+      setTimeout(function() {
+        window.location.href = '/';
+      }, 500);
+    })
+    .catch(function(error) {
+      NP.UI.toast(error.message || 'Loeschen fehlgeschlagen', 'error');
+    });
+}
+

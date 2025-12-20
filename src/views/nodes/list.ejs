@@ -4,11 +4,11 @@
   <div class="main-content">
     <div class="page-header">
       <h1>Nodes</h1>
-      <a href="/nodes/add" class="btn btn-primary">+ Node hinzufügen</a>
+      <button type="button" onclick="openAddNodePanel()" class="btn btn-primary">+ Node hinzufügen</button>
     </div>
 
     <% if (nodes.length === 0) { %>
-      <p class="empty-state">Noch keine Nodes vorhanden. <a href="/nodes/add">Ersten Node hinzufügen</a></p>
+      <p class="empty-state">Noch keine Nodes vorhanden. <button type="button" onclick="openAddNodePanel()" class="btn-link">Ersten Node hinzufügen</button></p>
     <% } else { %>
       <div class="table-wrapper">
         <table class="table">

@@ -7,7 +7,8 @@
  * - title (required): Main heading text
  * - text (optional): Description text
  * - buttonText (optional): Button/link text
- * - buttonHref (optional): Button/link URL
+ * - buttonHref (optional): Button/link URL (renders <a>)
+ * - buttonOnclick (optional): JS onclick handler (renders <button>)
  * - buttonClass (optional): Button class, default 'btn-primary'
  * - variant (optional): 'success' for positive empty states
  */
@@ -27,7 +28,11 @@ var emptyStateButtonClass = typeof buttonClass !== 'undefined' ? buttonClass : '
   <p class="empty-state-text"><%= text %></p>
   <% } %>
 
-  <% if (typeof buttonText !== 'undefined' && buttonText && typeof buttonHref !== 'undefined' && buttonHref) { %>
+  <% if (typeof buttonText !== 'undefined' && buttonText) { %>
+    <% if (typeof buttonOnclick !== 'undefined' && buttonOnclick) { %>
+  <button type="button" onclick="<%= buttonOnclick %>" class="btn <%= emptyStateButtonClass %>"><%= buttonText %></button>
+    <% } else if (typeof buttonHref !== 'undefined' && buttonHref) { %>
   <a href="<%= buttonHref %>" class="btn <%= emptyStateButtonClass %>"><%= buttonText %></a>
+    <% } %>
   <% } %>
 </div>

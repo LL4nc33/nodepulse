@@ -175,10 +175,11 @@ else
     echo "  \"bugs\": null,"
 fi
 
-# Cache
-L1=$(lscpu 2>/dev/null | grep 'L1d cache' | awk '{print $3}' || echo "")
-L2=$(lscpu 2>/dev/null | grep 'L2 cache' | awk '{print $3}' || echo "")
-L3=$(lscpu 2>/dev/null | grep 'L3 cache' | awk '{print $3}' || echo "")
+# Cache (include unit: KiB, MiB, etc.)
+# Handle both "256 KiB" and "256K" formats
+L1=$(lscpu 2>/dev/null | grep 'L1d cache' | awk '{if($4 != "" && $4 !~ /^\(/) print $3" "$4; else print $3}' | sed 's/^ *//;s/ *$//' || echo "")
+L2=$(lscpu 2>/dev/null | grep 'L2 cache' | awk '{if($4 != "" && $4 !~ /^\(/) print $3" "$4; else print $3}' | sed 's/^ *//;s/ *$//' || echo "")
+L3=$(lscpu 2>/dev/null | grep 'L3 cache' | awk '{if($4 != "" && $4 !~ /^\(/) print $3" "$4; else print $3}' | sed 's/^ *//;s/ *$//' || echo "")
 echo "  \"cache_l1\": \"$(json_escape "$L1")\","
 echo "  \"cache_l2\": \"$(json_escape "$L2")\","
 echo "  \"cache_l3\": \"$(json_escape "$L3")\""
@@ -204,87 +205,221 @@ fi
 echo "},"
 
 # === MEMORY SLOTS (detailed RAM info with dmidecode) ===
+# Complete parsing in AWK to avoid shell subshell issues with pipes
 echo "\"memory_slots\": ["
-SLOT_LIST=""
+MEMORY_SLOTS_OUTPUT=""
 if command -v dmidecode &>/dev/null && [ "$(id -u)" -eq 0 ]; then
-    # Parse dmidecode -t 17 (Memory Device) for each slot
-    SLOT_NUM=0
-    while IFS= read -r block; do
-        [ -z "$block" ] && continue
+    MEMORY_SLOTS_OUTPUT=$(dmidecode -t 17 2>/dev/null | awk '
+    function trim(s) {
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
+        return s
+    }
+    function json_escape(s) {
+        gsub(/\\/, "\\\\", s)
+        gsub(/"/, "\\\"", s)
+        return s
+    }
+    function extract_field(block, pattern, exclude_pattern) {
+        n = split(block, lines, "\n")
+        for (i = 1; i <= n; i++) {
+            if (lines[i] ~ pattern) {
+                if (exclude_pattern != "" && lines[i] ~ exclude_pattern) continue
+                sub(/^[^:]+:[[:space:]]*/, "", lines[i])
+                return trim(lines[i])
+            }
+        }
+        return ""
+    }
+    function extract_number(s) {
+        if (match(s, /[0-9]+/)) {
+            return substr(s, RSTART, RLENGTH)
+        }
+        return ""
+    }
+    function size_to_bytes(s) {
+        val = extract_number(s)
+        if (val == "") return "null"
+        if (s ~ /GB/) return val * 1024 * 1024 * 1024
+        return val * 1024 * 1024  # Default MB
+    }
 
-        # Extract fields from the block
-        LOCATOR=$(echo "$block" | grep -oP 'Locator: \K[^\n]+' | head -1 | xargs)
-        SIZE=$(echo "$block" | grep -oP 'Size: \K[^\n]+' | head -1 | xargs)
-        TYPE=$(echo "$block" | grep -oP 'Type: \K[^\n]+' | head -1 | xargs)
-        SPEED=$(echo "$block" | grep -oP 'Configured Memory Speed: \K[0-9]+' | head -1)
-        [ -z "$SPEED" ] && SPEED=$(echo "$block" | grep -oP 'Speed: \K[0-9]+' | head -1)
-        MANUFACTURER=$(echo "$block" | grep -oP 'Manufacturer: \K[^\n]+' | head -1 | xargs)
-        PART_NUMBER=$(echo "$block" | grep -oP 'Part Number: \K[^\n]+' | head -1 | xargs)
-        SERIAL=$(echo "$block" | grep -oP 'Serial Number: \K[^\n]+' | head -1 | xargs)
-        FORM_FACTOR=$(echo "$block" | grep -oP 'Form Factor: \K[^\n]+' | head -1 | xargs)
-        RANK=$(echo "$block" | grep -oP 'Rank: \K[0-9]+' | head -1)
+    BEGIN { slot_num = 0; installed_count = 0; first = 1 }
 
-        # Skip empty slots
-        if [ "$SIZE" = "No Module Installed" ] || [ -z "$SIZE" ]; then
-            # Still output empty slots so we know total slot count
-            [ -n "$SLOT_LIST" ] && SLOT_LIST="$SLOT_LIST,"
-            SLOT_LIST="$SLOT_LIST{\"slot\": $SLOT_NUM, \"locator\": \"$(json_escape "$LOCATOR")\", \"installed\": false, \"size\": null}"
-        else
-            # Parse size to bytes (e.g., "8192 MB" -> bytes)
-            SIZE_VAL=$(echo "$SIZE" | grep -oE '[0-9]+')
-            SIZE_UNIT=$(echo "$SIZE" | grep -oE '[A-Za-z]+' | head -1)
-            SIZE_BYTES="null"
-            if [ -n "$SIZE_VAL" ]; then
-                case "$SIZE_UNIT" in
-                    MB) SIZE_BYTES=$((SIZE_VAL * 1024 * 1024)) ;;
-                    GB) SIZE_BYTES=$((SIZE_VAL * 1024 * 1024 * 1024)) ;;
-                    *) SIZE_BYTES=$((SIZE_VAL * 1024 * 1024)) ;; # Default MB
-                esac
-            fi
+    /^Handle .*, DMI type 17/ {
+        if (block != "") {
+            # Process previous block
+            locator = extract_field(block, "Locator:", "Bank Locator:")
+            bank_locator = extract_field(block, "Bank Locator:", "")
+            size = extract_field(block, "Size:", "")
+            type = extract_field(block, "Type:", "Type Detail:")
+            speed = extract_field(block, "Configured Memory Speed:", "")
+            if (speed == "") speed = extract_field(block, "Speed:", "")
+            speed_num = extract_number(speed)
+            manufacturer = extract_field(block, "Manufacturer:", "")
+            part_number = extract_field(block, "Part Number:", "")
+            serial = extract_field(block, "Serial Number:", "")
+            form_factor = extract_field(block, "Form Factor:", "")
+            rank = extract_field(block, "Rank:", "")
+            rank_num = extract_number(rank)
 
-            [ -n "$SLOT_LIST" ] && SLOT_LIST="$SLOT_LIST,"
-            SLOT_LIST="$SLOT_LIST{"
-            SLOT_LIST="$SLOT_LIST\"slot\": $SLOT_NUM,"
-            SLOT_LIST="$SLOT_LIST \"locator\": \"$(json_escape "$LOCATOR")\","
-            SLOT_LIST="$SLOT_LIST \"installed\": true,"
-            SLOT_LIST="$SLOT_LIST \"size_bytes\": $SIZE_BYTES,"
-            SLOT_LIST="$SLOT_LIST \"type\": \"$(json_escape "$TYPE")\","
-            if [ -n "$SPEED" ]; then
-                SLOT_LIST="$SLOT_LIST \"speed_mhz\": $SPEED,"
-            else
-                SLOT_LIST="$SLOT_LIST \"speed_mhz\": null,"
-            fi
-            # Clean up manufacturer (remove generic values)
-            if [ "$MANUFACTURER" = "Unknown" ] || [ "$MANUFACTURER" = "Not Specified" ] || [ -z "$MANUFACTURER" ]; then
-                SLOT_LIST="$SLOT_LIST \"manufacturer\": null,"
-            else
-                SLOT_LIST="$SLOT_LIST \"manufacturer\": \"$(json_escape "$MANUFACTURER")\","
-            fi
-            # Clean up part number
-            if [ "$PART_NUMBER" = "Unknown" ] || [ "$PART_NUMBER" = "Not Specified" ] || [ -z "$PART_NUMBER" ]; then
-                SLOT_LIST="$SLOT_LIST \"part_number\": null,"
-            else
-                SLOT_LIST="$SLOT_LIST \"part_number\": \"$(json_escape "$PART_NUMBER")\","
-            fi
-            # Serial
-            if [ "$SERIAL" = "Unknown" ] || [ "$SERIAL" = "Not Specified" ] || [ -z "$SERIAL" ]; then
-                SLOT_LIST="$SLOT_LIST \"serial\": null,"
-            else
-                SLOT_LIST="$SLOT_LIST \"serial\": \"$(json_escape "$SERIAL")\","
-            fi
-            SLOT_LIST="$SLOT_LIST \"form_factor\": \"$(json_escape "$FORM_FACTOR")\","
-            if [ -n "$RANK" ]; then
-                SLOT_LIST="$SLOT_LIST \"rank\": $RANK"
-            else
-                SLOT_LIST="$SLOT_LIST \"rank\": null"
-            fi
-            SLOT_LIST="$SLOT_LIST}"
+            # Filter: Only real DIMM slots
+            is_real = 0
+            if (tolower(locator) ~ /dimm/) is_real = 1
+            if (size != "" && size != "No Module Installed") is_real = 1
+            if (tolower(form_factor) ~ /dimm|rimm|simm|chip/) is_real = 1
+
+            if (is_real) {
+                # Bank locator JSON
+                bank_json = "null"
+                if (bank_locator != "" && bank_locator != "Unknown" && bank_locator != "Not Specified") {
+                    bank_json = "\"" json_escape(bank_locator) "\""
+                }
+
+                # Empty slot?
+                if (size == "" || size == "No Module Installed") {
+                    if (tolower(locator) ~ /dimm/) {
+                        if (!first) printf ","
+                        first = 0
+                        printf "{\"slot\": %d, \"locator\": \"%s\", \"bank_locator\": %s, \"installed\": false, \"size\": null}",
+                            slot_num, json_escape(locator), bank_json
+                    }
+                } else {
+                    # Installed RAM
+                    # Fallback for empty locator
+                    if (locator == "" || locator == "Not Specified") {
+                        if (bank_locator != "" && bank_locator != "Not Specified" && bank_locator != "Unknown") {
+                            locator = bank_locator
+                        } else {
+                            locator = "Modul " installed_count
+                        }
+                    }
+
+                    if (!first) printf ","
+                    first = 0
+                    printf "{"
+                    printf "\"slot\": %d,", slot_num
+                    printf " \"locator\": \"%s\",", json_escape(locator)
+                    printf " \"bank_locator\": %s,", bank_json
+                    printf " \"installed\": true,"
+                    printf " \"size_bytes\": %s,", size_to_bytes(size)
+                    printf " \"type\": \"%s\",", json_escape(type)
+                    if (speed_num != "") printf " \"speed_mhz\": %s,", speed_num
+                    else printf " \"speed_mhz\": null,"
+                    if (manufacturer != "" && manufacturer != "Unknown" && manufacturer != "Not Specified")
+                        printf " \"manufacturer\": \"%s\",", json_escape(manufacturer)
+                    else printf " \"manufacturer\": null,"
+                    if (part_number != "" && part_number != "Unknown" && part_number != "Not Specified")
+                        printf " \"part_number\": \"%s\",", json_escape(part_number)
+                    else printf " \"part_number\": null,"
+                    if (serial != "" && serial != "Unknown" && serial != "Not Specified" && serial !~ /^0+$/)
+                        printf " \"serial\": \"%s\",", json_escape(serial)
+                    else printf " \"serial\": null,"
+                    printf " \"form_factor\": \"%s\",", json_escape(form_factor)
+                    if (rank_num != "") printf " \"rank\": %s", rank_num
+                    else printf " \"rank\": null"
+                    printf "}"
+                    installed_count++
+                }
+                slot_num++
+            }
+        }
+        block = ""
+        next
+    }
+    { block = block $0 "\n" }
+    END {
+        # Process last block (same logic as above)
+        if (block != "") {
+            locator = extract_field(block, "Locator:", "Bank Locator:")
+            bank_locator = extract_field(block, "Bank Locator:", "")
+            size = extract_field(block, "Size:", "")
+            type = extract_field(block, "Type:", "Type Detail:")
+            speed = extract_field(block, "Configured Memory Speed:", "")
+            if (speed == "") speed = extract_field(block, "Speed:", "")
+            speed_num = extract_number(speed)
+            manufacturer = extract_field(block, "Manufacturer:", "")
+            part_number = extract_field(block, "Part Number:", "")
+            serial = extract_field(block, "Serial Number:", "")
+            form_factor = extract_field(block, "Form Factor:", "")
+            rank = extract_field(block, "Rank:", "")
+            rank_num = extract_number(rank)
+
+            is_real = 0
+            if (tolower(locator) ~ /dimm/) is_real = 1
+            if (size != "" && size != "No Module Installed") is_real = 1
+            if (tolower(form_factor) ~ /dimm|rimm|simm|chip/) is_real = 1
+
+            if (is_real) {
+                bank_json = "null"
+                if (bank_locator != "" && bank_locator != "Unknown" && bank_locator != "Not Specified") {
+                    bank_json = "\"" json_escape(bank_locator) "\""
+                }
+                if (size == "" || size == "No Module Installed") {
+                    if (tolower(locator) ~ /dimm/) {
+                        if (!first) printf ","
+                        printf "{\"slot\": %d, \"locator\": \"%s\", \"bank_locator\": %s, \"installed\": false, \"size\": null}",
+                            slot_num, json_escape(locator), bank_json
+                    }
+                } else {
+                    if (locator == "" || locator == "Not Specified") {
+                        if (bank_locator != "" && bank_locator != "Not Specified" && bank_locator != "Unknown") {
+                            locator = bank_locator
+                        } else {
+                            locator = "Modul " installed_count
+                        }
+                    }
+                    if (!first) printf ","
+                    printf "{"
+                    printf "\"slot\": %d,", slot_num
+                    printf " \"locator\": \"%s\",", json_escape(locator)
+                    printf " \"bank_locator\": %s,", bank_json
+                    printf " \"installed\": true,"
+                    printf " \"size_bytes\": %s,", size_to_bytes(size)
+                    printf " \"type\": \"%s\",", json_escape(type)
+                    if (speed_num != "") printf " \"speed_mhz\": %s,", speed_num
+                    else printf " \"speed_mhz\": null,"
+                    if (manufacturer != "" && manufacturer != "Unknown" && manufacturer != "Not Specified")
+                        printf " \"manufacturer\": \"%s\",", json_escape(manufacturer)
+                    else printf " \"manufacturer\": null,"
+                    if (part_number != "" && part_number != "Unknown" && part_number != "Not Specified")
+                        printf " \"part_number\": \"%s\",", json_escape(part_number)
+                    else printf " \"part_number\": null,"
+                    if (serial != "" && serial != "Unknown" && serial != "Not Specified" && serial !~ /^0+$/)
+                        printf " \"serial\": \"%s\",", json_escape(serial)
+                    else printf " \"serial\": null,"
+                    printf " \"form_factor\": \"%s\",", json_escape(form_factor)
+                    if (rank_num != "") printf " \"rank\": %s", rank_num
+                    else printf " \"rank\": null"
+                    printf "}"
+                }
+            }
+        }
+    }
+    ')
+fi
+
+# Fallback: Wenn keine DIMM-Slots erkannt wurden, synthetischen Eintrag erstellen
+if [ -z "$MEMORY_SLOTS_OUTPUT" ]; then
+    # Lese Gesamt-RAM aus /proc/meminfo
+    MEM_TOTAL_KB=$(grep MemTotal /proc/meminfo 2>/dev/null | awk '{print $2}')
+    if [ -n "$MEM_TOTAL_KB" ]; then
+        MEM_TOTAL_BYTES=$((MEM_TOTAL_KB * 1024))
+
+        # Plattform-Erkennung für Typ
+        MEM_TYPE="Virtual"
+        if [ -f /proc/device-tree/model ]; then
+            # Raspberry Pi oder anderes ARM-Board
+            MEM_TYPE="Integrated"
+        elif grep -qi "hypervisor\|vmware\|virtualbox\|kvm\|qemu\|xen" /proc/cpuinfo 2>/dev/null || \
+             [ -f /sys/class/dmi/id/product_name ] && grep -qiE "virtual|vmware|kvm|qemu|xen|hyper-v" /sys/class/dmi/id/product_name 2>/dev/null; then
+            MEM_TYPE="Virtual"
         fi
 
-        SLOT_NUM=$((SLOT_NUM + 1))
-    done < <(dmidecode -t 17 2>/dev/null | awk '/Memory Device/{p=1; block=""} p{block=block $0 "\n"} /^$/ && p{print block; p=0; block=""}')
+        MEMORY_SLOTS_OUTPUT="{\"slot\": 0, \"locator\": \"System Memory\", \"bank_locator\": \"$MEM_TYPE\", \"installed\": true, \"size_bytes\": $MEM_TOTAL_BYTES, \"type\": null, \"speed_mhz\": null, \"manufacturer\": null, \"part_number\": null, \"serial\": null, \"form_factor\": null, \"rank\": null}"
+    fi
 fi
-echo "$SLOT_LIST"
+
+echo "$MEMORY_SLOTS_OUTPUT"
 echo "],"
 
 # === STORAGE ===
@@ -390,7 +525,8 @@ if command -v lsblk &>/dev/null; then
                     # ID 233: Media_Wearout_Indicator
                     WEAR=$(echo "$SMART_OUT" | grep -iE "Wear_Leveling_Count|Percent_Lifetime_Remain|SSD_Life_Left|Media_Wearout|Wear_Range_Delta" | head -1 | awk '{print $4}')
                     if [ -n "$WEAR" ] && [[ "$WEAR" =~ ^[0-9]+$ ]] && [ "$WEAR" -le 100 ] 2>/dev/null; then
-                        WEAR_LEVEL="$WEAR"
+                        # Strip leading zeros (079 -> 79) to produce valid JSON
+                        WEAR_LEVEL=$((10#$WEAR))
                     fi
                     # NVMe: Percentage Used
                     NVME_WEAR=$(echo "$SMART_OUT" | grep -i "Percentage Used" | awk '{print $3}' | grep -oE '[0-9]+')

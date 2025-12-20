@@ -78,6 +78,11 @@ function parseScriptOutput(output, nodeName = 'unknown') {
         error.position = e2.message.match(/position (\d+)/)?.[1] || 'unknown';
         console.error(`[COLLECTOR] JSON parse error for ${nodeName}:`, e2.message);
         console.error(`[COLLECTOR] Raw output (first 300 chars):`, trimmed.substring(0, 300));
+        // Show context around error position
+        const pos = parseInt(e2.message.match(/position (\d+)/)?.[1] || '0');
+        if (pos > 0) {
+          console.error(`[COLLECTOR] Context around position ${pos}:`, jsonStr.substring(Math.max(0, pos - 50), pos + 50));
+        }
         throw error;
       }
     }

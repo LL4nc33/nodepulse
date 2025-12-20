@@ -56,7 +56,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
 // Create node
 router.post('/', asyncHandler(async (req, res) => {
-  const { name, host, ssh_port, ssh_user, ssh_key_path, notes } = req.body;
+  const { name, host, ssh_port, ssh_user, ssh_password, ssh_key_path, notes } = req.body;
 
   // Validation
   const errors = validateNodeInput({ name, host, ssh_user, ssh_port });
@@ -76,6 +76,7 @@ router.post('/', asyncHandler(async (req, res) => {
       host: host.trim(),
       ssh_port: validatePort(ssh_port, 22).value,
       ssh_user: ssh_user.trim(),
+      ssh_password: ssh_password ? ssh_password.trim() : null,
       ssh_key_path: ssh_key_path ? ssh_key_path.trim() : null,
       notes: notes ? notes.trim() : null,
     });

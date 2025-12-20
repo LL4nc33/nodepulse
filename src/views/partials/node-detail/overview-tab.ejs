@@ -304,22 +304,52 @@
             <span class="subsection-summary"><%= hardware.ram_total_bytes ? formatBytesLocal(hardware.ram_total_bytes) : '-' %> <%= hardware.ram_type || '' %></span>
           </summary>
           <div class="hardware-subsection-content">
+            <%
+              // Channel-Modus berechnen (Dual-Channel, Single-Channel, etc.)
+              var channelMode = '-';
+              var installedSlots = memorySlots.filter(function(s) { return s.installed && s.bank_locator; });
+              if (installedSlots.length > 0) {
+                // Prüfe ob es ein Fallback-Eintrag ist (Virtual/Integrated)
+                var firstBank = installedSlots[0].bank_locator;
+                if (firstBank === 'Virtual' || firstBank === 'Integrated') {
+                  channelMode = '-';
+                } else {
+                  // Extrahiere unique Channels (suche nach "CHANNEL X" Pattern)
+                  var channels = {};
+                  installedSlots.forEach(function(s) {
+                    var match = s.bank_locator.match(/CHANNEL\s*([A-Z0-9])/i);
+                    if (match) channels[match[1].toUpperCase()] = true;
+                  });
+                  var channelCount = Object.keys(channels).length;
+                  if (channelCount === 0) channelMode = '-';
+                  else if (channelCount === 1) channelMode = 'Single-Channel';
+                  else if (channelCount === 2) channelMode = 'Dual-Channel';
+                  else if (channelCount === 3) channelMode = 'Triple-Channel';
+                  else if (channelCount === 4) channelMode = 'Quad-Channel';
+                  else channelMode = channelCount + '-Channel';
+                }
+              }
+            %>
             <table class="hardware-table">
               <tr><td>Gesamt</td><td><%= hardware.ram_total_bytes ? formatBytesLocal(hardware.ram_total_bytes) : '-' %></td></tr>
               <tr><td>Typ</td><td><%= hardware.ram_type || '-' %></td></tr>
               <tr><td>Geschwindigkeit</td><td><%= hardware.ram_speed_mhz ? hardware.ram_speed_mhz + ' MHz' : '-' %></td></tr>
+              <% if (channelMode !== '-') { %>
+              <tr><td>Modus</td><td><%= channelMode %></td></tr>
+              <% } %>
               <tr><td>Swap</td><td><%= hardware.swap_total_bytes ? formatBytesLocal(hardware.swap_total_bytes) : '-' %></td></tr>
             </table>
             <% if (memorySlots.length > 0) { %>
             <h4 class="hardware-table-title">Speicher-Slots</h4>
             <table class="hardware-table hardware-table-striped">
               <thead>
-                <tr><th>Slot</th><th>Groesse</th><th>Typ</th><th>Speed</th><th>Hersteller</th><th>Part#</th></tr>
+                <tr><th>Slot</th><th>Channel</th><th>Groesse</th><th>Typ</th><th>Speed</th><th>Hersteller</th><th>Part#</th></tr>
               </thead>
               <tbody>
                 <% memorySlots.forEach(function(slot) { %>
                 <tr class="<%= !slot.installed ? 'slot-empty' : '' %>">
                   <td><%= slot.locator || 'Slot ' + slot.slot %></td>
+                  <td><%= slot.bank_locator || '-' %></td>
                   <% if (slot.installed) { %>
                     <td><%= slot.size_bytes ? formatBytesLocal(slot.size_bytes) : '-' %></td>
                     <td><%= slot.type || '-' %></td>
