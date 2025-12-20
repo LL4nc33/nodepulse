@@ -2,7 +2,7 @@
 # nodepulse Proxmox Repository Management Script
 # Wechselt zwischen Enterprise und No-Subscription Repository
 
-ACTION="$1"  # "status", "enterprise", "no-subscription"
+ACTION="${1:-$ACTION}"  # Use $1 if provided, otherwise use ACTION env var
 
 # Safe string output
 safe_str() {
