@@ -184,10 +184,12 @@ run_upgrade() {
         exit 1
     fi
 
-    # Run upgrade
+    # Run upgrade - fully non-interactive
     export DEBIAN_FRONTEND=noninteractive
     export NEEDRESTART_MODE=a
-    export UCF_FORCE_CONFOLD=1
+    export NEEDRESTART_SUSPEND=1
+    export APT_LISTCHANGES_FRONTEND=none
+    export UCF_FORCE_CONFFOLD=1
 
     apt-get update -qq 2>&1
 
@@ -198,16 +200,18 @@ run_upgrade() {
         exit 0
     fi
 
-    apt-get -y \
+    # Use yes pipe for any remaining prompts
+    yes | apt-get -y -qq \
         -o Dpkg::Options::="--force-confdef" \
         -o Dpkg::Options::="--force-confold" \
+        -o Dpkg::Options::="--force-confnew" \
         dist-upgrade > "$log_file" 2>&1
 
     local result=$?
 
     # Cleanup
-    apt-get -y autoremove > /dev/null 2>&1
-    apt-get -y autoclean > /dev/null 2>&1
+    yes | apt-get -y -qq autoremove > /dev/null 2>&1
+    apt-get -y -qq autoclean > /dev/null 2>&1
 
     # Check reboot required
     local reboot_required="false"
