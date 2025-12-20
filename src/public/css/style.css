@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2025-12-19T20:09:14.952Z
+   Generated: 2025-12-20T19:54:26.955Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -8823,7 +8823,7 @@ button.node-tree-row {
 
 
 /* ============================================================
-   FROM: detail-pages.css (1899 lines)
+   FROM: detail-pages.css (1890 lines)
    ============================================================ */
 
 /* =====================================================
@@ -9300,17 +9300,8 @@ button.node-tree-row {
   border-color: var(--color-accent);
 }
 
-.hero-metric-card.warning {
-  border-left: 3px solid var(--color-warning);
-}
-
-.hero-metric-card.critical {
-  border-left: 3px solid var(--color-error);
-}
-
 .hero-metric-card.offline {
   opacity: 0.6;
-  border-left: 3px solid var(--color-text-muted);
 }
 
 .hero-metric-header {

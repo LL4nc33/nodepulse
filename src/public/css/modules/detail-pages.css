@@ -472,17 +472,8 @@
   border-color: var(--color-accent);
 }
 
-.hero-metric-card.warning {
-  border-left: 3px solid var(--color-warning);
-}
-
-.hero-metric-card.critical {
-  border-left: 3px solid var(--color-error);
-}
-
 .hero-metric-card.offline {
   opacity: 0.6;
-  border-left: 3px solid var(--color-text-muted);
 }
 
 .hero-metric-header {
