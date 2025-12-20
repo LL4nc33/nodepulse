@@ -17,6 +17,13 @@ const discovery = {
   },
 
   /**
+   * Alias for getForNode (backwards compatibility)
+   */
+  get(nodeId) {
+    return this.getForNode(nodeId);
+  },
+
+  /**
    * Save or update discovery data for a node
    */
   save(nodeId, data) {
