@@ -28,6 +28,19 @@
       var ramPercent = (typeof currentStats !== 'undefined' && currentStats) ? currentStats.ram_percent : null;
       var diskPercent = (typeof currentStats !== 'undefined' && currentStats) ? currentStats.disk_percent : null;
       var isOffline = !node.online;
+
+      // Memory Slots für Hero-Card
+      var memorySlots = [];
+      try { memorySlots = JSON.parse((hardware && hardware.memory_slots_json) || '[]'); } catch(e) {}
+      var usedSlots = memorySlots.filter(function(s) { return s.size_bytes > 0; }).length;
+      var totalSlots = memorySlots.length;
+
+      // Disks für Hero-Card
+      var disks = [];
+      try { disks = JSON.parse((hardware && hardware.disks_json) || '[]'); } catch(e) {}
+      var diskCount = disks.length;
+      var primaryDisk = disks.find(function(d) { return d.mountpoint === '/'; }) || disks[0];
+      var primaryType = primaryDisk ? (primaryDisk.type || (primaryDisk.rotational ? 'HDD' : 'SSD')) : '';
     %>
 
     <!-- CPU Card -->
@@ -120,7 +133,9 @@
           <span><%= formatBytesLocal(hardware.ram_total_bytes) %> Total</span>
         <% } %>
         <% if (hardware && hardware.ram_type) { %>
-          <span class="hero-metric-subtext"><%= hardware.ram_type %></span>
+          <span class="hero-metric-subtext"><%= hardware.ram_type %><% if (totalSlots > 0) { %> · <%= usedSlots %>/<%= totalSlots %> Slots<% } %></span>
+        <% } else if (totalSlots > 0) { %>
+          <span class="hero-metric-slots"><%= usedSlots %>/<%= totalSlots %> Slots</span>
         <% } %>
       </div>
     </div>
@@ -156,6 +171,14 @@
       <div class="hero-metric-details">
         <% if (currentStats && currentStats.disk_used_bytes && currentStats.disk_total_bytes) { %>
           <span><%= formatBytesLocal(currentStats.disk_used_bytes) %> / <%= formatBytesLocal(currentStats.disk_total_bytes) %></span>
+        <% } %>
+        <% if (diskCount > 0) { %>
+          <span class="hero-metric-subtext">
+            <%= diskCount %> <%= diskCount === 1 ? 'Disk' : 'Disks' %>
+            <% if (primaryType) { %>
+              · <span class="badge badge-<%= primaryType === 'NVMe' ? 'info' : (primaryType === 'SSD' ? 'ok' : 'neutral') %> badge-sm"><%= primaryType %></span>
+            <% } %>
+          </span>
         <% } %>
       </div>
     </div>
@@ -217,10 +240,10 @@
   <% } %>
 
   <!-- Hardware Section (Collapsible with Sub-Sections) -->
-  <div class="overview-section collapsible">
-    <h2 class="section-header" onclick="toggleSection(this)">
+  <div class="overview-section collapsible collapsed" data-section-id="hardware-details">
+    <h2 class="section-header" onclick="SectionToggle.toggle(this)">
       <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
-      Hardware Details
+      <span data-i18n="sections.hardwareDetails">Hardware Details</span>
       <% if (hardware && hardware.is_virtual) { %>
         <span class="badge badge-info">VM</span>
       <% } %>
@@ -566,10 +589,10 @@
   </div>
 
   <!-- Discovery Section (Collapsible) -->
-  <div class="overview-section collapsible">
-    <h2 class="section-header" onclick="toggleSection(this)">
+  <div class="overview-section collapsible collapsed" data-section-id="discovery-env">
+    <h2 class="section-header" onclick="SectionToggle.toggle(this)">
       <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
-      Discovery & Umgebung
+      <span data-i18n="sections.discoveryEnv">Discovery & Umgebung</span>
     </h2>
     <div class="section-content">
       <% if (!discovery) { %>
@@ -651,10 +674,10 @@
   </div>
 
   <!-- System Health Section (Collapsible) - ProxMenux Style -->
-  <div class="overview-section collapsible">
-    <h2 class="section-header" onclick="toggleSection(this)">
+  <div class="overview-section collapsible collapsed" data-section-id="system-health">
+    <h2 class="section-header" onclick="SectionToggle.toggle(this)">
       <span class="section-toggle"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
-      System Health
+      <span data-i18n="sections.systemHealth">System Health</span>
       <% if (health && health.health_status) { %>
         <span class="badge badge-<%= health.health_status === 'healthy' ? 'ok' : (health.health_status === 'warning' ? 'warning' : 'critical') %>">
           <%= health.health_score || 100 %>%

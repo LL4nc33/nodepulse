@@ -13,6 +13,94 @@
   window.NP = window.NP || {};
 
   // =====================================================
+  // Section Toggle mit localStorage Persistenz
+  // =====================================================
+
+  window.SectionToggle = {
+    STORAGE_PREFIX: 'nodepulse-section-',
+
+    /**
+     * Initialize section states from localStorage
+     */
+    init: function() {
+      var sections = document.querySelectorAll('.collapsible[data-section-id]');
+      for (var i = 0; i < sections.length; i++) {
+        this.restoreState(sections[i]);
+      }
+    },
+
+    /**
+     * Toggle a collapsible section
+     * @param {HTMLElement} headerEl - Section header element
+     */
+    toggle: function(headerEl) {
+      var section = headerEl.parentElement;
+      var content = section.querySelector('.section-content');
+      var id = this.getSectionId(section);
+      var isCollapsed = section.classList.contains('collapsed');
+
+      if (isCollapsed) {
+        section.classList.remove('collapsed');
+        if (content) content.style.display = 'block';
+        this.saveState(id, 'open');
+      } else {
+        section.classList.add('collapsed');
+        if (content) content.style.display = 'none';
+        this.saveState(id, 'collapsed');
+      }
+    },
+
+    /**
+     * Save section state to localStorage
+     * @param {string} id - Section ID
+     * @param {string} state - 'open' or 'collapsed'
+     */
+    saveState: function(id, state) {
+      try {
+        localStorage.setItem(this.STORAGE_PREFIX + id, state);
+      } catch(e) {
+        // localStorage may not be available
+      }
+    },
+
+    /**
+     * Restore section state from localStorage
+     * @param {HTMLElement} section - Section element
+     */
+    restoreState: function(section) {
+      var id = this.getSectionId(section);
+      var content = section.querySelector('.section-content');
+      try {
+        var saved = localStorage.getItem(this.STORAGE_PREFIX + id);
+        if (saved === 'open') {
+          section.classList.remove('collapsed');
+          if (content) content.style.display = 'block';
+        } else if (saved === 'collapsed') {
+          section.classList.add('collapsed');
+          if (content) content.style.display = 'none';
+        }
+      } catch(e) {
+        // localStorage may not be available
+      }
+    },
+
+    /**
+     * Get section ID from data attribute or header text
+     * @param {HTMLElement} section - Section element
+     * @returns {string} Section ID
+     */
+    getSectionId: function(section) {
+      return section.dataset.sectionId ||
+             section.querySelector('h2').textContent.trim().replace(/\s+/g, '-').toLowerCase();
+    }
+  };
+
+  // Initialize section states on DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', function() {
+    SectionToggle.init();
+  });
+
+  // =====================================================
   // Helpers Namespace - Zentrale Utility-Funktionen
   // =====================================================
 

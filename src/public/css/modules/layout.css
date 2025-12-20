@@ -146,6 +146,39 @@
   display: block;
 }
 
+/* Language Toggle Button */
+.language-toggle {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  margin-left: 0.5rem;
+  min-height: 32px;
+  min-width: 36px;
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.language-toggle:hover,
+.language-toggle:focus {
+  background: var(--color-bg-input);
+  border-color: var(--color-accent);
+  outline: none;
+}
+
 .nav-link {
   color: var(--color-text-muted);
   padding: 0.75rem 1rem;
