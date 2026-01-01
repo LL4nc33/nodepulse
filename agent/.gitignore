@@ -1,0 +1,14 @@
+# Binaries (only in root, not cmd/nodepulse-agent directory)
+/nodepulse-agent
+*.exe
+/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test files
+*.test
+coverage.out
