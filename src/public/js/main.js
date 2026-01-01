@@ -1502,7 +1502,7 @@
           if (activePane) activePane.style.display = '';
 
           // Populate checkboxes
-          var checkboxes = ['auto_discovery_enabled', 'rediscovery_on_connect', 'toast_notifications_enabled'];
+          var checkboxes = ['auto_discovery_enabled', 'rediscovery_on_connect', 'toast_notifications_enabled', 'agent_server_enabled'];
           for (var i = 0; i < checkboxes.length; i++) {
             var key = checkboxes[i];
             var el = document.getElementById('sp-' + key);
@@ -1525,6 +1525,30 @@
               numEl.value = settings[numKey];
             }
           }
+
+          // Populate agent text inputs
+          var agentTexts = ['agent_server_url', 'agent_github_repo', 'agent_binary_url'];
+          for (var k = 0; k < agentTexts.length; k++) {
+            var agentKey = agentTexts[k];
+            var agentEl = document.getElementById('sp-' + agentKey);
+            if (agentEl && settings[agentKey]) {
+              agentEl.value = settings[agentKey];
+            }
+          }
+
+          // Populate agent binary source select
+          var sourceEl = document.getElementById('sp-agent_binary_source');
+          if (sourceEl && settings.agent_binary_source) {
+            sourceEl.value = settings.agent_binary_source;
+            Panels.toggleAgentBinarySource(settings.agent_binary_source);
+          }
+
+          // Setup binary source toggle handler
+          if (sourceEl) {
+            sourceEl.onchange = function() {
+              Panels.toggleAgentBinarySource(this.value);
+            };
+          }
         })
         .catch(function(err) {
           if (loadingEl) loadingEl.innerHTML = '<p>Fehler beim Laden: ' + (err.message || 'Unbekannt') + '</p>';
@@ -1546,7 +1570,7 @@
       var settings = {};
 
       // Checkboxes (need special handling for unchecked = false)
-      var checkboxes = ['auto_discovery_enabled', 'rediscovery_on_connect', 'toast_notifications_enabled'];
+      var checkboxes = ['auto_discovery_enabled', 'rediscovery_on_connect', 'toast_notifications_enabled', 'agent_server_enabled'];
       for (var i = 0; i < checkboxes.length; i++) {
         var key = checkboxes[i];
         var el = document.getElementById('sp-' + key);
@@ -1567,6 +1591,16 @@
         var numEl = document.getElementById('sp-' + numKey);
         if (numEl && numEl.value) {
           settings[numKey] = numEl.value;
+        }
+      }
+
+      // Agent text inputs
+      var agentTexts = ['agent_server_url', 'agent_github_repo', 'agent_binary_url', 'agent_binary_source'];
+      for (var k = 0; k < agentTexts.length; k++) {
+        var agentKey = agentTexts[k];
+        var agentEl = document.getElementById('sp-' + agentKey);
+        if (agentEl) {
+          settings[agentKey] = agentEl.value || '';
         }
       }
 
@@ -1601,6 +1635,44 @@
         activePane.classList.add('active');
         activePane.style.display = '';
       }
+
+      // Load agent stats when switching to agent tab
+      if (tabId === 'agent') {
+        this.loadAgentStats();
+      }
+    },
+
+    // Toggle agent binary source fields
+    toggleAgentBinarySource: function(source) {
+      var githubGroup = document.getElementById('agent-github-repo-group');
+      var urlGroup = document.getElementById('agent-binary-url-group');
+
+      if (source === 'github') {
+        if (githubGroup) githubGroup.style.display = '';
+        if (urlGroup) urlGroup.style.display = 'none';
+      } else {
+        if (githubGroup) githubGroup.style.display = 'none';
+        if (urlGroup) urlGroup.style.display = '';
+      }
+    },
+
+    // Load agent statistics
+    loadAgentStats: function() {
+      var totalEl = document.getElementById('agent-total-count');
+      var enabledEl = document.getElementById('agent-enabled-count');
+      var connectedEl = document.getElementById('agent-connected-count');
+
+      API.get('/api/agents/stats')
+        .then(function(stats) {
+          if (totalEl) totalEl.textContent = stats.total || 0;
+          if (enabledEl) enabledEl.textContent = stats.enabled || 0;
+          if (connectedEl) connectedEl.textContent = stats.connected || 0;
+        })
+        .catch(function() {
+          if (totalEl) totalEl.textContent = '-';
+          if (enabledEl) enabledEl.textContent = '-';
+          if (connectedEl) connectedEl.textContent = '-';
+        });
     }
   };
 

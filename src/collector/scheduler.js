@@ -34,6 +34,10 @@ const MIN_INTERVAL = 10000; // 10 seconds
 // Collection tick interval (how often we check for nodes to collect)
 const TICK_INTERVAL = 5000; // 5 seconds
 
+// Maximum concurrent collections (semaphore limit)
+// Prevents overwhelming SSH connections while enabling parallelism
+const MAX_CONCURRENT = 5;
+
 /**
  * Collect stats for a single node
  * @param {Object} node - Node object
@@ -111,16 +115,30 @@ async function tick() {
       return now - lastTime >= effectiveInterval;
     });
 
-    // Collect stats for each node (sequentially to avoid overwhelming the Pi)
-    for (var i = 0; i < nodesToCollect.length; i++) {
+    // Collect stats for nodes in parallel (with concurrency limit)
+    // Process in chunks of MAX_CONCURRENT to avoid overwhelming SSH
+    for (var i = 0; i < nodesToCollect.length; i += MAX_CONCURRENT) {
       if (!isRunning) break;
 
-      // Get node with credentials for SSH connection
-      var node = db.nodes.getByIdWithCredentials(nodesToCollect[i].id);
-      if (!node) continue;
-      await collectNode(node);
-      // Set timestamp AFTER successful collection
-      lastCollectionTime.set(node.id, Date.now());
+      // Get chunk of nodes to process in parallel
+      var chunk = nodesToCollect.slice(i, i + MAX_CONCURRENT);
+
+      // Get nodes with credentials and filter nulls
+      var nodesWithCreds = chunk.map(function(n) {
+        return db.nodes.getByIdWithCredentials(n.id);
+      }).filter(function(n) {
+        return n !== null;
+      });
+
+      // Collect all nodes in chunk in parallel
+      var results = await Promise.all(nodesWithCreds.map(function(node) {
+        return collectNode(node).then(function(result) {
+          // Set timestamp AFTER collection attempt (regardless of success)
+          // This prevents retry spam on failing nodes
+          lastCollectionTime.set(node.id, Date.now());
+          return result;
+        });
+      }));
     }
   } finally {
     isCollecting = false;

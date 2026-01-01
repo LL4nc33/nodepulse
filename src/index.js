@@ -3,6 +3,7 @@ const path = require('path');
 const config = require('./config');
 const db = require('./db');
 const scheduler = require('./collector/scheduler');
+const agent = require('./agent');
 
 // Main startup (async for sql.js initialization)
 (async () => {
@@ -92,14 +93,30 @@ const server = app.listen(config.port, config.host, () => {
 
   // Start background stats collector
   scheduler.start();
+
+  // Initialize Agent WebSocket Hub (attached to HTTP server)
+  // Agents connect via ws://host:port/agent
+  var agentEnabled = db.settings.get('agent_server_enabled');
+  if (agentEnabled === '1' || agentEnabled === 'true' || agentEnabled === true) {
+    agent.init({ server: server });
+    console.log('  Agent Hub: ws://...:' + config.port + '/agent');
+  }
 });
 
 // Graceful shutdown
-const shutdown = (signal) => {
+const shutdown = async (signal) => {
   console.log(`\n[SHUTDOWN] ${signal} empfangen`);
 
   // Stop background collector
   scheduler.stop();
+
+  // Shutdown agent hub
+  try {
+    await agent.shutdown();
+    console.log('[SHUTDOWN] Agent Hub geschlossen');
+  } catch (err) {
+    console.error('[SHUTDOWN] Agent Hub Fehler:', err.message);
+  }
 
   // Stop accepting new connections
   server.close(async () => {

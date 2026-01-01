@@ -21,7 +21,8 @@ const modules = [
   'tasks.js',
   'network.js',
   'health.js',
-  'live-metrics.js'
+  'live-metrics.js',
+  'agent.js'
 ];
 
 console.log('🔨 Building detail-page.js from modules...\n');

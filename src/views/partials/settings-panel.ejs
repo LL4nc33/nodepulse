@@ -29,6 +29,9 @@
         <button type="button" class="right-panel-tab" data-tab="alerts" onclick="switchSettingsPanelTab('alerts', this)">
           Thresholds
         </button>
+        <button type="button" class="right-panel-tab" data-tab="agent" onclick="switchSettingsPanelTab('agent', this)">
+          Agent
+        </button>
       </div>
 
       <!-- Discovery Tab -->
@@ -150,6 +153,70 @@
               <label for="sp-alert_temp_critical">Critical &deg;C</label>
               <input type="number" id="sp-alert_temp_critical" name="alert_temp_critical" min="30" max="100">
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent Tab -->
+      <div class="right-panel-tab-pane" id="settings-tab-agent">
+        <div class="right-panel-section">
+          <h3>Agent Server</h3>
+          <div class="form-group">
+            <div class="checkbox-row">
+              <label>
+                <input type="checkbox" id="sp-agent_server_enabled" name="agent_server_enabled">
+                <span>Agent-Server aktivieren</span>
+              </label>
+            </div>
+            <small>WebSocket-Server fuer Agent-Verbindungen starten</small>
+          </div>
+          <div class="form-group">
+            <label for="sp-agent_server_url">Server-URL (fuer Agents)</label>
+            <input type="text" id="sp-agent_server_url" name="agent_server_url" placeholder="ws://server:3000/agent">
+            <small>URL, die Agents fuer Verbindung nutzen (leer = auto)</small>
+          </div>
+        </div>
+
+        <div class="right-panel-section">
+          <h3>Binary-Quelle</h3>
+          <div class="form-group">
+            <label for="sp-agent_binary_source">Quelle</label>
+            <select id="sp-agent_binary_source" name="agent_binary_source">
+              <option value="github">GitHub Releases</option>
+              <option value="local">Lokale URL</option>
+            </select>
+          </div>
+          <div class="form-group" id="agent-github-repo-group">
+            <label for="sp-agent_github_repo">GitHub Repository</label>
+            <input type="text" id="sp-agent_github_repo" name="agent_github_repo" placeholder="oidanice/nodepulse-agent">
+          </div>
+          <div class="form-group" id="agent-binary-url-group" style="display: none;">
+            <label for="sp-agent_binary_url">Binary-URL</label>
+            <input type="text" id="sp-agent_binary_url" name="agent_binary_url" placeholder="https://...">
+            <small>URL zur Binary (ohne Arch-Suffix)</small>
+          </div>
+        </div>
+
+        <div class="right-panel-section">
+          <h3>Agent-Status</h3>
+          <div id="agent-status-overview" class="agent-status-box">
+            <div class="agent-stats">
+              <span class="agent-stat">
+                <strong id="agent-total-count">-</strong>
+                <small>Gesamt</small>
+              </span>
+              <span class="agent-stat">
+                <strong id="agent-enabled-count">-</strong>
+                <small>Aktiviert</small>
+              </span>
+              <span class="agent-stat agent-stat-connected">
+                <strong id="agent-connected-count">-</strong>
+                <small>Verbunden</small>
+              </span>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top: 12px;">
+            <a href="/agents" class="btn btn-secondary btn-block">Alle Agents verwalten</a>
           </div>
         </div>
       </div>

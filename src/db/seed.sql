@@ -23,7 +23,13 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
 ('import_inherit_credentials', 'true'),
 ('dashboard_refresh_interval', '5'),
 -- TOON Integration (Phase 3)
-('use_toon_format', 'false');
+('use_toon_format', 'false'),
+-- Agent Settings (Phase 5)
+('agent_server_enabled', 'false'),
+('agent_binary_source', 'github'),
+('agent_github_repo', 'oidanice/nodepulse-agent'),
+('agent_binary_url', ''),
+('agent_server_url', '');
 
 -- System Tags (consolidated to main categories)
 INSERT OR IGNORE INTO tags (name, tag_type, color, description) VALUES

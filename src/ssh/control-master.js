@@ -107,12 +107,19 @@ async function execute(node, command, options = {}) {
         }
 
         // Execute with sshpass
+        // SECURITY: Use -e flag to read password from SSHPASS env var
+        // instead of -p which exposes password in process list (ps aux)
         const sshArgs = buildSSHCommand(node, command);
         const proc = spawn('sshpass', [
-          '-p', node.ssh_password,
+          '-e',  // Read password from SSHPASS environment variable
           'ssh',
           ...sshArgs
-        ]);
+        ], {
+          env: {
+            ...process.env,
+            SSHPASS: node.ssh_password
+          }
+        });
 
         executeProcess(proc, timeout, silent, resolve, reject);
       });
@@ -211,6 +218,26 @@ async function executeMultiple(node, commands, options = {}) {
 }
 
 /**
+ * Execute a script on a node via ControlMaster
+ * Uses base64 encoding to safely transmit script content and avoid injection
+ * @param {Object} node - Node object
+ * @param {string} scriptContent - Script content to execute
+ * @param {number} [timeout=60000] - Script timeout in ms
+ * @returns {Promise<{stdout: string, stderr: string, exitCode: number}>}
+ */
+async function executeScript(node, scriptContent, timeout = 60000) {
+  // Base64 encode the script to prevent any injection attacks
+  const base64Script = Buffer.from(scriptContent, 'utf8').toString('base64');
+  // Validate base64 contains only safe characters (A-Z, a-z, 0-9, +, /, =)
+  if (!/^[A-Za-z0-9+/=]*$/.test(base64Script)) {
+    throw new Error('Invalid base64 encoding');
+  }
+  // Decode on remote and pipe to bash - use printf for safety
+  const command = `printf '%s' '${base64Script}' | base64 -d | bash`;
+  return execute(node, command, { timeout: timeout });
+}
+
+/**
  * Close SSH ControlMaster connection for a node
  * @param {Object} node - Node object
  * @returns {Promise<void>}
@@ -278,6 +305,7 @@ async function cleanup() {
 
 module.exports = {
   execute,
+  executeScript,
   executeMultiple,
   closeConnection,
   cleanup,

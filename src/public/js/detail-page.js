@@ -61,7 +61,7 @@ window.addEventListener('hashchange', function() {
 
 
 /* Built from modular JavaScript v0.4.0
-   Generated: 2025-12-18T23:45:06.324Z
+   Generated: 2026-01-01T17:09:02.538Z
 */
 
 
@@ -4695,114 +4695,277 @@ function addSparklineDataPoint(stats) {
   }
 })();
 
+
 // ============================================================
-// Edit Panel Functions
+// FROM: agent.js (269 lines)
 // ============================================================
 
-function openEditPanel() {
-  var panel = document.getElementById('editPanel');
-  var overlay = document.getElementById('editPanelOverlay');
-  if (panel) panel.classList.add('open');
-  if (overlay) overlay.classList.add('open');
-}
+// =============================================================================
+// AGENT MANAGEMENT FUNCTIONS (ES5 Compatible - Fire HD 10 Support)
+// =============================================================================
 
-function closeEditPanel() {
-  var panel = document.getElementById('editPanel');
-  var overlay = document.getElementById('editPanelOverlay');
-  if (panel) panel.classList.remove('open');
-  if (overlay) overlay.classList.remove('open');
-}
-
-function toggleMonitoring() {
-  var toggle = document.getElementById('monitoring-toggle');
-  var input = document.getElementById('edit-monitoring_enabled');
-  if (!toggle || !input) return;
-
-  var isActive = toggle.classList.contains('active');
-  if (isActive) {
-    toggle.classList.remove('active');
-    input.value = '0';
-    toggle.querySelector('.toggle-text').textContent = 'AUS';
-  } else {
-    toggle.classList.add('active');
-    input.value = '1';
-    toggle.querySelector('.toggle-text').textContent = 'AN';
-  }
-}
-
-function saveNode(event) {
-  event.preventDefault();
-
-  var form = document.getElementById('editNodeForm');
-  var saveBtn = form.querySelector('button[type="submit"]');
-  if (!form || typeof nodeId === 'undefined') return;
-
-  // Collect form data
-  var formData = {
-    name: document.getElementById('edit-name').value.trim(),
-    host: document.getElementById('edit-host').value.trim(),
-    ssh_user: document.getElementById('edit-ssh_user').value.trim(),
-    ssh_port: parseInt(document.getElementById('edit-ssh_port').value, 10) || 22,
-    ssh_key_path: document.getElementById('edit-ssh_key_path').value.trim() || null,
-    monitoring_enabled: document.getElementById('edit-monitoring_enabled').value === '1',
-    monitoring_interval: parseInt(document.getElementById('edit-monitoring_interval').value, 10) || 5,
-    notes: document.getElementById('edit-notes').value.trim() || null
-  };
-
-  // Check for password field
-  var passwordField = document.getElementById('edit-ssh_password');
-  if (passwordField && passwordField.value) {
-    formData.ssh_password = passwordField.value;
+/**
+ * Load agent status for a node
+ * @param {number} nodeId - The node ID
+ */
+function loadAgentStatus(nodeId) {
+  var btn = document.getElementById('btn-refresh-agent');
+  if (btn) {
+    btn.classList.add('loading');
   }
 
-  if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<span class="spinner-small"></span> Speichern...';
-  }
-
-  NP.API.put('/api/nodes/' + nodeId, formData)
-    .then(function(response) {
-      closeEditPanel();
-      NP.UI.toast('Node gespeichert', 'success');
-      // Reload page to show updated data
-      setTimeout(function() {
-        window.location.reload();
-      }, 500);
+  NP.API.get('/api/nodes/' + nodeId + '/agent')
+    .then(function(status) {
+      if (btn) btn.classList.remove('loading');
+      updateAgentUI(status);
     })
     .catch(function(error) {
-      NP.UI.toast(error.message || 'Speichern fehlgeschlagen', 'error');
-      if (saveBtn) {
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = 'Speichern';
+      if (btn) btn.classList.remove('loading');
+      updateAgentUI({ enabled: false, connected: false });
+      console.error('[Agent] Failed to load status:', error.message);
+    });
+}
+
+/**
+ * Update the agent UI based on status
+ * @param {Object} status - Agent status object
+ */
+function updateAgentUI(status) {
+  var statusBadge = document.getElementById('agent-status-badge');
+  var versionEl = document.getElementById('agent-version');
+  var archEl = document.getElementById('agent-arch');
+  var heartbeatEl = document.getElementById('agent-heartbeat');
+  var fallbackEl = document.getElementById('agent-fallback');
+  var installedEl = document.getElementById('agent-installed');
+
+  var installBtn = document.getElementById('btn-agent-install');
+  var updateBtn = document.getElementById('btn-agent-update');
+  var uninstallBtn = document.getElementById('btn-agent-uninstall');
+  var fallbackToggle = document.getElementById('agent-fallback-toggle');
+  var fallbackCheckbox = document.getElementById('agent-fallback-checkbox');
+
+  // Status Badge
+  if (statusBadge) {
+    if (!status.enabled) {
+      statusBadge.innerHTML = '<span class="agent-badge">Nicht installiert</span>';
+    } else if (status.connected) {
+      statusBadge.innerHTML = '<span class="agent-badge connected">Verbunden</span>';
+    } else {
+      statusBadge.innerHTML = '<span class="agent-badge disconnected">Getrennt</span>';
+    }
+  }
+
+  // Version
+  if (versionEl) {
+    versionEl.textContent = status.version || '-';
+  }
+
+  // Architecture
+  if (archEl) {
+    archEl.textContent = status.arch || '-';
+  }
+
+  // Last Heartbeat
+  if (heartbeatEl) {
+    if (status.last_heartbeat) {
+      var date = new Date(status.last_heartbeat * 1000);
+      heartbeatEl.textContent = date.toLocaleString('de-DE');
+    } else {
+      heartbeatEl.textContent = '-';
+    }
+  }
+
+  // SSH Fallback
+  if (fallbackEl) {
+    fallbackEl.textContent = status.ssh_fallback ? 'Aktiv' : 'Deaktiviert';
+  }
+
+  // Installed At
+  if (installedEl) {
+    if (status.installed_at) {
+      var installDate = new Date(status.installed_at * 1000);
+      installedEl.textContent = installDate.toLocaleString('de-DE');
+    } else {
+      installedEl.textContent = '-';
+    }
+  }
+
+  // Buttons visibility
+  if (installBtn) {
+    installBtn.style.display = !status.enabled ? '' : 'none';
+  }
+  if (updateBtn) {
+    updateBtn.style.display = status.enabled ? '' : 'none';
+  }
+  if (uninstallBtn) {
+    uninstallBtn.style.display = status.enabled ? '' : 'none';
+  }
+  if (fallbackToggle) {
+    fallbackToggle.style.display = status.enabled ? '' : 'none';
+  }
+  if (fallbackCheckbox) {
+    fallbackCheckbox.checked = status.ssh_fallback;
+  }
+}
+
+/**
+ * Install agent on a node
+ * @param {number} nodeId - The node ID
+ */
+function installAgent(nodeId) {
+  if (!confirm('Agent auf diesem Node installieren?')) {
+    return;
+  }
+
+  var btn = document.getElementById('btn-agent-install');
+  if (btn) {
+    btn.classList.add('loading');
+    btn.disabled = true;
+  }
+
+  NP.API.post('/api/nodes/' + nodeId + '/agent/install', {}, { timeout: 180000 })
+    .then(function(result) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Agent installiert (Version: ' + (result.version || 'unknown') + ')', 'success');
+      }
+      loadAgentStatus(nodeId);
+    })
+    .catch(function(error) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Installation fehlgeschlagen: ' + error.message, 'error');
       }
     });
 }
 
-// Close edit panel with Escape key
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    var panel = document.getElementById('editPanel');
-    if (panel && panel.classList.contains('open')) {
-      closeEditPanel();
-    }
-  }
-});
-
-// Delete node function
-function deleteNode(id, name) {
-  if (!confirm('Bist du sicher, dass du den Node "' + name + '" loeschen moechtest?\n\nAlle zugehoerigen Daten (Stats, Hardware-Info, Discovery) werden ebenfalls geloescht.')) {
+/**
+ * Update agent on a node
+ * @param {number} nodeId - The node ID
+ */
+function updateAgent(nodeId) {
+  if (!confirm('Agent aktualisieren?')) {
     return;
   }
 
-  NP.API.delete('/api/nodes/' + id)
-    .then(function() {
-      NP.UI.toast('Node "' + name + '" geloescht', 'success');
-      setTimeout(function() {
-        window.location.href = '/';
-      }, 500);
+  var btn = document.getElementById('btn-agent-update');
+  if (btn) {
+    btn.classList.add('loading');
+    btn.disabled = true;
+  }
+
+  NP.API.post('/api/nodes/' + nodeId + '/agent/update', {}, { timeout: 180000 })
+    .then(function(result) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Agent aktualisiert (Version: ' + (result.version || 'unknown') + ')', 'success');
+      }
+      loadAgentStatus(nodeId);
     })
     .catch(function(error) {
-      NP.UI.toast(error.message || 'Loeschen fehlgeschlagen', 'error');
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Update fehlgeschlagen: ' + error.message, 'error');
+      }
     });
 }
+
+/**
+ * Uninstall agent from a node
+ * @param {number} nodeId - The node ID
+ */
+function uninstallAgent(nodeId) {
+  if (!confirm('Agent wirklich deinstallieren? Die Verbindung wird getrennt.')) {
+    return;
+  }
+
+  var btn = document.getElementById('btn-agent-uninstall');
+  if (btn) {
+    btn.classList.add('loading');
+    btn.disabled = true;
+  }
+
+  NP.API.delete('/api/nodes/' + nodeId + '/agent', { timeout: 120000 })
+    .then(function() {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Agent deinstalliert', 'success');
+      }
+      loadAgentStatus(nodeId);
+    })
+    .catch(function(error) {
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Deinstallation fehlgeschlagen: ' + error.message, 'error');
+      }
+    });
+}
+
+/**
+ * Toggle SSH fallback for agent
+ * @param {number} nodeId - The node ID
+ * @param {boolean} enabled - New fallback state
+ */
+function toggleAgentFallback(nodeId, enabled) {
+  NP.API.patch('/api/nodes/' + nodeId + '/agent/fallback', { enabled: enabled })
+    .then(function(status) {
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('SSH-Fallback ' + (enabled ? 'aktiviert' : 'deaktiviert'), 'success');
+      }
+      updateAgentUI(status);
+    })
+    .catch(function(error) {
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Fehler: ' + error.message, 'error');
+      }
+      // Revert checkbox
+      var checkbox = document.getElementById('agent-fallback-checkbox');
+      if (checkbox) {
+        checkbox.checked = !enabled;
+      }
+    });
+}
+
+// Auto-load agent status when system tab becomes visible
+(function() {
+  // Wait for DOM and check if we're on detail page
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function() {
+      var systemTab = document.getElementById('tab-system');
+      if (systemTab) {
+        // Load on tab switch
+        var tabBtns = document.querySelectorAll('.detail-tab[data-tab="system"]');
+        for (var i = 0; i < tabBtns.length; i++) {
+          var originalClick = tabBtns[i].onclick;
+          tabBtns[i].onclick = function(e) {
+            if (originalClick) originalClick.call(this, e);
+            // Get nodeId from URL or page data
+            var nodeId = window.NP && window.NP.nodeId;
+            if (nodeId) {
+              loadAgentStatus(nodeId);
+            }
+          };
+        }
+      }
+    });
+  }
+})();
 

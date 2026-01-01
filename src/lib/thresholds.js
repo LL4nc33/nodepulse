@@ -51,7 +51,27 @@ var VALID_SETTINGS_KEYS = [
   'toast_notifications_enabled',
 
   // Import Settings
-  'import_inherit_credentials'
+  'import_inherit_credentials',
+
+  // API Authentication
+  'api_auth_enabled',       // Enable API-Key authentication
+  'api_keys',               // JSON array of API keys [{key, name, created_at}]
+  'api_auth_whitelist_local', // Whitelist localhost requests (127.0.0.1, ::1)
+
+  // Agent Settings
+  'agent_server_enabled',   // Enable WebSocket server for agents
+  'agent_server_port',      // WebSocket port (default: 3001)
+  'agent_auto_install',     // Auto-install agent on new nodes
+  'agent_binary_source',    // 'github' or 'local'
+  'agent_github_repo',      // GitHub repo for agent binaries
+  'agent_binary_url',       // Custom URL for local binary
+  'agent_server_url',       // Server URL for agent connections (ws://...)
+
+  // Alert Retention
+  'alert_retention_days',
+
+  // TOON Format
+  'use_toon_format'
 ];
 
 /**

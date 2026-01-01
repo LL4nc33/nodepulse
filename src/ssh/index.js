@@ -5,6 +5,40 @@ const config = require('../config');
 // Command timeout in ms (separate from connection timeout)
 const COMMAND_TIMEOUT = 30000;
 
+// =============================================================================
+// SSH KEY CACHE
+// =============================================================================
+// Caches private keys in memory to avoid repeated file system reads
+// Key files rarely change, so cache invalidation is time-based (5 minutes)
+const keyCache = new Map();
+const KEY_CACHE_TTL = 300000; // 5 minutes
+
+/**
+ * Get SSH key from cache or read from file
+ * @param {string} keyPath - Path to SSH key file
+ * @returns {Buffer|null} Key content or null if not found
+ */
+function getCachedKey(keyPath) {
+  if (!keyPath) return null;
+
+  const cached = keyCache.get(keyPath);
+  if (cached && Date.now() - cached.timestamp < KEY_CACHE_TTL) {
+    return cached.content;
+  }
+
+  // Read from file system
+  try {
+    if (fs.existsSync(keyPath)) {
+      const content = fs.readFileSync(keyPath);
+      keyCache.set(keyPath, { content, timestamp: Date.now() });
+      return content;
+    }
+  } catch (err) {
+    console.error('[SSH] Failed to read key file:', keyPath, err.message);
+  }
+  return null;
+}
+
 /**
  * Wrap command for login shell execution
  * Non-interactive SSH doesn't load profile, so programs like neofetch aren't found
@@ -54,17 +88,14 @@ async function testConnection(node) {
     if (node.ssh_password) {
       connectionConfig.password = node.ssh_password;
     } else {
-      // Use key if specified and exists
+      // Use cached key if specified and exists
       const keyPath = node.ssh_key_path || config.ssh.defaultKeyPath;
-      if (keyPath) {
-        try {
-          if (fs.existsSync(keyPath)) {
-            connectionConfig.privateKey = fs.readFileSync(keyPath);
-          }
-        } catch (err) {
-          cleanup();
-          return reject(new Error(`SSH Key nicht lesbar: ${err.message}`));
-        }
+      const cachedKey = getCachedKey(keyPath);
+      if (cachedKey) {
+        connectionConfig.privateKey = cachedKey;
+      } else if (keyPath) {
+        cleanup();
+        return reject(new Error(`SSH Key nicht lesbar: ${keyPath}`));
       }
     }
 
@@ -183,17 +214,14 @@ async function execute(node, command, timeout = COMMAND_TIMEOUT) {
     if (node.ssh_password) {
       connectionConfig.password = node.ssh_password;
     } else {
-      // Use key if specified and exists
+      // Use cached key if specified and exists
       const keyPath = node.ssh_key_path || config.ssh.defaultKeyPath;
-      if (keyPath) {
-        try {
-          if (fs.existsSync(keyPath)) {
-            connectionConfig.privateKey = fs.readFileSync(keyPath);
-          }
-        } catch (err) {
-          cleanup();
-          return reject(new Error(`SSH Key nicht lesbar: ${err.message}`));
-        }
+      const cachedKey = getCachedKey(keyPath);
+      if (cachedKey) {
+        connectionConfig.privateKey = cachedKey;
+      } else if (keyPath) {
+        cleanup();
+        return reject(new Error(`SSH Key nicht lesbar: ${keyPath}`));
       }
     }
 

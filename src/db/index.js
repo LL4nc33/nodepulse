@@ -19,6 +19,7 @@ const capabilitiesModule = require('./entities/capabilities');
 const lvmModule = require('./entities/lvm');
 const backupsModule = require('./entities/backups');
 const tasksModule = require('./entities/tasks');
+const agentsModule = require('./entities/agents');
 
 let db = null;
 let initPromise = null;
@@ -287,6 +288,54 @@ async function init() {
       // Don't throw - allow app to continue with reduced functionality
     }
 
+    // Migration 10: Performance Indices (identified by Query-Queen)
+    // These indices improve query performance for hierarchy and alert queries
+    try {
+      // Index for node hierarchy queries (parent-child relationships)
+      db.exec('CREATE INDEX IF NOT EXISTS idx_nodes_parent ON nodes(parent_id)');
+
+      // Composite index for active alerts sorted by creation date
+      // Improves getAll() with ORDER BY created_at DESC
+      db.exec('CREATE INDEX IF NOT EXISTS idx_alerts_active_created ON alerts_history(resolved_at, created_at DESC)');
+
+      // Index for Docker container state queries
+      db.exec('CREATE INDEX IF NOT EXISTS idx_docker_containers_state ON docker_containers(node_id, state)');
+
+      // Index for Proxmox VM/CT status queries
+      db.exec('CREATE INDEX IF NOT EXISTS idx_proxmox_vms_status ON proxmox_vms(node_id, status)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_proxmox_cts_status ON proxmox_cts(node_id, status)');
+
+      console.log('[DB] Migration: Performance indices created');
+    } catch (err) {
+      console.error('[DB] Migration error (performance indices):', err.message);
+      // Don't throw - indices are optional optimizations
+    }
+
+    // Migration 11: Node Agents Table (Agent-based monitoring)
+    try {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS node_agents (
+          node_id INTEGER PRIMARY KEY,
+          agent_enabled INTEGER DEFAULT 0,
+          agent_connected INTEGER DEFAULT 0,
+          agent_api_key TEXT,
+          agent_version TEXT,
+          agent_arch TEXT,
+          ssh_fallback_enabled INTEGER DEFAULT 1,
+          install_method TEXT,
+          installed_at INTEGER,
+          last_connected_at INTEGER,
+          last_disconnected_at INTEGER,
+          last_heartbeat_at INTEGER,
+          FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
+        )
+      `);
+      console.log('[DB] Migration: Created node_agents table');
+    } catch (err) {
+      console.error('[DB] Migration error (node_agents):', err.message);
+      // Don't throw - table might already exist
+    }
+
     // Run seed data
     const seedPath = path.join(__dirname, 'seed.sql');
     const seed = fs.readFileSync(seedPath, 'utf8');
@@ -308,6 +357,7 @@ async function init() {
     lvmModule.init(getDb);
     backupsModule.init(getDb);
     tasksModule.init(getDb);
+    agentsModule.init(getDb);
 
     console.log('[DB] Database initialized at', config.dbPath);
 
@@ -359,4 +409,5 @@ module.exports = {
   lvm: lvmModule.lvm,
   backups: backupsModule.backups,
   tasks: tasksModule.tasks,
+  agents: agentsModule.agents,
 };

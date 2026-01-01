@@ -1,4 +1,5 @@
 <div class="tab-content" id="tab-system">
+  <!-- System Info Section -->
   <div class="system-info-container">
     <div class="system-info-header">
       <h3>System-Informationen</h3>
@@ -12,6 +13,74 @@
       <div class="loading-placeholder">
         <span class="spinner"></span>
         <span>System-Informationen werden geladen...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agent Section -->
+  <div class="system-info-container agent-section" id="agent-section">
+    <div class="system-info-header">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+        NodePulse Agent
+      </h3>
+      <button class="btn btn-secondary" onclick="loadAgentStatus(<%= node.id %>)" id="btn-refresh-agent">
+        <span class="btn-text">Status</span>
+        <span class="btn-loading"><span class="spinner"></span></span>
+      </button>
+    </div>
+
+    <div class="agent-status-content" id="agent-status-content">
+      <div class="agent-info-grid">
+        <div class="agent-info-item">
+          <span class="agent-info-label">Status</span>
+          <span class="agent-info-value" id="agent-status-badge">
+            <span class="agent-badge">Lade...</span>
+          </span>
+        </div>
+        <div class="agent-info-item">
+          <span class="agent-info-label">Version</span>
+          <span class="agent-info-value mono" id="agent-version">-</span>
+        </div>
+        <div class="agent-info-item">
+          <span class="agent-info-label">Architektur</span>
+          <span class="agent-info-value mono" id="agent-arch">-</span>
+        </div>
+        <div class="agent-info-item">
+          <span class="agent-info-label">Letzter Heartbeat</span>
+          <span class="agent-info-value" id="agent-heartbeat">-</span>
+        </div>
+        <div class="agent-info-item">
+          <span class="agent-info-label">SSH-Fallback</span>
+          <span class="agent-info-value" id="agent-fallback">-</span>
+        </div>
+        <div class="agent-info-item">
+          <span class="agent-info-label">Installiert am</span>
+          <span class="agent-info-value" id="agent-installed">-</span>
+        </div>
+      </div>
+
+      <div class="agent-actions" id="agent-actions">
+        <button class="btn btn-primary" id="btn-agent-install" onclick="installAgent(<%= node.id %>)" style="display: none;">
+          <span class="btn-text">Agent installieren</span>
+          <span class="btn-loading"><span class="spinner"></span></span>
+        </button>
+        <button class="btn btn-secondary" id="btn-agent-update" onclick="updateAgent(<%= node.id %>)" style="display: none;">
+          <span class="btn-text">Update</span>
+          <span class="btn-loading"><span class="spinner"></span></span>
+        </button>
+        <button class="btn btn-danger" id="btn-agent-uninstall" onclick="uninstallAgent(<%= node.id %>)" style="display: none;">
+          <span class="btn-text">Deinstallieren</span>
+          <span class="btn-loading"><span class="spinner"></span></span>
+        </button>
+        <label class="toggle-label" id="agent-fallback-toggle" style="display: none;">
+          <input type="checkbox" id="agent-fallback-checkbox" onchange="toggleAgentFallback(<%= node.id %>, this.checked)">
+          <span>SSH-Fallback aktiv</span>
+        </label>
       </div>
     </div>
   </div>

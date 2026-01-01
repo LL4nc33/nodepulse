@@ -80,7 +80,7 @@ router.post('/check', asyncHandler(async (req, res) => {
 
   try {
     // Run health check script via SSH (120s timeout for apt update)
-    const result = await ssh.executeScript(node, HEALTH_CHECK_SCRIPT, 120000);
+    const result = await ssh.controlMaster.executeScript(node, HEALTH_CHECK_SCRIPT, 120000);
 
     // Parse JSON output
     let healthData;
@@ -190,7 +190,7 @@ router.get('/repo', asyncHandler(async (req, res) => {
   try {
     // Create script with ACTION set
     const script = 'ACTION="status"\n' + PROXMOX_REPO_SCRIPT;
-    const result = await ssh.executeScript(node, script, 30000);
+    const result = await ssh.controlMaster.executeScript(node, script, 30000);
 
     const data = JSON.parse(result.stdout);
     return apiResponse(res, 200, data);
@@ -232,7 +232,7 @@ router.post('/repo', asyncHandler(async (req, res) => {
   try {
     // Create script with ACTION set
     const script = `ACTION="${mode}"\n` + PROXMOX_REPO_SCRIPT;
-    const result = await ssh.executeScript(node, script, 120000);
+    const result = await ssh.controlMaster.executeScript(node, script, 120000);
 
     const data = JSON.parse(result.stdout);
 
@@ -278,11 +278,13 @@ router.post('/upgrade', asyncHandler(async (req, res) => {
     if (isProxmox) {
       // Use proxmox-repo.sh upgrade
       const script = 'ACTION="upgrade"\n' + PROXMOX_REPO_SCRIPT;
-      result = await ssh.executeScript(node, script, 600000); // 10 min timeout
+      result = await ssh.controlMaster.executeScript(node, script, 600000); // 10 min timeout
     } else {
       // Generic apt upgrade script - fully non-interactive
       // Uses sudo with password for non-root users
-      // Escape password for shell (single quotes, escape existing single quotes)
+      // SECURITY: Password is stored in a shell variable and passed via printf
+      // This prevents the password from appearing in process listings (ps aux)
+      // because only "$_NP_PASS" appears instead of the actual password
       const escapedPassword = node.ssh_password
         ? node.ssh_password.replace(/'/g, "'\\''")
         : '';
@@ -295,12 +297,16 @@ export NEEDRESTART_SUSPEND=1
 export APT_LISTCHANGES_FRONTEND=none
 export UCF_FORCE_CONFFOLD=1
 
+# SECURITY: Store password in variable - only variable name visible in ps
+_NP_PASS='${escapedPassword}'
+
 # Sudo helper function - uses password if available
+# Uses printf instead of echo to avoid password appearing in process list
 do_sudo() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
-  elif [ -n '${escapedPassword}' ]; then
-    echo '${escapedPassword}' | sudo -S -E "$@" 2>/dev/null
+  elif [ -n "$_NP_PASS" ]; then
+    printf '%s\\n' "$_NP_PASS" | sudo -S -E "$@" 2>/dev/null
   else
     sudo -E "$@"
   fi
@@ -335,7 +341,7 @@ REBOOT="false"
 [ -f /var/run/reboot-required ] && REBOOT="true"
 echo "{\\"success\\": true, \\"packages_upgraded\\": $UPGRADABLE, \\"reboot_required\\": $REBOOT}"
 `;
-      result = await ssh.executeScript(node, upgradeScript, 600000); // 10 min timeout
+      result = await ssh.controlMaster.executeScript(node, upgradeScript, 600000); // 10 min timeout
     }
 
     // Try to parse JSON from last line
@@ -351,7 +357,7 @@ echo "{\\"success\\": true, \\"packages_upgraded\\": $UPGRADABLE, \\"reboot_requ
     // Refresh health data after upgrade
     setTimeout(async () => {
       try {
-        const healthResult = await ssh.executeScript(node, HEALTH_CHECK_SCRIPT, 120000);
+        const healthResult = await ssh.controlMaster.executeScript(node, HEALTH_CHECK_SCRIPT, 120000);
         const healthData = JSON.parse(healthResult.stdout);
         db.health.save(nodeId, {
           kernel_version: healthData.kernel_version,

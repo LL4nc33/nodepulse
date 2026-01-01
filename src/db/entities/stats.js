@@ -192,6 +192,45 @@ const stats = {
   },
 
   /**
+   * Get running counts for VMs, CTs, and Docker containers in a single query
+   * Consolidates 3 COUNT queries into 1 (N+1 → 1 optimization)
+   * @param {number} nodeId - Node ID
+   * @param {boolean} isProxmox - True if node has Proxmox
+   * @param {boolean} isDocker - True if node has Docker
+   * @returns {Object} - {vms_running, cts_running, containers_running}
+   */
+  getRunningCounts(nodeId, isProxmox, isDocker) {
+    // Skip if node has neither Proxmox nor Docker
+    if (!isProxmox && !isDocker) {
+      return { vms_running: 0, cts_running: 0, containers_running: 0 };
+    }
+
+    // Build UNION ALL query for required counts only
+    var queries = [];
+    if (isProxmox) {
+      queries.push("SELECT 'vms' as type, COUNT(*) as count FROM proxmox_vms WHERE node_id = " + nodeId + " AND status = 'running'");
+      queries.push("SELECT 'cts' as type, COUNT(*) as count FROM proxmox_cts WHERE node_id = " + nodeId + " AND status = 'running'");
+    }
+    if (isDocker) {
+      queries.push("SELECT 'containers' as type, COUNT(*) as count FROM docker_containers WHERE node_id = " + nodeId + " AND state = 'running'");
+    }
+
+    // Execute consolidated query
+    var sql = queries.join(' UNION ALL ');
+    var rows = getDb().prepare(sql).all();
+
+    // Parse results
+    var result = { vms_running: 0, cts_running: 0, containers_running: 0 };
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].type === 'vms') result.vms_running = rows[i].count;
+      else if (rows[i].type === 'cts') result.cts_running = rows[i].count;
+      else if (rows[i].type === 'containers') result.containers_running = rows[i].count;
+    }
+
+    return result;
+  },
+
+  /**
    * Get aggregated cluster history (all nodes averaged per time bucket)
    * @param {number} hours - Hours of history to fetch
    * @param {number} bucketMinutes - Time bucket size in minutes (default 5)
