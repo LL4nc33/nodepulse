@@ -69,7 +69,10 @@ ProxmoxPoller.prototype.poll = async function() {
     });
 
     if (result && result.stdout) {
+      console.log('[ProxmoxPoller] Raw stdout length:', result.stdout.length);
+      console.log('[ProxmoxPoller] Raw stdout (first 500 chars):', result.stdout.substring(0, 500));
       var data = this.parseOutput(result.stdout);
+      console.log('[ProxmoxPoller] Parsed CTs:', JSON.stringify(data.cts));
       if (data) {
         // Use syncFromPoller to add/remove/update VMs and CTs
         db.proxmox.syncFromPoller(this.nodeId, data);
