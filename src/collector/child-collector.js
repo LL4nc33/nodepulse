@@ -49,10 +49,6 @@ var CHILD_COMMANDS = {
   // Process info
   'process-count': 'ps aux 2>/dev/null | wc -l',
 
-  // Network info (basic)
-  'ip-addr': 'ip -4 addr show 2>/dev/null | grep inet | head -5',
-  'get-ip': 'hostname -I 2>/dev/null | awk \'{print $1}\' || ip -4 addr show 2>/dev/null | grep inet | grep -v 127.0.0.1 | head -1 | awk \'{print $2}\' | cut -d/ -f1',
-
   // Health check commands
   'systemctl-failed': 'systemctl --failed --no-pager 2>/dev/null | head -20',
   'reboot-required': 'test -f /var/run/reboot-required && echo "1" || echo "0"',
@@ -409,10 +405,113 @@ function getAvailableCommands() {
   return Object.keys(CHILD_COMMANDS);
 }
 
+/**
+ * Get guest IP address from Proxmox host (runs on host, not inside guest)
+ * More efficient than executing inside the guest
+ *
+ * For LXCs: Uses lxc-info which reads container config
+ * For VMs: Uses qm guest cmd which requires QEMU Guest Agent
+ *
+ * @param {Object} hostNode - Proxmox host node (with SSH credentials)
+ * @param {number|string} vmid - VM/CT ID (100-999999)
+ * @param {string} type - Guest type ('vm' or 'lxc')
+ * @returns {Promise<Object>} Result with ip address or error
+ */
+async function getGuestIpFromHost(hostNode, vmid, type) {
+  var validVmid = validateVmid(vmid);
+  var validType = validateType(type);
+
+  var cmd;
+  if (validType === 'lxc') {
+    // lxc-info runs on host, reads container network config
+    // -iH = IP only, no hostname/header
+    cmd = 'lxc-info -n ' + validVmid + ' -iH 2>/dev/null | grep -E "^[0-9]+\\." | head -1';
+  } else {
+    // qm guest cmd requires QEMU Guest Agent running in the VM
+    // Returns JSON with network interfaces
+    cmd = 'qm guest cmd ' + validVmid + ' network-get-interfaces 2>/dev/null';
+  }
+
+  try {
+    var result = await ssh.controlMaster.execute(hostNode, cmd, {
+      timeout: 10000,
+      silent: true
+    });
+
+    var ip = '';
+
+    if (validType === 'lxc') {
+      // lxc-info returns plain IP address
+      ip = (result.stdout || '').trim();
+    } else {
+      // qm guest cmd returns JSON array of interfaces
+      ip = parseVmNetworkInterfaces(result.stdout);
+    }
+
+    if (ip) {
+      return {
+        success: true,
+        ip: ip
+      };
+    }
+
+    return {
+      success: false,
+      error: validType === 'vm' ? 'No IPv4 found (QEMU Guest Agent running?)' : 'No IPv4 found'
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err.message
+    };
+  }
+}
+
+/**
+ * Parse VM network interfaces JSON from qm guest cmd
+ * Extracts first non-loopback IPv4 address
+ *
+ * @param {string} output - JSON output from qm guest cmd network-get-interfaces
+ * @returns {string} IPv4 address or empty string
+ */
+function parseVmNetworkInterfaces(output) {
+  if (!output || typeof output !== 'string') return '';
+
+  try {
+    var interfaces = JSON.parse(output);
+    if (!Array.isArray(interfaces)) return '';
+
+    // Search through all interfaces for first non-loopback IPv4
+    for (var i = 0; i < interfaces.length; i++) {
+      var iface = interfaces[i];
+      var addrs = iface['ip-addresses'];
+      if (!addrs || !Array.isArray(addrs)) continue;
+
+      for (var j = 0; j < addrs.length; j++) {
+        var addr = addrs[j];
+        if (addr['ip-address-type'] === 'ipv4') {
+          var ip = addr['ip-address'];
+          // Skip loopback
+          if (ip && ip.indexOf('127.') !== 0) {
+            return ip;
+          }
+        }
+      }
+    }
+
+    return '';
+  } catch (e) {
+    return '';
+  }
+}
+
 module.exports = {
   // Core execution
   execInChild: execInChild,
   execBatchInChild: execBatchInChild,
+
+  // IP retrieval (runs on host, not inside guest)
+  getGuestIpFromHost: getGuestIpFromHost,
 
   // Convenience methods
   collectDockerFromChild: collectDockerFromChild,

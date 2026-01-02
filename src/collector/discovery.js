@@ -65,9 +65,9 @@ async function runDiscoveryForChild(childNode) {
   console.log('[DISCOVERY] Running child discovery for ' + childNode.name +
               ' (' + childNode.guest_type + ' ' + childNode.guest_vmid + ') via ' + parent.name);
 
-  // Commands to run for discovery (including IP for guest_ip column)
+  // Commands to run for discovery (executed inside guest)
   var commands = ['hostname', 'os-release', 'uname', 'cpu-info', 'mem-info',
-                  'df', 'docker-check', 'systemd-check', 'kernel-version', 'get-ip'];
+                  'df', 'docker-check', 'systemd-check', 'kernel-version'];
 
   // Execute commands via pct/qm exec
   var batchResult = await childCollector.execBatchInChild(
@@ -89,12 +89,19 @@ async function runDiscoveryForChild(childNode) {
   // Save to database
   db.discovery.save(childNode.id, data);
 
-  // Extract and save guest IP (for display instead of host IP)
+  // Get guest IP from host (more efficient than executing inside guest)
+  // Uses lxc-info for LXCs, qm guest cmd for VMs
   var guestIp = null;
-  if (batchResult.results['get-ip'] && batchResult.results['get-ip'].success) {
-    var rawIp = batchResult.results['get-ip'].stdout.trim();
+  var ipResult = await childCollector.getGuestIpFromHost(
+    parent,
+    childNode.guest_vmid,
+    childNode.guest_type
+  );
+
+  if (ipResult.success && ipResult.ip) {
+    var rawIp = ipResult.ip;
     // Validate IP format before saving (security: prevent injection via SSH output)
-    if (rawIp && validators.isValidIP(rawIp)) {
+    if (validators.isValidIP(rawIp)) {
       guestIp = rawIp;
       try {
         db.nodes.setGuestIp(childNode.id, guestIp);
@@ -102,9 +109,11 @@ async function runDiscoveryForChild(childNode) {
       } catch (err) {
         console.error('[DISCOVERY] Failed to save guest_ip:', err.message);
       }
-    } else if (rawIp) {
+    } else {
       console.warn('[DISCOVERY] Invalid IP format for ' + childNode.name + ': ' + rawIp.substring(0, 50));
     }
+  } else if (ipResult.error) {
+    console.warn('[DISCOVERY] Could not get IP for ' + childNode.name + ': ' + ipResult.error);
   }
 
   // Update node online status
