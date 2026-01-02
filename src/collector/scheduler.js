@@ -9,6 +9,7 @@ const CircuitBreaker = require('../lib/circuit-breaker');
 const ProxmoxPoller = require('./proxmox-poller');
 const DiscoveryOrchestrator = require('./discovery-orchestrator');
 const ChildPoller = require('./child-poller');
+const discovery = require('./discovery');
 
 // Proxmox pollers (nodeId -> ProxmoxPoller)
 const proxmoxPollers = new Map();
@@ -16,6 +17,10 @@ const proxmoxPollers = new Map();
 // Discovery sync timer
 let discoverySyncTimer = null;
 const DISCOVERY_SYNC_INTERVAL = 120000;  // 2 minutes
+
+// Child discovery timer (runs discovery on child nodes to get guest_ip)
+let childDiscoveryTimer = null;
+const CHILD_DISCOVERY_INTERVAL = 300000;  // 5 minutes
 
 // Track collection state
 let isRunning = false;
@@ -203,6 +208,9 @@ function start() {
 
   // Start Child Pollers (Docker data from VMs/LXCs)
   startChildPollers();
+
+  // Start child discovery (to collect guest_ip for VMs/LXCs)
+  startChildDiscovery();
 }
 
 /**
@@ -271,6 +279,71 @@ function startChildPollers() {
 }
 
 /**
+ * Run discovery on child nodes to collect guest_ip
+ * Only runs on children that are online and missing guest_ip
+ */
+async function runChildDiscovery() {
+  try {
+    var nodes = db.nodes.getAll();
+
+    // Find child nodes that need discovery (missing guest_ip, online, have guest_type)
+    var childrenNeedingDiscovery = nodes.filter(function(n) {
+      return n.guest_type &&          // Is a child node (VM or LXC)
+             n.guest_vmid &&          // Has VMID
+             n.online === 1 &&        // Is online
+             !n.guest_ip &&           // Missing guest_ip
+             n.monitoring_enabled;    // Monitoring enabled
+    });
+
+    if (childrenNeedingDiscovery.length === 0) {
+      return;
+    }
+
+    console.log('[SCHEDULER] Running child discovery for ' + childrenNeedingDiscovery.length + ' children');
+
+    // Process one at a time to avoid overwhelming the system
+    for (var i = 0; i < childrenNeedingDiscovery.length; i++) {
+      var child = childrenNeedingDiscovery[i];
+
+      try {
+        // Circuit breaker check
+        if (!CircuitBreaker.canExecute(child.id)) {
+          continue;
+        }
+
+        await discovery.runDiscoveryForChild(child);
+        CircuitBreaker.recordSuccess(child.id);
+        console.log('[SCHEDULER] Child discovery complete for ' + child.name);
+      } catch (err) {
+        CircuitBreaker.recordFailure(child.id);
+        console.error('[SCHEDULER] Child discovery failed for ' + child.name + ':', err.message);
+      }
+
+      // Small delay between discoveries
+      await new Promise(function(resolve) { setTimeout(resolve, 1000); });
+    }
+  } catch (err) {
+    console.error('[SCHEDULER] runChildDiscovery failed:', err.message);
+  }
+}
+
+/**
+ * Start child discovery scheduler
+ * Runs discovery on child nodes to collect guest_ip
+ */
+function startChildDiscovery() {
+  // Initial run after everything else is set up
+  setTimeout(function() {
+    runChildDiscovery();
+  }, 20000);  // 20 seconds after start
+
+  // Periodic run
+  childDiscoveryTimer = setInterval(function() {
+    runChildDiscovery();
+  }, CHILD_DISCOVERY_INTERVAL);
+}
+
+/**
  * Stop the background collector
  */
 function stop() {
@@ -308,6 +381,12 @@ function stop() {
 
   // Stop all Child Pollers
   ChildPoller.stopAll();
+
+  // Stop child discovery timer
+  if (childDiscoveryTimer) {
+    clearInterval(childDiscoveryTimer);
+    childDiscoveryTimer = null;
+  }
 }
 
 /**
