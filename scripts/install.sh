@@ -1,94 +1,228 @@
 #!/bin/bash
 #
-# nodepulse - One-Shot Installer für Raspberry Pi
-# Verwendung: curl -fsSL https://raw.githubusercontent.com/LL4nc33/nodepulse/main/scripts/install.sh | bash
+# NodePulse Installer
+#
+# Verwendung:
+#   Lokal:     ./scripts/install.sh
+#   Remote:    curl -fsSL https://raw.githubusercontent.com/LL4nc33/nodepulse/main/scripts/install.sh | bash
 #
 
 set -e
 
-echo "╔═══════════════════════════════════════╗"
-echo "║       nodepulse Installer             ║"
-echo "╚═══════════════════════════════════════╝"
-echo ""
-
-# Farben
+# Colors
+RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
-INSTALL_DIR="$HOME/nodepulse"
+echo -e "${CYAN}"
+echo "╔═══════════════════════════════════════╗"
+echo "║        NodePulse Installer            ║"
+echo "╚═══════════════════════════════════════╝"
+echo -e "${NC}"
 
-# Node.js prüfen
+# Determine install directory
+if [ -f "package.json" ] && grep -q '"name": "nodepulse"' package.json 2>/dev/null; then
+    # Running from within nodepulse directory
+    INSTALL_DIR="$(pwd)"
+    CLONE_REPO=false
+else
+    # Running standalone (curl | bash)
+    INSTALL_DIR="$HOME/nodepulse"
+    CLONE_REPO=true
+fi
+
+echo "Install directory: $INSTALL_DIR"
+echo ""
+
+# =============================================================================
+# Prerequisites Check
+# =============================================================================
+
+echo -e "${YELLOW}Checking prerequisites...${NC}"
+echo ""
+
+# Check/Install Node.js
 if ! command -v node &> /dev/null; then
-    echo -e "${YELLOW}Node.js nicht gefunden. Installiere Node.js 20.x...${NC}"
+    echo -e "${YELLOW}Node.js not found. Installing Node.js 20.x...${NC}"
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt-get install -y nodejs
 fi
 
-NODE_VERSION=$(node -v)
-echo -e "${GREEN}✓${NC} Node.js $NODE_VERSION"
+NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+if [ "$NODE_VERSION" -lt 18 ]; then
+    echo -e "${RED}✗ Node.js version too old (v$NODE_VERSION)${NC}"
+    echo "  NodePulse requires Node.js 18+"
+    echo "  Run: curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -"
+    exit 1
+fi
+echo -e "${GREEN}✓ Node.js $(node -v)${NC}"
 
-# Repository klonen oder updaten
-if [ -d "$INSTALL_DIR" ]; then
-    echo "Aktualisiere nodepulse..."
-    cd "$INSTALL_DIR"
-    git pull
-else
-    echo "Klone nodepulse..."
-    git clone https://github.com/LL4nc33/nodepulse.git "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
+# Check npm
+if ! command -v npm &> /dev/null; then
+    echo -e "${RED}✗ npm not found${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ npm $(npm -v)${NC}"
+
+# Check git (only if we need to clone)
+if [ "$CLONE_REPO" = true ]; then
+    if ! command -v git &> /dev/null; then
+        echo -e "${YELLOW}Installing git...${NC}"
+        sudo apt-get install -y git
+    fi
+    echo -e "${GREEN}✓ git $(git --version | cut -d' ' -f3)${NC}"
 fi
 
-# Dependencies installieren
-echo "Installiere Abhängigkeiten..."
-npm install --production
+echo ""
 
-# .env erstellen falls nicht vorhanden
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo -e "${GREEN}✓${NC} .env erstellt"
+# =============================================================================
+# Installation Options
+# =============================================================================
+
+echo -e "${YELLOW}Installation options:${NC}"
+echo ""
+echo "  1) Full install (clone/update + deps + systemd)"
+echo "  2) Dependencies only (npm install)"
+echo "  3) Service only (systemd setup)"
+echo "  4) Cancel"
+echo ""
+read -p "Choose [1-4]: " choice
+
+case $choice in
+    1) DO_CLONE=true; DO_DEPS=true; DO_SERVICE=true ;;
+    2) DO_CLONE=false; DO_DEPS=true; DO_SERVICE=false ;;
+    3) DO_CLONE=false; DO_DEPS=false; DO_SERVICE=true ;;
+    4) echo "Cancelled."; exit 0 ;;
+    *) echo "Invalid choice."; exit 1 ;;
+esac
+
+echo ""
+
+# =============================================================================
+# Clone/Update Repository
+# =============================================================================
+
+if [ "$DO_CLONE" = true ] && [ "$CLONE_REPO" = true ]; then
+    if [ -d "$INSTALL_DIR" ]; then
+        echo -e "${YELLOW}Updating NodePulse...${NC}"
+        cd "$INSTALL_DIR"
+        git pull
+        echo -e "${GREEN}✓ Repository updated${NC}"
+    else
+        echo -e "${YELLOW}Cloning NodePulse...${NC}"
+        git clone https://github.com/LL4nc33/nodepulse.git "$INSTALL_DIR"
+        cd "$INSTALL_DIR"
+        echo -e "${GREEN}✓ Repository cloned${NC}"
+    fi
+    echo ""
 fi
 
-# systemd Service installieren
-echo "Richte systemd Service ein..."
-sudo tee /etc/systemd/system/nodepulse.service > /dev/null <<EOF
+cd "$INSTALL_DIR"
+
+# =============================================================================
+# Install Dependencies
+# =============================================================================
+
+if [ "$DO_DEPS" = true ]; then
+    echo -e "${YELLOW}Installing dependencies...${NC}"
+    npm install --production
+    echo -e "${GREEN}✓ Dependencies installed${NC}"
+    echo ""
+fi
+
+# =============================================================================
+# Create Data Directory
+# =============================================================================
+
+mkdir -p "$INSTALL_DIR/data"
+
+# =============================================================================
+# Setup Systemd Service
+# =============================================================================
+
+if [ "$DO_SERVICE" = true ]; then
+    echo -e "${YELLOW}Setting up systemd service...${NC}"
+
+    # Port configuration
+    read -p "Port [3000]: " PORT
+    PORT=${PORT:-3000}
+
+    # Create service file
+    sudo tee /etc/systemd/system/nodepulse.service > /dev/null <<EOF
 [Unit]
-Description=nodepulse Dashboard
+Description=NodePulse - Homelab Dashboard
+Documentation=https://github.com/LL4nc33/nodepulse
 After=network.target
 
 [Service]
 Type=simple
 User=$USER
+Group=$USER
 WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/node src/index.js
+ExecStart=$(which node) src/index.js
 Restart=on-failure
 RestartSec=10
+
+# Environment
 Environment=NODE_ENV=production
+Environment=PORT=$PORT
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=$INSTALL_DIR/data
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# Service aktivieren und starten
-sudo systemctl daemon-reload
-sudo systemctl enable nodepulse
-sudo systemctl restart nodepulse
+    echo -e "${GREEN}✓ Service file created${NC}"
 
-# IP-Adresse ermitteln
-IP=$(hostname -I | awk '{print $1}')
+    # Reload and enable
+    sudo systemctl daemon-reload
+    sudo systemctl enable nodepulse
+    echo -e "${GREEN}✓ Service enabled${NC}"
+
+    # Start service
+    read -p "Start NodePulse now? [Y/n]: " START_NOW
+    START_NOW=${START_NOW:-Y}
+
+    if [[ "$START_NOW" =~ ^[Yy]$ ]]; then
+        sudo systemctl restart nodepulse
+        sleep 2
+
+        if systemctl is-active --quiet nodepulse; then
+            echo -e "${GREEN}✓ NodePulse started${NC}"
+        else
+            echo -e "${RED}✗ Failed to start${NC}"
+            echo "  Check: journalctl -u nodepulse -f"
+            exit 1
+        fi
+    fi
+fi
+
+# =============================================================================
+# Done
+# =============================================================================
+
+IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+HOSTNAME=$(hostname)
 
 echo ""
-echo "╔═══════════════════════════════════════╗"
-echo "║       Installation abgeschlossen!     ║"
-echo "╚═══════════════════════════════════════╝"
+echo -e "${GREEN}╔═══════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║     Installation Complete!            ║${NC}"
+echo -e "${GREEN}╚═══════════════════════════════════════╝${NC}"
 echo ""
-echo -e "${GREEN}✓${NC} nodepulse läuft jetzt als Service"
+echo -e "  ${CYAN}Access NodePulse:${NC}"
+echo "    http://${HOSTNAME}:${PORT:-3000}/"
+[ -n "$IP" ] && echo "    http://${IP}:${PORT:-3000}/"
 echo ""
-echo "Dashboard öffnen:"
-echo -e "  ${GREEN}http://$IP:3000${NC}"
-echo ""
-echo "Service-Befehle:"
-echo "  sudo systemctl status nodepulse"
-echo "  sudo systemctl restart nodepulse"
-echo "  journalctl -u nodepulse -f"
+echo -e "  ${CYAN}Commands:${NC}"
+echo "    sudo systemctl status nodepulse"
+echo "    sudo systemctl restart nodepulse"
+echo "    journalctl -u nodepulse -f"
 echo ""
