@@ -248,6 +248,39 @@ router.post('/command', asyncHandler(async function(req, res) {
 }));
 
 /**
+ * POST /api/nodes/:nodeId/agent/enable-debug
+ * Debug route: Enable agent without SSH installation
+ * FOR TESTING ONLY - Returns API key for manual agent configuration
+ */
+router.post('/enable-debug', asyncHandler(async function(req, res) {
+  var nodeId = parseInt(req.params.nodeId, 10);
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungueltige Node-ID' });
+  }
+
+  var node = db.nodes.getById(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Generate API key and enable agent (without SSH installation)
+  var apiKey = db.agents.enable(nodeId);
+  console.log('[API] Debug: Agent enabled for node ' + nodeId + ' with API key: ' + apiKey.substring(0, 8) + '...');
+
+  apiResponse(res, 200, {
+    message: 'Agent aktiviert (Debug-Modus)',
+    api_key: apiKey,
+    config: {
+      server_url: 'ws://127.0.0.1:3000/agent',
+      api_key: apiKey,
+      node_id: nodeId,
+      push_interval: 5,
+      log_level: 'debug'
+    }
+  });
+}));
+
+/**
  * GET /api/nodes/:nodeId/agent/detect-arch
  * Detect architecture of remote node (for manual binary selection)
  */
