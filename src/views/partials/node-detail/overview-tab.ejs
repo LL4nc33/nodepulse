@@ -220,7 +220,7 @@
       <div class="hero-metric-details">
         <span class="hero-metric-connection">
           <span class="status-dot <%= node.online ? 'online' : 'offline' %>"></span>
-          <span class="mono"><%= node.host %>:<%= node.ssh_port %></span>
+          <span class="mono"><%= node.guest_ip || node.host %>:<%= node.ssh_port %></span>
           <span class="hero-metric-subtext"><%= node.ssh_user %>@</span>
         </span>
       </div>

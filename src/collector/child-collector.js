@@ -51,6 +51,7 @@ var CHILD_COMMANDS = {
 
   // Network info (basic)
   'ip-addr': 'ip -4 addr show 2>/dev/null | grep inet | head -5',
+  'get-ip': 'hostname -I 2>/dev/null | awk \'{print $1}\' || ip -4 addr show 2>/dev/null | grep inet | grep -v 127.0.0.1 | head -1 | awk \'{print $2}\' | cut -d/ -f1',
 
   // Health check commands
   'systemctl-failed': 'systemctl --failed --no-pager 2>/dev/null | head -20',

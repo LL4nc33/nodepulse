@@ -358,6 +358,24 @@ async function init() {
       throw err;
     }
 
+    // Migration 13: Guest IP column for child nodes
+    // Stores the real IP address of VMs/LXCs (vs host column which points to parent)
+    try {
+      const nodeCols = db.prepare("PRAGMA table_info(nodes)").all();
+      const hasGuestIp = nodeCols.some(col => col.name === 'guest_ip');
+
+      if (!hasGuestIp) {
+        db.exec('ALTER TABLE nodes ADD COLUMN guest_ip TEXT');
+        console.log('[DB] Migration: Added guest_ip column');
+      }
+
+      // Add index for guest_ip lookups (idempotent)
+      db.exec('CREATE INDEX IF NOT EXISTS idx_nodes_guest_ip ON nodes(guest_ip)');
+    } catch (err) {
+      console.error('[DB] Migration error (guest_ip):', err.message);
+      // Don't throw - app can function without this column
+    }
+
     // Run seed data
     const seedPath = path.join(__dirname, 'seed.sql');
     const seed = fs.readFileSync(seedPath, 'utf8');

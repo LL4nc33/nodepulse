@@ -32,6 +32,37 @@ var CHILD_TIMEOUT = 5000;  // 5 seconds per child
 var MAX_BATCH_TIMEOUT = 30000;  // 30 seconds total
 
 /**
+ * Parse Docker size string to bytes
+ * Handles formats: "1.2GB", "500MB", "100KB", "50B"
+ * @param {string} sizeStr - Size string from docker (e.g., "1.2GB")
+ * @returns {number} Size in bytes
+ */
+function parseSizeToBytes(sizeStr) {
+  if (!sizeStr || typeof sizeStr !== 'string') return 0;
+
+  var match = sizeStr.match(/^([\d.]+)\s*([KMGT]?B)/i);
+  if (!match) return 0;
+
+  var num = parseFloat(match[1]);
+  var unit = match[2].toUpperCase();
+
+  if (isNaN(num)) return 0;
+
+  switch (unit) {
+    case 'GB':
+      return Math.round(num * 1073741824);  // 1024^3
+    case 'MB':
+      return Math.round(num * 1048576);     // 1024^2
+    case 'KB':
+      return Math.round(num * 1024);
+    case 'B':
+      return Math.round(num);
+    default:
+      return 0;
+  }
+}
+
+/**
  * ChildPoller - Polls Docker data from all child nodes of a Proxmox host
  * @param {number} hostNodeId - Proxmox host node ID
  * @param {Object} options - Poller options
@@ -167,12 +198,21 @@ ChildPoller.prototype.pollBatched = async function(hostNode, children) {
       ? 'pct exec ' + child.guest_vmid + ' --'
       : 'qm guest exec ' + child.guest_vmid + ' --';
 
-    // Collect docker ps with timeout
-    // Use timeout command to limit per-child execution time
-    var dockerCmd = 'docker ps -a --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.State}}" 2>/dev/null';
+    // Collect all Docker data (containers, images, volumes, networks)
+    // Uses section markers for parsing
+    var dockerScript = [
+      'echo "CONTAINERS"',
+      'docker ps -a --format "{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.State}}" 2>/dev/null',
+      'echo "IMAGES"',
+      'docker images --format "{{.ID}}|{{.Repository}}|{{.Tag}}|{{.Size}}" 2>/dev/null',
+      'echo "VOLUMES"',
+      'docker volume ls --format "{{.Name}}|{{.Driver}}" 2>/dev/null',
+      'echo "NETWORKS"',
+      'docker network ls --format "{{.ID}}|{{.Name}}|{{.Driver}}" 2>/dev/null'
+    ].join('; ');
 
     return 'echo "---CHILD:' + child.id + '---"; ' +
-           'timeout ' + Math.floor(CHILD_TIMEOUT / 1000) + ' ' + execPrefix + ' sh -c \'' + dockerCmd + '\' 2>/dev/null || echo "CHILD_ERROR"';
+           'timeout ' + Math.floor(CHILD_TIMEOUT / 1000) + ' ' + execPrefix + ' sh -c \'' + dockerScript + '\' 2>/dev/null || echo "CHILD_ERROR"';
   });
 
   var batchScript = scriptParts.join('; ');
@@ -195,11 +235,15 @@ ChildPoller.prototype.pollBatched = async function(hostNode, children) {
       var output = (sections[i + 1] || '').trim();
 
       if (output === 'CHILD_ERROR' || !output) {
-        results[childId] = { success: false, containers: [], error: 'Command failed or timeout' };
+        results[childId] = { success: false, containers: [], images: [], volumes: [], networks: [], error: 'Command failed or timeout' };
       } else {
+        var dockerData = this.parseDockerOutput(output);
         results[childId] = {
           success: true,
-          containers: this.parseDockerOutput(output)
+          containers: dockerData.containers,
+          images: dockerData.images,
+          volumes: dockerData.volumes,
+          networks: dockerData.networks
         };
       }
     }
@@ -207,7 +251,7 @@ ChildPoller.prototype.pollBatched = async function(hostNode, children) {
     console.error('[ChildPoller] Batch poll failed:', err.message);
     // Mark all children as failed
     children.forEach(function(child) {
-      results[child.id] = { success: false, containers: [], error: err.message };
+      results[child.id] = { success: false, containers: [], images: [], volumes: [], networks: [], error: err.message };
     });
   }
 
@@ -215,31 +259,68 @@ ChildPoller.prototype.pollBatched = async function(hostNode, children) {
 };
 
 /**
- * Parse docker ps output into container objects
- * @param {string} output - Docker ps output (pipe-delimited)
- * @returns {Array} Container objects
+ * Parse Docker output with section markers
+ * Parses containers, images, volumes, and networks
+ * @param {string} output - Docker output with section markers
+ * @returns {Object} Object with containers, images, volumes, networks arrays
  */
 ChildPoller.prototype.parseDockerOutput = function(output) {
-  var containers = [];
+  var result = {
+    containers: [],
+    images: [],
+    volumes: [],
+    networks: []
+  };
 
-  if (!output) return containers;
+  if (!output) return result;
 
-  var lines = output.split('\n').filter(function(l) { return l.trim(); });
+  var section = '';
+  var lines = output.split('\n');
 
   for (var i = 0; i < lines.length; i++) {
-    var parts = lines[i].split('|');
-    if (parts.length >= 5) {
-      containers.push({
+    var line = lines[i].trim();
+    if (!line) continue;
+
+    // Section markers
+    if (line === 'CONTAINERS') { section = 'containers'; continue; }
+    if (line === 'IMAGES') { section = 'images'; continue; }
+    if (line === 'VOLUMES') { section = 'volumes'; continue; }
+    if (line === 'NETWORKS') { section = 'networks'; continue; }
+
+    var parts = line.split('|');
+
+    // Parse based on current section
+    if (section === 'containers' && parts.length >= 5) {
+      result.containers.push({
         id: parts[0],
         name: parts[1],
         image: parts[2],
         status: parts[3],
         state: parts[4]
       });
+    } else if (section === 'images' && parts.length >= 4) {
+      result.images.push({
+        id: parts[0],
+        repository: parts[1],
+        tag: parts[2],
+        size: parts[3],
+        size_bytes: parseSizeToBytes(parts[3])
+      });
+    } else if (section === 'volumes' && parts.length >= 2) {
+      result.volumes.push({
+        name: parts[0],
+        driver: parts[1]
+      });
+    } else if (section === 'networks' && parts.length >= 3) {
+      result.networks.push({
+        id: parts[0],
+        name: parts[1],
+        driver: parts[2]
+      });
     }
   }
 
-  return containers;
+  return result;
 };
 
 /**
@@ -259,10 +340,8 @@ ChildPoller.prototype.processResults = function(children, results) {
       // Record success in circuit breaker
       CircuitBreaker.recordSuccess(child.id);
 
-      // Save containers to database
-      if (result.containers.length > 0) {
-        self.saveContainers(child.id, result.containers);
-      }
+      // Always save Docker data (even empty - removes stale data)
+      self.saveDockerData(child.id, result);
     } else {
       // Record failure in circuit breaker
       CircuitBreaker.recordFailure(child.id);
@@ -271,21 +350,24 @@ ChildPoller.prototype.processResults = function(children, results) {
 };
 
 /**
- * Save containers to database
- * TODO: Implement bulk save when db.docker supports it
+ * Save all Docker data to database
+ * Uses db.docker.saveAll() for efficient bulk save
  *
  * @param {number} nodeId - Child node ID
- * @param {Array} containers - Container objects
+ * @param {Object} dockerData - Object with containers, images, volumes, networks arrays
  */
-ChildPoller.prototype.saveContainers = function(nodeId, containers) {
-  // For now, use existing docker save if available
-  // In future: implement bulk save for efficiency
+ChildPoller.prototype.saveDockerData = function(nodeId, dockerData) {
   try {
-    if (db.docker && db.docker.saveContainers) {
-      db.docker.saveContainers(nodeId, containers);
+    if (db.docker && db.docker.saveAll) {
+      db.docker.saveAll(nodeId, {
+        containers: dockerData.containers || [],
+        images: dockerData.images || [],
+        volumes: dockerData.volumes || [],
+        networks: dockerData.networks || []
+      });
     }
   } catch (err) {
-    console.error('[ChildPoller] Failed to save containers for node ' + nodeId + ':', err.message);
+    console.error('[ChildPoller] Failed to save Docker data for node ' + nodeId + ':', err.message);
   }
 };
 

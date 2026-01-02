@@ -272,9 +272,9 @@
                   <%= node.aggregate.total_nodes %> nodes)
                 </span>
               <% } %>
-              <span class="node-list-host-mobile"><%= node.host %></span>
+              <span class="node-list-host-mobile"><%= node.guest_ip || node.host %></span>
             </div>
-            <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-host"><%= node.guest_ip || node.host %></div>
             <div class="node-list-uptime">
               <% if (node.online && stats.uptime_seconds) {
                 var uptimeDays = Math.floor(stats.uptime_seconds / 86400);
@@ -410,9 +410,9 @@
             </div>
             <div class="node-list-name">
               <a href="/nodes/<%= node.id %>"><%= node.name %></a>
-              <span class="node-list-host-mobile"><%= node.host %></span>
+              <span class="node-list-host-mobile"><%= node.guest_ip || node.host %></span>
             </div>
-            <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-host"><%= node.guest_ip || node.host %></div>
             <div class="node-list-uptime">
               <% if (node.online && stats.uptime_seconds) {
                 var uptimeDays = Math.floor(stats.uptime_seconds / 86400);
@@ -525,9 +525,9 @@
             </div>
             <div class="node-list-name">
               <a href="/nodes/<%= node.id %>"><%= node.name %></a>
-              <span class="node-list-host-mobile"><%= node.host %></span>
+              <span class="node-list-host-mobile"><%= node.guest_ip || node.host %></span>
             </div>
-            <div class="node-list-host"><%= node.host %></div>
+            <div class="node-list-host"><%= node.guest_ip || node.host %></div>
             <div class="node-list-uptime">
               <% if (node.online && stats.uptime_seconds) {
                 var uptimeDays = Math.floor(stats.uptime_seconds / 86400);

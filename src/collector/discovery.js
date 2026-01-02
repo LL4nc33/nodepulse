@@ -64,9 +64,9 @@ async function runDiscoveryForChild(childNode) {
   console.log('[DISCOVERY] Running child discovery for ' + childNode.name +
               ' (' + childNode.guest_type + ' ' + childNode.guest_vmid + ') via ' + parent.name);
 
-  // Commands to run for discovery
+  // Commands to run for discovery (including IP for guest_ip column)
   var commands = ['hostname', 'os-release', 'uname', 'cpu-info', 'mem-info',
-                  'df', 'docker-check', 'systemd-check', 'kernel-version'];
+                  'df', 'docker-check', 'systemd-check', 'kernel-version', 'get-ip'];
 
   // Execute commands via pct/qm exec
   var batchResult = await childCollector.execBatchInChild(
@@ -88,11 +88,26 @@ async function runDiscoveryForChild(childNode) {
   // Save to database
   db.discovery.save(childNode.id, data);
 
+  // Extract and save guest IP (for display instead of host IP)
+  var guestIp = null;
+  if (batchResult.results['get-ip'] && batchResult.results['get-ip'].success) {
+    guestIp = batchResult.results['get-ip'].stdout.trim();
+    if (guestIp) {
+      // Update node with guest_ip via proper entity method
+      try {
+        db.nodes.setGuestIp(childNode.id, guestIp);
+        console.log('[DISCOVERY] Set guest_ip for ' + childNode.name + ': ' + guestIp);
+      } catch (err) {
+        console.error('[DISCOVERY] Failed to save guest_ip:', err.message);
+      }
+    }
+  }
+
   // Update node online status
   db.nodes.setOnline(childNode.id, true);
 
   console.log('[DISCOVERY] Child discovery complete for ' + childNode.name +
-              ': hostname=' + data.hostname + ', docker=' + data.has_docker);
+              ': hostname=' + data.hostname + ', docker=' + data.has_docker + ', ip=' + (guestIp || 'n/a'));
 
   return data;
 }

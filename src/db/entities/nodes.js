@@ -14,7 +14,7 @@ const NODE_SAFE_COLUMNS = `
   n.monitoring_enabled, n.monitoring_interval,
   n.online, n.last_seen, n.last_error, n.notes,
   n.parent_id, n.auto_discovered_from,
-  n.guest_vmid, n.guest_type,
+  n.guest_vmid, n.guest_type, n.guest_ip,
   (n.ssh_password IS NOT NULL AND n.ssh_password != '') as has_ssh_password,
   (n.ssh_key_path IS NOT NULL AND n.ssh_key_path != '') as has_ssh_key,
   n.created_at, n.updated_at
@@ -179,6 +179,17 @@ const nodes = {
     return stmt.run(nodeType, id);
   },
 
+  /**
+   * Update guest IP for child nodes (VMs/LXCs)
+   * Sets the real IP address of the guest for display purposes
+   * @param {number} id - Node ID
+   * @param {string} guestIp - IP address of the VM/LXC
+   */
+  setGuestIp(id, guestIp) {
+    const stmt = getDb().prepare('UPDATE nodes SET guest_ip = ? WHERE id = ?');
+    return stmt.run(guestIp, id);
+  },
+
   // =====================================================
   // Node Hierarchy Methods
   // =====================================================
@@ -332,10 +343,12 @@ const nodes = {
       FROM nodes n
       LEFT JOIN node_tags nt ON n.id = nt.node_id
       LEFT JOIN tags t ON nt.tag_id = t.id
-      WHERE n.auto_discovered_from = ? AND n.guest_vmid = ? AND n.guest_type = ?
+      WHERE (n.auto_discovered_from = ? OR n.parent_id = ?)
+        AND n.guest_vmid = ?
+        AND n.guest_type = ?
       GROUP BY n.id
     `);
-    return stmt.get(parentId, vmid, type);
+    return stmt.get(parentId, parentId, vmid, type);
   },
 
   /**

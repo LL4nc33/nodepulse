@@ -30,7 +30,7 @@
                         aria-label="<%= node.online ? 'Online' : 'Offline' %>"></span>
                 </td>
                 <td><a href="/nodes/<%= node.id %>"><%= node.name %></a></td>
-                <td><%= node.host %>:<%= node.ssh_port %></td>
+                <td><%= node.guest_ip || node.host %>:<%= node.ssh_port %></td>
                 <td><%= node.node_type || '-' %></td>
                 <td><%= node.last_seen || 'Nie' %></td>
                 <td>

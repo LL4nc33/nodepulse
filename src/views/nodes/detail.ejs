@@ -36,7 +36,7 @@
           <a href="/nodes/<%= parentNode.id %>"><%= parentNode.name %></a>
         </span>
       <% } else { %>
-        <span class="mono"><%= node.ssh_user %>@<%= node.host %>:<%= node.ssh_port %></span>
+        <span class="mono"><%= node.ssh_user %>@<%= node.guest_ip || node.host %>:<%= node.ssh_port %></span>
       <% } %>
       <% if (node.guest_type) { %>
         <span class="node-type-badge guest-badge <%= node.guest_type %>"><%= node.guest_type.toUpperCase() %></span>
