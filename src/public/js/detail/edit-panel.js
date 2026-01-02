@@ -71,7 +71,9 @@ function saveNode(event) {
   var nodeId = pathParts[pathParts.length - 1];
 
   if (!nodeId || isNaN(nodeId)) {
-    NP.toast('Fehler: Node-ID nicht gefunden', 'error');
+    if (window.NP && window.NP.Toast) {
+      window.NP.Toast.show('Fehler: Node-ID nicht gefunden', 'error');
+    }
     return;
   }
 
@@ -100,9 +102,11 @@ function saveNode(event) {
   }
 
   // API call
-  NP.API.put('/api/nodes/' + nodeId, data)
+  window.NP.API.put('/api/nodes/' + nodeId, data)
     .then(function(result) {
-      NP.toast('Node gespeichert', 'success');
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Node gespeichert', 'success');
+      }
       closeEditPanel();
 
       // Update page header with new values
@@ -115,7 +119,9 @@ function saveNode(event) {
       }
     })
     .catch(function(error) {
-      NP.toast('Fehler: ' + error.message, 'error');
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Fehler: ' + error.message, 'error');
+      }
 
       // Reset button
       if (submitBtn) {
@@ -182,18 +188,24 @@ function deleteNode(nodeId, nodeName) {
   // Double confirmation for safety
   var doubleConfirm = prompt('Zur Bestaetigung den Node-Namen eingeben:', '');
   if (doubleConfirm !== nodeName) {
-    NP.toast('Loeschen abgebrochen - Name stimmte nicht ueberein', 'warning');
+    if (window.NP && window.NP.Toast) {
+      window.NP.Toast.show('Loeschen abgebrochen - Name stimmte nicht ueberein', 'warning');
+    }
     return;
   }
 
-  NP.API.delete('/api/nodes/' + nodeId)
+  window.NP.API.delete('/api/nodes/' + nodeId)
     .then(function() {
-      NP.toast('Node geloescht', 'success');
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Node geloescht', 'success');
+      }
       // Redirect to nodes list
       window.location.href = '/nodes';
     })
     .catch(function(error) {
-      NP.toast('Fehler beim Loeschen: ' + error.message, 'error');
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Fehler beim Loeschen: ' + error.message, 'error');
+      }
     });
 }
 
