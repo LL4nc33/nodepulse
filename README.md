@@ -49,13 +49,35 @@ Ein leichtgewichtiges Homelab Dashboard zur Verwaltung von Servern, Proxmox-Host
 
 ---
 
-## Quick Install
+## Installation
+
+### Quick Install (empfohlen)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/LL4nc33/nodepulse/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/LL4nc33/nodepulse/main/scripts/install.sh -o /tmp/np-install.sh && bash /tmp/np-install.sh
 ```
 
-Danach: `http://<ip>:3000`
+Der Installer:
+- Installiert Node.js falls nicht vorhanden
+- Klont das Repository
+- Installiert Dependencies
+- Richtet systemd Service ein
+- Startet NodePulse automatisch
+
+**Auto-Mode** (ohne Fragen, Port 3000):
+```bash
+bash /tmp/np-install.sh --auto
+```
+
+Danach erreichbar unter: `http://<ip>:3000`
+
+### Update
+
+```bash
+cd ~/nodepulse && ./scripts/install.sh
+```
+
+Wähle Option 1 für vollständiges Update (git pull + npm install + service restart).
 
 ### Manuell
 
@@ -65,25 +87,32 @@ cd nodepulse && npm install
 npm start
 ```
 
-### Als systemd Service (empfohlen)
+### Service-Befehle
 
-Nach der Installation einmalig ausführen:
-
-```bash
-curl -sL https://raw.githubusercontent.com/LL4nc33/nodepulse/main/scripts/setup-service.sh | sudo bash
-```
-
-Das Script:
-- Erstellt einen systemd Service
-- Aktiviert Autostart beim Boot
-- Startet nodepulse im Hintergrund
-
-**Service-Befehle:**
 ```bash
 sudo systemctl status nodepulse   # Status anzeigen
 sudo systemctl restart nodepulse  # Neustarten
 sudo systemctl stop nodepulse     # Stoppen
 journalctl -u nodepulse -f        # Logs anzeigen
+```
+
+---
+
+## Deinstallation
+
+```bash
+cd ~/nodepulse && ./scripts/uninstall.sh
+```
+
+Optionen:
+1. **Data only** - Löscht nur Datenbank (Fresh Start)
+2. **Service only** - Entfernt systemd Service
+3. **Data + Service** - Beides, behält Code
+4. **Everything** - Komplette Entfernung
+
+**Auto-Mode** (komplette Entfernung ohne Fragen):
+```bash
+./scripts/uninstall.sh --auto
 ```
 
 ---
