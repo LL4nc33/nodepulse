@@ -173,15 +173,111 @@ function updateNode(nodeId, data) {
 }
 
 /**
- * Delete a node
+ * Delete a node with proper child handling
+ * Implements Delete-Strategy per Petra's Architecture Review
+ *
  * @param {number} nodeId - Node ID
+ * @param {Object} options - Delete options
+ * @param {boolean} options.cascade - If true, recursively delete children
+ *                                    If false (default), children become root nodes
+ * @returns {Object} Delete result with counts
  */
-function deleteNode(nodeId) {
-  // Stop monitoring if running
-  collector.stopTieredMonitoring(nodeId);
+function deleteNode(nodeId, options) {
+  options = options || {};
+  var result = {
+    deleted: 0,
+    orphaned: 0,
+    errors: []
+  };
 
-  // Delete from database (cascades to related tables)
-  db.nodes.delete(nodeId);
+  // Get node info for logging
+  var node = db.nodes.getById(nodeId);
+  if (!node) {
+    return { deleted: 0, orphaned: 0, errors: ['Node not found'] };
+  }
+
+  // Get children before deleting
+  var children = db.nodes.getChildren(nodeId);
+
+  // Handle children based on cascade option
+  if (options.cascade && children.length > 0) {
+    // Recursive delete: delete all children first (depth-first)
+    for (var i = 0; i < children.length; i++) {
+      try {
+        var childResult = deleteNode(children[i].id, { cascade: true });
+        result.deleted += childResult.deleted;
+        result.errors = result.errors.concat(childResult.errors);
+      } catch (err) {
+        result.errors.push('Failed to delete child ' + children[i].name + ': ' + err.message);
+      }
+    }
+  } else if (children.length > 0) {
+    // Orphan children: promote them to root nodes
+    for (var j = 0; j < children.length; j++) {
+      try {
+        db.nodes.setParent(children[j].id, null);
+        // Clear auto_discovered_from since parent is gone
+        db.nodes.setAutoDiscoveredFrom(children[j].id, null);
+        result.orphaned++;
+        console.log('[NodeService] Orphaned child node: ' + children[j].name + ' (was child of ' + node.name + ')');
+      } catch (err) {
+        result.errors.push('Failed to orphan child ' + children[j].name + ': ' + err.message);
+      }
+    }
+  }
+
+  // Stop monitoring for this node
+  try {
+    collector.stopTieredMonitoring(nodeId);
+  } catch (err) {
+    console.error('[NodeService] Failed to stop monitoring for ' + node.name + ':', err.message);
+  }
+
+  // Delete related data
+  try {
+    // Proxmox data (VMs, CTs, storage, snapshots)
+    if (db.proxmox && db.proxmox.deleteForNode) {
+      db.proxmox.deleteForNode(nodeId);
+    }
+
+    // Docker data
+    if (db.docker && db.docker.deleteForNode) {
+      db.docker.deleteForNode(nodeId);
+    }
+
+    // Discovery data
+    if (db.discovery && db.discovery.delete) {
+      db.discovery.delete(nodeId);
+    }
+
+    // Stats history
+    if (db.stats && db.stats.deleteForNode) {
+      db.stats.deleteForNode(nodeId);
+    }
+  } catch (err) {
+    result.errors.push('Failed to delete related data: ' + err.message);
+  }
+
+  // Finally, delete the node itself
+  try {
+    db.nodes.delete(nodeId);
+    result.deleted++;
+    console.log('[NodeService] Deleted node: ' + node.name + ' (ID: ' + nodeId + ')');
+  } catch (err) {
+    result.errors.push('Failed to delete node: ' + err.message);
+  }
+
+  return result;
+}
+
+/**
+ * Delete a node with all children (cascade)
+ * Convenience wrapper for deleteNode with cascade: true
+ * @param {number} nodeId - Node ID
+ * @returns {Object} Delete result
+ */
+function deleteNodeCascade(nodeId) {
+  return deleteNode(nodeId, { cascade: true });
 }
 
 /**
@@ -244,6 +340,7 @@ module.exports = {
   createNode: createNode,
   updateNode: updateNode,
   deleteNode: deleteNode,
+  deleteNodeCascade: deleteNodeCascade,
   setNodeOnline: setNodeOnline,
 
   // Monitoring

@@ -14,6 +14,7 @@ const NODE_SAFE_COLUMNS = `
   n.monitoring_enabled, n.monitoring_interval,
   n.online, n.last_seen, n.last_error, n.notes,
   n.parent_id, n.auto_discovered_from,
+  n.guest_vmid, n.guest_type,
   (n.ssh_password IS NOT NULL AND n.ssh_password != '') as has_ssh_password,
   (n.ssh_key_path IS NOT NULL AND n.ssh_key_path != '') as has_ssh_key,
   n.created_at, n.updated_at
@@ -310,6 +311,119 @@ const nodes = {
     }
 
     return roots;
+  },
+
+  // =====================================================
+  // Auto-Discovery Child Node Methods
+  // =====================================================
+
+  /**
+   * Get a child node by guest ID (VM/LXC ID on Proxmox host)
+   * Used to check if a VM/LXC is already registered as a child node
+   * @param {number} parentId - Parent node ID (Proxmox host)
+   * @param {number} vmid - VM/CT ID on Proxmox (100-999999)
+   * @param {string} type - 'vm' or 'lxc'
+   * @returns {Object|null} Node or null if not found
+   */
+  getByGuestId(parentId, vmid, type) {
+    const stmt = getDb().prepare(`
+      SELECT ${NODE_SAFE_COLUMNS},
+        GROUP_CONCAT(t.name) as tags
+      FROM nodes n
+      LEFT JOIN node_tags nt ON n.id = nt.node_id
+      LEFT JOIN tags t ON nt.tag_id = t.id
+      WHERE n.auto_discovered_from = ? AND n.guest_vmid = ? AND n.guest_type = ?
+      GROUP BY n.id
+    `);
+    return stmt.get(parentId, vmid, type);
+  },
+
+  /**
+   * Create a child node from Proxmox VM/LXC data
+   * Used by DiscoveryOrchestrator to auto-create child nodes
+   * @param {number} parentId - Parent node ID (Proxmox host)
+   * @param {Object} data - Guest data
+   * @param {string} data.name - VM/LXC name
+   * @param {number} data.guest_vmid - VM/CT ID (100-999999)
+   * @param {string} data.guest_type - 'vm' or 'lxc'
+   * @param {string} data.node_type - 'proxmox-vm' or 'proxmox-lxc'
+   * @returns {number} New node ID
+   */
+  createChildFromProxmox(parentId, data) {
+    const stmt = getDb().prepare(`
+      INSERT INTO nodes (
+        name, host, ssh_port, ssh_user,
+        parent_id, auto_discovered_from,
+        guest_vmid, guest_type, node_type,
+        monitoring_enabled, auto_discovery
+      ) VALUES (
+        @name, @host, @ssh_port, @ssh_user,
+        @parent_id, @auto_discovered_from,
+        @guest_vmid, @guest_type, @node_type,
+        @monitoring_enabled, @auto_discovery
+      )
+    `);
+
+    // Get parent node for host info
+    const parent = this.getById(parentId);
+    const hostName = parent ? parent.host : 'localhost';
+
+    const result = stmt.run({
+      name: data.name,
+      host: hostName,  // Same host as parent (commands go via parent)
+      ssh_port: 22,
+      ssh_user: 'root',
+      parent_id: parentId,
+      auto_discovered_from: parentId,
+      guest_vmid: data.guest_vmid,
+      guest_type: data.guest_type,
+      node_type: data.node_type || (data.guest_type === 'vm' ? 'proxmox-vm' : 'proxmox-lxc'),
+      monitoring_enabled: 1,
+      auto_discovery: 1
+    });
+
+    return result.lastInsertRowid;
+  },
+
+  /**
+   * Update child node status from Proxmox data
+   * @param {number} nodeId - Child node ID
+   * @param {string} status - 'running', 'stopped', etc.
+   */
+  updateChildStatus(nodeId, status) {
+    const online = status === 'running' ? 1 : 0;
+    const stmt = getDb().prepare(`
+      UPDATE nodes SET
+        online = ?,
+        last_seen = CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE last_seen END
+      WHERE id = ?
+    `);
+    return stmt.run(online, online, nodeId);
+  },
+
+  /**
+   * Get all child nodes that were auto-discovered from a host
+   * but no longer exist in Proxmox (orphaned)
+   * @param {number} parentId - Parent node ID
+   * @param {Array} currentVmids - List of current VMIDs from Proxmox
+   * @param {string} type - 'vm' or 'lxc'
+   * @returns {Array} Orphaned child nodes
+   */
+  getOrphanedChildren(parentId, currentVmids, type) {
+    const placeholders = currentVmids.length > 0
+      ? currentVmids.map(function() { return '?'; }).join(',')
+      : '-1';  // No valid VMIDs means all are orphaned
+
+    const sql = `
+      SELECT id, name, guest_vmid FROM nodes
+      WHERE auto_discovered_from = ?
+        AND guest_type = ?
+        AND guest_vmid NOT IN (${placeholders})
+    `;
+
+    const stmt = getDb().prepare(sql);
+    const params = [parentId, type].concat(currentVmids);
+    return stmt.all.apply(stmt, params);
   },
 };
 

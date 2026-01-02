@@ -7,9 +7,15 @@ const db = require('../db');
 const collector = require('./index');
 const CircuitBreaker = require('../lib/circuit-breaker');
 const ProxmoxPoller = require('./proxmox-poller');
+const DiscoveryOrchestrator = require('./discovery-orchestrator');
+const ChildPoller = require('./child-poller');
 
 // Proxmox pollers (nodeId -> ProxmoxPoller)
 const proxmoxPollers = new Map();
+
+// Discovery sync timer
+let discoverySyncTimer = null;
+const DISCOVERY_SYNC_INTERVAL = 120000;  // 2 minutes
 
 // Track collection state
 let isRunning = false;
@@ -191,6 +197,12 @@ function start() {
 
   // Start ProxmoxPollers for Proxmox hosts
   startProxmoxPollers();
+
+  // Start Discovery Orchestrator sync (syncs VMs/LXCs as child nodes)
+  startDiscoverySync();
+
+  // Start Child Pollers (Docker data from VMs/LXCs)
+  startChildPollers();
 }
 
 /**
@@ -215,6 +227,47 @@ function startProxmoxPollers() {
   } catch (err) {
     console.error('[SCHEDULER] Failed to start ProxmoxPollers:', err.message);
   }
+}
+
+/**
+ * Start Discovery Orchestrator periodic sync
+ * Syncs VMs/LXCs as child nodes in the nodes table
+ */
+function startDiscoverySync() {
+  // Initial sync after ProxmoxPollers have run (delay to let them populate data)
+  setTimeout(function() {
+    try {
+      var result = DiscoveryOrchestrator.syncAllHosts();
+      console.log('[SCHEDULER] Discovery sync complete: created=' + result.created +
+                  ', updated=' + result.updated + ', deleted=' + result.deleted);
+    } catch (err) {
+      console.error('[SCHEDULER] Discovery sync failed:', err.message);
+    }
+  }, 10000);  // 10 seconds after start
+
+  // Periodic sync
+  discoverySyncTimer = setInterval(function() {
+    try {
+      DiscoveryOrchestrator.syncAllHosts();
+    } catch (err) {
+      console.error('[SCHEDULER] Discovery sync failed:', err.message);
+    }
+  }, DISCOVERY_SYNC_INTERVAL);
+}
+
+/**
+ * Start Child Pollers for all Proxmox hosts with child nodes
+ * Collects Docker data from VMs/LXCs
+ */
+function startChildPollers() {
+  // Delay to let Discovery Orchestrator create child nodes first
+  setTimeout(function() {
+    try {
+      ChildPoller.startAllProxmoxHosts();
+    } catch (err) {
+      console.error('[SCHEDULER] Failed to start ChildPollers:', err.message);
+    }
+  }, 15000);  // 15 seconds after start
 }
 
 /**
@@ -246,6 +299,15 @@ function stop() {
     poller.stop();
   });
   proxmoxPollers.clear();
+
+  // Stop Discovery sync timer
+  if (discoverySyncTimer) {
+    clearInterval(discoverySyncTimer);
+    discoverySyncTimer = null;
+  }
+
+  // Stop all Child Pollers
+  ChildPoller.stopAll();
 }
 
 /**

@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS nodes (
     parent_id INTEGER REFERENCES nodes(id),
     auto_discovered_from INTEGER REFERENCES nodes(id),
 
+    -- Guest Info (for auto-discovered VMs/LXCs)
+    guest_vmid INTEGER,           -- VM/CT ID on Proxmox host (100-999999)
+    guest_type TEXT,              -- 'vm' or 'lxc'
+
     -- Settings
     auto_discovery INTEGER DEFAULT 1,
     monitoring_enabled INTEGER DEFAULT 1,
@@ -40,6 +44,10 @@ CREATE TABLE IF NOT EXISTS nodes (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Index for efficient child-node lookup by guest ID
+CREATE INDEX IF NOT EXISTS idx_nodes_guest ON nodes(auto_discovered_from, guest_vmid, guest_type);
+CREATE INDEX IF NOT EXISTS idx_nodes_parent ON nodes(parent_id);
 
 -- Tags für Gruppierung
 CREATE TABLE IF NOT EXISTS tags (

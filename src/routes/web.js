@@ -248,6 +248,9 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
   const currentStats = db.stats.getCurrent(node.id);
   const health = db.health.get(node.id);
 
+  // Parent node for child nodes (VM/LXC)
+  const parentNode = node.parent_id ? db.nodes.getById(node.parent_id) : null;
+
   // LVM data for Proxmox hosts
   let lvmData = null;
   if (discovery && discovery.is_proxmox_host) {
@@ -292,6 +295,7 @@ router.get('/nodes/:id', asyncHandler(async (req, res) => {
     title: node.name,
     currentPath: '/nodes',
     node,
+    parentNode,
     tags: nodeTags,
     discovery,
     hardware,

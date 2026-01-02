@@ -58,33 +58,58 @@
     <div class="side-panel-section-content">
       <ul class="node-tree">
         <%
+        // Helper to get node type icon
+        function getNodeTypeIcon(node) {
+          if (node.guest_type === 'vm') return '<span class="node-icon vm" title="VM">&#128187;</span>';
+          if (node.guest_type === 'lxc') return '<span class="node-icon lxc" title="LXC">&#128230;</span>';
+          if (node.node_type === 'proxmox') return '<span class="node-icon proxmox" title="Proxmox">&#127968;</span>';
+          return '<span class="node-icon server" title="Server">&#128421;</span>';
+        }
+
         // Render node tree recursively
         function renderNodeTree(nodeList, level) {
           nodeList.forEach(function(node, index) {
             var nStats = nodeStatsMap[node.id] || {};
             var cpuPct = Math.round(nStats.cpu_percent || 0);
             var ramPct = Math.round(nStats.ram_percent || 0);
+            var hasChildren = node.children && node.children.length > 0;
+            var childCount = node.child_count || (hasChildren ? node.children.length : 0);
         %>
-          <li class="node-tree-item">
-            <a href="/nodes/<%= node.id %>" class="node-tree-row" data-level="<%= level %>">
-              <span class="node-tree-status <%= node.online ? 'online' : 'offline' %>"></span>
-              <span class="node-tree-name"><%= node.name %></span>
-              <% if (node.child_count > 0) { %>
-                <span class="node-tree-children-count"><%= node.child_count %></span>
+          <li class="node-tree-item<%= hasChildren ? ' has-children' : '' %>" data-node-id="<%= node.id %>">
+            <div class="node-tree-row-wrapper">
+              <% if (hasChildren) { %>
+              <button type="button" class="node-tree-toggle" data-target="children-<%= node.id %>" aria-expanded="false" aria-label="Kinder ein-/ausblenden">
+                <svg class="toggle-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+              <% } else { %>
+              <span class="node-tree-toggle-placeholder"></span>
               <% } %>
-              <% if (node.online) { %>
-              <span class="node-tree-mini-bars">
-                <span class="mini-bar" title="CPU: <%= cpuPct %>%">
-                  <span class="mini-bar-fill cpu <%= getBarClass(cpuPct) %>" style="width: <%= Math.max(cpuPct, 2) %>%;"></span>
+              <a href="/nodes/<%= node.id %>" class="node-tree-row" data-level="<%= level %>">
+                <span class="node-tree-status <%= node.online ? 'online' : 'offline' %>"></span>
+                <%- getNodeTypeIcon(node) %>
+                <span class="node-tree-name"><%= node.name %></span>
+                <% if (node.guest_type) { %>
+                  <span class="node-tree-guest-badge <%= node.guest_type %>"><%= node.guest_type.toUpperCase() %></span>
+                <% } %>
+                <% if (childCount > 0) { %>
+                  <span class="node-tree-children-count" title="<%= childCount %> Child-Nodes"><%= childCount %></span>
+                <% } %>
+                <% if (node.online) { %>
+                <span class="node-tree-mini-bars">
+                  <span class="mini-bar" title="CPU: <%= cpuPct %>%">
+                    <span class="mini-bar-fill cpu <%= getBarClass(cpuPct) %>" style="width: <%= Math.max(cpuPct, 2) %>%;"></span>
+                  </span>
+                  <span class="mini-bar" title="RAM: <%= ramPct %>%">
+                    <span class="mini-bar-fill ram <%= getBarClass(ramPct) %>" style="width: <%= Math.max(ramPct, 2) %>%;"></span>
+                  </span>
                 </span>
-                <span class="mini-bar" title="RAM: <%= ramPct %>%">
-                  <span class="mini-bar-fill ram <%= getBarClass(ramPct) %>" style="width: <%= Math.max(ramPct, 2) %>%;"></span>
-                </span>
-              </span>
-              <% } %>
-            </a>
-            <% if (node.children && node.children.length > 0) { %>
-              <ul class="node-tree">
+                <% } %>
+              </a>
+            </div>
+            <% if (hasChildren) { %>
+              <ul class="node-tree node-tree-children" id="children-<%= node.id %>" style="display: none;">
                 <% renderNodeTree(node.children, level + 1); %>
               </ul>
             <% } %>
