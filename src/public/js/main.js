@@ -1702,12 +1702,15 @@
       var alertsPanel = document.getElementById('alertsPanel');
       var settingsPanel = document.getElementById('settingsPanel');
       var addNodePanel = document.getElementById('addNodePanel');
+      var editPanel = document.getElementById('editPanel');
       if (alertsPanel && alertsPanel.classList.contains('open')) {
         Panels.closeAlerts();
       } else if (settingsPanel && settingsPanel.classList.contains('open')) {
         Panels.closeSettings();
       } else if (addNodePanel && addNodePanel.classList.contains('open')) {
         Panels.closeAddNode();
+      } else if (editPanel && editPanel.classList.contains('open') && typeof closeEditPanel === 'function') {
+        closeEditPanel();
       }
     }
   });

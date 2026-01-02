@@ -22,7 +22,8 @@ const modules = [
   'network.js',
   'health.js',
   'live-metrics.js',
-  'agent.js'
+  'agent.js',
+  'edit-panel.js'
 ];
 
 console.log('🔨 Building detail-page.js from modules...\n');
