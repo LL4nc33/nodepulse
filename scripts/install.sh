@@ -141,7 +141,7 @@ cd "$INSTALL_DIR"
 
 if [ "$DO_DEPS" = true ]; then
     echo -e "${YELLOW}Installing dependencies...${NC}"
-    npm install --production
+    npm install --omit=dev
     echo -e "${GREEN}✓ Dependencies installed${NC}"
     echo ""
 fi
