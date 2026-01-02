@@ -139,6 +139,29 @@ function buildExecCommand(vmid, type, command) {
 }
 
 /**
+ * Parse output from qm guest exec (returns JSON)
+ * qm guest exec returns: {"out-data": "actual output\n", "exited": true, "exitcode": 0}
+ * @param {string} output - Raw output from qm guest exec
+ * @returns {string} Extracted stdout content
+ */
+function parseVmExecOutput(output) {
+  if (!output || typeof output !== 'string') return '';
+
+  try {
+    // Try to parse as JSON (qm guest exec output)
+    var json = JSON.parse(output);
+    if (json && typeof json['out-data'] === 'string') {
+      return json['out-data'];
+    }
+    // If no out-data, return empty (command may have failed)
+    return '';
+  } catch (e) {
+    // Not JSON, return as-is (shouldn't happen for qm guest exec)
+    return output;
+  }
+}
+
+/**
  * Execute a whitelisted command inside a VM/LXC
  *
  * @param {Object} hostNode - Proxmox host node (with SSH credentials)
@@ -172,15 +195,21 @@ async function execInChild(hostNode, vmid, type, commandKey, options) {
       silent: true
     });
 
-    // 6. Limit output size (DoS protection)
-    if (result.stdout && result.stdout.length > MAX_OUTPUT_SIZE) {
-      result.stdout = result.stdout.substring(0, MAX_OUTPUT_SIZE);
+    // 6. Parse VM output (qm guest exec returns JSON)
+    var stdout = result.stdout || '';
+    if (validType === 'vm' && stdout) {
+      stdout = parseVmExecOutput(stdout);
+    }
+
+    // 7. Limit output size (DoS protection)
+    if (stdout && stdout.length > MAX_OUTPUT_SIZE) {
+      stdout = stdout.substring(0, MAX_OUTPUT_SIZE);
       result.truncated = true;
     }
 
     return {
       success: true,
-      stdout: result.stdout || '',
+      stdout: stdout,
       stderr: result.stderr || '',
       exitCode: result.exitCode || 0,
       truncated: result.truncated || false
@@ -232,9 +261,15 @@ async function execBatchInChild(hostNode, vmid, type, commandKeys, options) {
       silent: true
     });
 
-    // Parse batch output
+    // For VMs, parse JSON wrapper first (qm guest exec returns JSON)
+    var rawOutput = result.stdout || '';
+    if (validType === 'vm' && rawOutput) {
+      rawOutput = parseVmExecOutput(rawOutput);
+    }
+
+    // Parse batch output (split by command delimiters)
     var results = {};
-    var sections = (result.stdout || '').split(/---CMD:(\w+[\-\w]*)---/);
+    var sections = rawOutput.split(/---CMD:(\w+[\-\w]*)---/);
 
     for (var j = 1; j < sections.length; j += 2) {
       var cmdKey = sections[j];
