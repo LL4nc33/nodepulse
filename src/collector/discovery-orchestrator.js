@@ -134,8 +134,8 @@ DiscoveryOrchestrator.prototype.syncGuests = async function(guests, type) {
       var existing = childMap[vmid];
 
       if (existing) {
-        // Update existing child node status
-        self.updateChildNode(existing, guest);
+        // Update existing child node status (async for IP retrieval)
+        await self.updateChildNode(existing, guest);
         self.stats.updated++;
       } else {
         // Create new child node (async for IP retrieval)
@@ -198,7 +198,7 @@ DiscoveryOrchestrator.prototype.createChildNode = async function(guest, type) {
  * @param {Object} childNode - Existing node from nodes table
  * @param {Object} guest - Updated VM/CT data from Proxmox
  */
-DiscoveryOrchestrator.prototype.updateChildNode = function(childNode, guest) {
+DiscoveryOrchestrator.prototype.updateChildNode = async function(childNode, guest) {
   // Update online status based on Proxmox status
   db.nodes.updateChildStatus(childNode.id, guest.status);
 
@@ -215,6 +215,24 @@ DiscoveryOrchestrator.prototype.updateChildNode = function(childNode, guest) {
         monitoring_enabled: childNode.monitoring_enabled,
         monitoring_interval: childNode.monitoring_interval
       });
+    }
+  }
+
+  // Fetch IP if missing and guest is running
+  if (!childNode.guest_ip && guest.status === 'running') {
+    try {
+      var hostNode = db.nodes.getByIdWithCredentials(this.hostNodeId);
+      if (hostNode) {
+        var vmid = childNode.guest_vmid;
+        var type = childNode.guest_type;
+        var ipResult = await childCollector.getGuestIpFromHost(hostNode, vmid, type);
+        if (ipResult.success && ipResult.ip && validators.isValidIP(ipResult.ip)) {
+          db.nodes.setGuestIp(childNode.id, ipResult.ip);
+          console.log('[DiscoveryOrchestrator] Updated guest_ip for ' + childNode.name + ': ' + ipResult.ip);
+        }
+      }
+    } catch (err) {
+      console.warn('[DiscoveryOrchestrator] Failed to get IP for ' + childNode.name + ':', err.message);
     }
   }
 };
