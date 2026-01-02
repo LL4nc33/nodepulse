@@ -279,6 +279,100 @@ const proxmox = {
       }
     }
   },
+
+  /**
+   * Sync VMs/CTs from poller - adds new, removes deleted, updates existing
+   * This is more thorough than updateStatus() - it keeps the list in sync
+   */
+  syncFromPoller(nodeId, data) {
+    const database = getDb();
+
+    // Sync VMs
+    if (data.vms) {
+      const currentVMs = this.getVMs(nodeId);
+      const currentVMIDs = currentVMs.map(function(vm) { return vm.vmid; });
+      const newVMIDs = data.vms.map(function(vm) { return vm.vmid; });
+
+      // Delete VMs that no longer exist
+      const toDelete = currentVMIDs.filter(function(id) {
+        return newVMIDs.indexOf(id) === -1;
+      });
+      if (toDelete.length > 0) {
+        const deleteStmt = database.prepare(
+          'DELETE FROM proxmox_vms WHERE node_id = ? AND vmid = ?'
+        );
+        for (let i = 0; i < toDelete.length; i++) {
+          deleteStmt.run(nodeId, toDelete[i]);
+        }
+      }
+
+      // Upsert VMs (INSERT OR REPLACE)
+      const upsertStmt = database.prepare(`
+        INSERT INTO proxmox_vms (node_id, vmid, name, status, cpu_cores, memory_bytes, disk_bytes, template)
+        VALUES (@node_id, @vmid, @name, @status, @cpu_cores, @memory_bytes, @disk_bytes, @template)
+        ON CONFLICT(node_id, vmid) DO UPDATE SET
+          name = COALESCE(@name, name),
+          status = @status,
+          updated_at = CURRENT_TIMESTAMP
+      `);
+      for (let j = 0; j < data.vms.length; j++) {
+        const vm = data.vms[j];
+        upsertStmt.run({
+          node_id: nodeId,
+          vmid: vm.vmid,
+          name: vm.name || null,
+          status: vm.status || 'unknown',
+          cpu_cores: 1,
+          memory_bytes: 0,
+          disk_bytes: 0,
+          template: 0
+        });
+      }
+    }
+
+    // Sync CTs
+    if (data.cts) {
+      const currentCTs = this.getCTs(nodeId);
+      const currentCTIDs = currentCTs.map(function(ct) { return ct.ctid; });
+      const newCTIDs = data.cts.map(function(ct) { return ct.ctid; });
+
+      // Delete CTs that no longer exist
+      const toDeleteCT = currentCTIDs.filter(function(id) {
+        return newCTIDs.indexOf(id) === -1;
+      });
+      if (toDeleteCT.length > 0) {
+        const deleteStmtCT = database.prepare(
+          'DELETE FROM proxmox_cts WHERE node_id = ? AND ctid = ?'
+        );
+        for (let k = 0; k < toDeleteCT.length; k++) {
+          deleteStmtCT.run(nodeId, toDeleteCT[k]);
+        }
+      }
+
+      // Upsert CTs (INSERT OR REPLACE)
+      const upsertStmtCT = database.prepare(`
+        INSERT INTO proxmox_cts (node_id, ctid, name, status, cpu_cores, memory_bytes, disk_bytes, template)
+        VALUES (@node_id, @ctid, @name, @status, @cpu_cores, @memory_bytes, @disk_bytes, @template)
+        ON CONFLICT(node_id, ctid) DO UPDATE SET
+          name = COALESCE(@name, name),
+          status = @status,
+          updated_at = CURRENT_TIMESTAMP
+      `);
+      for (let l = 0; l < data.cts.length; l++) {
+        const ct = data.cts[l];
+        upsertStmtCT.run({
+          node_id: nodeId,
+          ctid: ct.ctid,
+          name: ct.name || null,
+          status: ct.status || 'unknown',
+          cpu_cores: 1,
+          memory_bytes: 0,
+          disk_bytes: 0,
+          template: 0
+        });
+      }
+    }
+  },
 };
 
 module.exports = { init, proxmox };

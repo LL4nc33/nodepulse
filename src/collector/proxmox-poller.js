@@ -70,8 +70,9 @@ ProxmoxPoller.prototype.poll = async function() {
 
     if (result && result.stdout) {
       var data = this.parseOutput(result.stdout);
-      if (data && (data.vms.length > 0 || data.cts.length > 0)) {
-        db.proxmox.updateStatus(this.nodeId, data);
+      if (data) {
+        // Use syncFromPoller to add/remove/update VMs and CTs
+        db.proxmox.syncFromPoller(this.nodeId, data);
       }
     }
 
@@ -87,7 +88,7 @@ ProxmoxPoller.prototype.poll = async function() {
 /**
  * Parse combined output from qm list, pct list, pvesm status
  * @param {string} stdout - Combined command output
- * @returns {Object} Parsed data with vms and cts arrays
+ * @returns {Object} Parsed data with vms and cts arrays (includes name for sync)
  */
 ProxmoxPoller.prototype.parseOutput = function(stdout) {
   var data = { vms: [], cts: [] };
@@ -105,6 +106,7 @@ ProxmoxPoller.prototype.parseOutput = function(stdout) {
           if (vmParts.length >= 3 && !isNaN(parseInt(vmParts[0], 10))) {
             data.vms.push({
               vmid: parseInt(vmParts[0], 10),
+              name: vmParts[1] || null,
               status: vmParts[2].toLowerCase()
             });
           }
@@ -118,8 +120,15 @@ ProxmoxPoller.prototype.parseOutput = function(stdout) {
         for (var k = 0; k < ctLines.length; k++) {
           var ctParts = ctLines[k].trim().split(/\s+/);
           if (ctParts.length >= 2 && !isNaN(parseInt(ctParts[0], 10))) {
+            // pct list: VMID Status [Lock] Name - Name kann an Position 2 oder 3 sein
+            var ctName = ctParts.length >= 4 ? ctParts[3] : (ctParts.length >= 3 ? ctParts[2] : null);
+            // Wenn ctParts[2] "running" oder "stopped" ist, dann ist es kein Lock
+            if (ctName === 'running' || ctName === 'stopped') {
+              ctName = null;
+            }
             data.cts.push({
               ctid: parseInt(ctParts[0], 10),
+              name: ctName,
               status: ctParts[1].toLowerCase()
             });
           }
