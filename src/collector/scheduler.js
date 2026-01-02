@@ -6,6 +6,10 @@
 const db = require('../db');
 const collector = require('./index');
 const CircuitBreaker = require('../lib/circuit-breaker');
+const ProxmoxPoller = require('./proxmox-poller');
+
+// Proxmox pollers (nodeId -> ProxmoxPoller)
+const proxmoxPollers = new Map();
 
 // Track collection state
 let isRunning = false;
@@ -184,6 +188,33 @@ function start() {
 
   // Initial collection (after a short delay to let the server start)
   initialCollectionTimer = setTimeout(tick, 2000);
+
+  // Start ProxmoxPollers for Proxmox hosts
+  startProxmoxPollers();
+}
+
+/**
+ * Start ProxmoxPollers for all Proxmox host nodes
+ */
+function startProxmoxPollers() {
+  try {
+    var nodes = db.nodes.getAll();
+    nodes.forEach(function(node) {
+      if (!node.monitoring_enabled) return;
+
+      var discovery = db.discovery.get(node.id);
+      if (discovery && discovery.is_proxmox_host === 1) {
+        if (!proxmoxPollers.has(node.id)) {
+          var poller = new ProxmoxPoller(node.id);
+          poller.start();
+          proxmoxPollers.set(node.id, poller);
+        }
+      }
+    });
+    console.log('[SCHEDULER] Started ' + proxmoxPollers.size + ' ProxmoxPollers');
+  } catch (err) {
+    console.error('[SCHEDULER] Failed to start ProxmoxPollers:', err.message);
+  }
 }
 
 /**
@@ -209,6 +240,12 @@ function stop() {
     clearTimeout(initialCollectionTimer);
     initialCollectionTimer = null;
   }
+
+  // Stop all ProxmoxPollers
+  proxmoxPollers.forEach(function(poller) {
+    poller.stop();
+  });
+  proxmoxPollers.clear();
 }
 
 /**
