@@ -24,6 +24,9 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
 ('dashboard_refresh_interval', '5'),
 -- TOON Integration (Phase 3)
 ('use_toon_format', 'false'),
+-- Child Node Auto-Discovery (Hierarchical Nodes)
+('auto_create_child_nodes', '1'),
+('child_poll_interval', '60'),
 -- Agent Settings (Phase 5)
 ('agent_server_enabled', 'false'),
 ('agent_binary_source', 'github'),
