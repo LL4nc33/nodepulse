@@ -7,9 +7,11 @@
 
 var db = require('../db');
 var TieredPoller = require('./tiered-poller');
+var ProxmoxPoller = require('./proxmox-poller');
 
 // Active pollers (nodeId -> TieredPoller instance)
 var activePollers = new Map();
+var proxmoxPollers = new Map();
 
 /**
  * Start tiered polling for a node
@@ -49,6 +51,16 @@ function startTieredMonitoring(nodeId) {
   activePollers.set(nodeId, poller);
   poller.start();
 
+  // Start ProxmoxPoller if Proxmox host
+  var discovery = db.discovery.get(nodeId);
+  if (discovery && discovery.is_proxmox_host === 1) {
+    if (!proxmoxPollers.has(nodeId)) {
+      var pxPoller = new ProxmoxPoller(nodeId);
+      pxPoller.start();
+      proxmoxPollers.set(nodeId, pxPoller);
+    }
+  }
+
   console.log('[Collector] Started tiered monitoring for node ' + nodeId + ' (' + node.name + ')');
 }
 
@@ -62,8 +74,15 @@ async function stopTieredMonitoring(nodeId) {
   if (poller) {
     await poller.stop();
     activePollers.delete(nodeId);
-    console.log('[Collector] Stopped tiered monitoring for node ' + nodeId);
   }
+
+  // Stop ProxmoxPoller if exists
+  if (proxmoxPollers.has(nodeId)) {
+    proxmoxPollers.get(nodeId).stop();
+    proxmoxPollers.delete(nodeId);
+  }
+
+  console.log('[Collector] Stopped tiered monitoring for node ' + nodeId);
 }
 
 /**
@@ -90,6 +109,13 @@ async function stopAllMonitoring() {
   });
   await Promise.all(stopPromises);
   activePollers.clear();
+
+  // Stop all Proxmox pollers
+  proxmoxPollers.forEach(function(poller) {
+    poller.stop();
+  });
+  proxmoxPollers.clear();
+
   console.log('[Collector] Stopped all monitoring');
 }
 

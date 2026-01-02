@@ -253,6 +253,32 @@ const proxmox = {
       snapshots_count: snapshots.count,
     };
   },
+
+  /**
+   * Update VM/CT status only (lightweight, for polling)
+   * Does not replace all data, only updates status field
+   */
+  updateStatus(nodeId, data) {
+    const database = getDb();
+
+    if (data.vms && data.vms.length > 0) {
+      const updateVM = database.prepare(
+        'UPDATE proxmox_vms SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE node_id = ? AND vmid = ?'
+      );
+      for (let i = 0; i < data.vms.length; i++) {
+        updateVM.run(data.vms[i].status, nodeId, data.vms[i].vmid);
+      }
+    }
+
+    if (data.cts && data.cts.length > 0) {
+      const updateCT = database.prepare(
+        'UPDATE proxmox_cts SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE node_id = ? AND ctid = ?'
+      );
+      for (let j = 0; j < data.cts.length; j++) {
+        updateCT.run(data.cts[j].status, nodeId, data.cts[j].ctid);
+      }
+    }
+  },
 };
 
 module.exports = { init, proxmox };
