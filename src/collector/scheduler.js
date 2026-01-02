@@ -243,6 +243,7 @@ function startProxmoxPollers() {
  */
 function startDiscoverySync() {
   // Initial sync after ProxmoxPollers have run (delay to let them populate data)
+  // ProxmoxPoller runs every 30s, so wait 45s to ensure first poll is complete
   setTimeout(async function() {
     try {
       var result = await DiscoveryOrchestrator.syncAllHosts();
@@ -251,7 +252,7 @@ function startDiscoverySync() {
     } catch (err) {
       console.error('[SCHEDULER] Discovery sync failed:', err.message);
     }
-  }, 10000);  // 10 seconds after start
+  }, 45000);  // 45 seconds after start (after first ProxmoxPoller run)
 
   // Periodic sync
   discoverySyncTimer = setInterval(async function() {
@@ -268,14 +269,14 @@ function startDiscoverySync() {
  * Collects Docker data from VMs/LXCs
  */
 function startChildPollers() {
-  // Delay to let Discovery Orchestrator create child nodes first
+  // Delay to let Discovery Orchestrator create child nodes first (runs at 45s)
   setTimeout(function() {
     try {
       ChildPoller.startAllProxmoxHosts();
     } catch (err) {
       console.error('[SCHEDULER] Failed to start ChildPollers:', err.message);
     }
-  }, 15000);  // 15 seconds after start
+  }, 60000);  // 60 seconds after start (after DiscoveryOrchestrator)
 }
 
 /**
@@ -332,10 +333,10 @@ async function runChildDiscovery() {
  * Runs discovery on child nodes to collect guest_ip
  */
 function startChildDiscovery() {
-  // Initial run after everything else is set up
+  // Initial run after everything else is set up (ChildPollers start at 60s)
   setTimeout(function() {
     runChildDiscovery();
-  }, 20000);  // 20 seconds after start
+  }, 75000);  // 75 seconds after start (after ChildPollers)
 
   // Periodic run
   childDiscoveryTimer = setInterval(function() {
