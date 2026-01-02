@@ -27,23 +27,37 @@ var CHILD_COMMANDS = {
   'docker-stats': 'docker stats --no-stream --format "{{json .}}" 2>/dev/null',
   'docker-images': 'docker images --format "{{json .}}" 2>/dev/null',
   'docker-version': 'docker version --format "{{json .}}" 2>/dev/null || echo "{}"',
+  'docker-check': 'which docker 2>/dev/null && echo "HAS_DOCKER" || echo ""',
 
-  // System info commands
+  // System info commands (Discovery)
   'hostname': 'hostname 2>/dev/null',
   'uptime': 'uptime 2>/dev/null',
   'uname': 'uname -a 2>/dev/null',
-  'os-release': 'cat /etc/os-release 2>/dev/null | head -10',
+  'os-release': 'cat /etc/os-release 2>/dev/null | head -20',
+  'cpu-info': 'cat /proc/cpuinfo 2>/dev/null | head -50',
+  'mem-info': 'cat /proc/meminfo 2>/dev/null | head -20',
+  'systemd-check': 'which systemctl 2>/dev/null && echo "HAS_SYSTEMD" || echo ""',
 
-  // Resource usage
+  // Resource usage (Stats)
   'memory': 'free -b 2>/dev/null | head -3',
   'disk': 'df -B1 / 2>/dev/null | tail -1',
   'load': 'cat /proc/loadavg 2>/dev/null',
+  'df': 'df -h 2>/dev/null',
+  'df-root': 'df / --output=pcent 2>/dev/null | tail -1',
+  'vmstat': 'vmstat 1 2 2>/dev/null | tail -1',
 
   // Process info
   'process-count': 'ps aux 2>/dev/null | wc -l',
 
   // Network info (basic)
-  'ip-addr': 'ip -4 addr show 2>/dev/null | grep inet | head -5'
+  'ip-addr': 'ip -4 addr show 2>/dev/null | grep inet | head -5',
+
+  // Health check commands
+  'systemctl-failed': 'systemctl --failed --no-pager 2>/dev/null | head -20',
+  'reboot-required': 'test -f /var/run/reboot-required && echo "1" || echo "0"',
+  'apt-updates': 'apt list --upgradable 2>/dev/null 2>&1 | tail -n +2 | wc -l',
+  'kernel-version': 'uname -r 2>/dev/null',
+  'last-boot': 'who -b 2>/dev/null | awk "{print $3, $4}"'
 };
 
 /**

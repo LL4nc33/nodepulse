@@ -6,6 +6,7 @@ const router = express.Router();
 const db = require('../../db');
 const ssh = require('../../ssh');
 const collector = require('../../collector');
+const childCollector = require('../../collector/child-collector');
 const { asyncHandler, apiResponse, validateNodeInput } = require('./helpers');
 const { validatePort } = require('../../lib/validators');
 const { parseIntParam, parseHoursParam, parseLimitParam, parseMaxHopsParam } = require('../../lib/params');
@@ -382,7 +383,7 @@ router.post('/:id/create-child', asyncHandler(async (req, res) => {
 // SSH & Discovery Operations
 // =====================================================
 
-// Test SSH connection
+// Test connection (SSH for normal nodes, pct/qm exec for child nodes)
 router.post('/:id/test', asyncHandler(async (req, res) => {
   // Need credentials for SSH connection
   const node = db.nodes.getByIdWithCredentials(req.params.id);
@@ -391,12 +392,46 @@ router.post('/:id/test', asyncHandler(async (req, res) => {
   }
 
   try {
-    const result = await ssh.testConnection(node);
-    db.nodes.setOnline(node.id, true);
-    apiResponse(res, 200, {
-      connected: true,
-      hostname: result.hostname,
-    });
+    // Check if this is a child node (VM/LXC)
+    if (node.guest_type && node.parent_id) {
+      // Child-Node: Test via pct/qm exec through parent
+      const parent = db.nodes.getByIdWithCredentials(node.parent_id);
+      if (!parent) {
+        return apiResponse(res, 400, null, { code: 'PARENT_NOT_FOUND', message: 'Parent-Node nicht gefunden' });
+      }
+      if (!parent.online) {
+        return apiResponse(res, 503, null, { code: 'PARENT_OFFLINE', message: 'Parent-Node ist offline' });
+      }
+
+      const result = await childCollector.execInChild(
+        parent,
+        node.guest_vmid,
+        node.guest_type,
+        'hostname',
+        { timeout: 15000 }
+      );
+
+      if (result.success) {
+        db.nodes.setOnline(node.id, true);
+        apiResponse(res, 200, {
+          connected: true,
+          hostname: result.stdout.trim(),
+          connection_type: node.guest_type === 'lxc' ? 'pct exec' : 'qm guest exec',
+        });
+      } else {
+        db.nodes.setOnline(node.id, false, result.error);
+        apiResponse(res, 503, null, { code: 'EXEC_ERROR', message: result.error });
+      }
+    } else {
+      // Normal node: Direct SSH test
+      const result = await ssh.testConnection(node);
+      db.nodes.setOnline(node.id, true);
+      apiResponse(res, 200, {
+        connected: true,
+        hostname: result.hostname,
+        connection_type: 'ssh',
+      });
+    }
   } catch (err) {
     db.nodes.setOnline(node.id, false, err.message);
     // Return 503 for connection failures (service unavailable)
@@ -418,17 +453,40 @@ router.post('/:id/discover', asyncHandler(async (req, res) => {
   }
 
   try {
-    const result = await collector.runFullDiscovery(node);
+    // Check if this is a child node (VM/LXC)
+    if (node.guest_type && node.parent_id) {
+      // Child-Node: Discovery via pct/qm exec through parent
+      const discoveryData = await collector.runDiscoveryForChild(node);
 
-    // Return 207 Multi-Status if hardware collection failed but discovery succeeded
-    const statusCode = result.hardwareError ? 207 : 200;
+      // Determine node type from discovery data
+      const nodeType = collector.determineNodeType(discoveryData);
+      db.nodes.setNodeType(node.id, nodeType);
 
-    apiResponse(res, statusCode, {
-      discovery: result.discovery,
-      hardware: result.hardware,
-      hardwareError: result.hardwareError || null,
-      nodeType: result.nodeType,
-    });
+      // Apply auto-tags
+      collector.applyAutoTags(node.id, discoveryData);
+
+      apiResponse(res, 200, {
+        discovery: discoveryData,
+        hardware: null,  // Hardware collection not implemented for child nodes yet
+        hardwareError: null,
+        nodeType: nodeType,
+        connection_type: node.guest_type === 'lxc' ? 'pct exec' : 'qm guest exec',
+      });
+    } else {
+      // Normal node: Direct SSH discovery
+      const result = await collector.runFullDiscovery(node);
+
+      // Return 207 Multi-Status if hardware collection failed but discovery succeeded
+      const statusCode = result.hardwareError ? 207 : 200;
+
+      apiResponse(res, statusCode, {
+        discovery: result.discovery,
+        hardware: result.hardware,
+        hardwareError: result.hardwareError || null,
+        nodeType: result.nodeType,
+        connection_type: 'ssh',
+      });
+    }
   } catch (err) {
     db.nodes.setOnline(node.id, false, err.message);
     apiResponse(res, 503, null, { code: 'DISCOVERY_ERROR', message: err.message });
@@ -660,7 +718,15 @@ router.post('/:id/stats', asyncHandler(async (req, res) => {
   }
 
   try {
-    const data = await collector.runStats(node, true);
+    let data;
+    // Check if this is a child node (VM/LXC)
+    if (node.guest_type && node.parent_id) {
+      // Child-Node: Stats via pct/qm exec through parent
+      data = await collector.runStatsForChild(node, true);
+    } else {
+      // Normal node: Direct SSH stats
+      data = await collector.runStats(node, true);
+    }
     apiResponse(res, 200, data);
   } catch (err) {
     db.nodes.setOnline(node.id, false, err.message);

@@ -55,6 +55,7 @@ async function runStats(node, saveHistory) {
 module.exports = {
   // Discovery
   runDiscovery: discoveryModule.runDiscovery,
+  runDiscoveryForChild: discoveryModule.runDiscoveryForChild,
   runFullDiscovery: runFullDiscovery,
   determineNodeType: discoveryModule.determineNodeType,
   getTagsFromDiscovery: discoveryModule.getTagsFromDiscovery,
@@ -66,6 +67,7 @@ module.exports = {
 
   // Stats
   runStats: runStats,
+  runStatsForChild: statsModule.runStatsForChild,
 
   // Docker
   runDocker: dockerModule.runDocker,

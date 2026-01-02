@@ -30,6 +30,14 @@ function startTieredMonitoring(nodeId) {
     return;
   }
 
+  // Skip TieredPoller for child nodes (VMs/LXCs)
+  // Child nodes are polled via ChildPoller on parent nodes (pct/qm exec)
+  if (node.guest_type && node.parent_id) {
+    console.log('[Collector] Skipping TieredPoller for child node ' + node.name +
+                ' (type: ' + node.guest_type + ', parent: ' + node.parent_id + ')');
+    return;
+  }
+
   if (!node.monitoring_enabled) {
     console.log('[Collector] Monitoring disabled for node ' + nodeId);
     return;

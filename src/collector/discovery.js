@@ -8,6 +8,7 @@
 var db = require('../db');
 var ssh = require('../ssh');
 var utils = require('./utils');
+var childCollector = require('./child-collector');
 
 /**
  * Run discovery on a node
@@ -31,6 +32,160 @@ async function runDiscovery(node) {
 
   // Update node online status
   db.nodes.setOnline(node.id, true);
+
+  return data;
+}
+
+/**
+ * Run discovery for a child node (VM/LXC) via parent host
+ * Uses pct exec (LXC) or qm guest exec (VM) instead of direct SSH
+ *
+ * @param {Object} childNode - Child node object (must have parent_id, guest_vmid, guest_type)
+ * @returns {Promise<Object>} Discovery data
+ */
+async function runDiscoveryForChild(childNode) {
+  // Validate child node properties
+  if (!childNode.parent_id) {
+    throw new Error('Not a child node: missing parent_id');
+  }
+  if (!childNode.guest_vmid || !childNode.guest_type) {
+    throw new Error('Not a child node: missing guest_vmid or guest_type');
+  }
+
+  // Get parent node with credentials
+  var parent = db.nodes.getByIdWithCredentials(childNode.parent_id);
+  if (!parent) {
+    throw new Error('Parent node not found');
+  }
+  if (!parent.online) {
+    throw new Error('Parent node is offline');
+  }
+
+  console.log('[DISCOVERY] Running child discovery for ' + childNode.name +
+              ' (' + childNode.guest_type + ' ' + childNode.guest_vmid + ') via ' + parent.name);
+
+  // Commands to run for discovery
+  var commands = ['hostname', 'os-release', 'uname', 'cpu-info', 'mem-info',
+                  'df', 'docker-check', 'systemd-check', 'kernel-version'];
+
+  // Execute commands via pct/qm exec
+  var batchResult = await childCollector.execBatchInChild(
+    parent,
+    childNode.guest_vmid,
+    childNode.guest_type,
+    commands,
+    { timeout: 60000 }
+  );
+
+  if (!batchResult.success) {
+    db.nodes.setOnline(childNode.id, false, batchResult.error);
+    throw new Error('Child discovery failed: ' + batchResult.error);
+  }
+
+  // Parse results into discovery data structure
+  var data = parseChildDiscoveryResults(batchResult.results, childNode);
+
+  // Save to database
+  db.discovery.save(childNode.id, data);
+
+  // Update node online status
+  db.nodes.setOnline(childNode.id, true);
+
+  console.log('[DISCOVERY] Child discovery complete for ' + childNode.name +
+              ': hostname=' + data.hostname + ', docker=' + data.has_docker);
+
+  return data;
+}
+
+/**
+ * Parse batch command results into discovery data structure
+ * @param {Object} results - Results from execBatchInChild
+ * @param {Object} childNode - Child node object
+ * @returns {Object} Discovery data
+ */
+function parseChildDiscoveryResults(results, childNode) {
+  var data = {
+    hostname: '',
+    os_name: 'Linux',
+    os_version: '',
+    os_pretty: '',
+    arch: '',
+    kernel: '',
+    cpu_cores: 0,
+    ram_total_mb: 0,
+    has_docker: 0,
+    has_podman: 0,
+    has_systemd: 0,
+    is_proxmox_host: 0,
+    is_raspberry_pi: 0,
+    virtualization: childNode.guest_type === 'lxc' ? 'lxc' : 'kvm',
+    discovered_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
+  };
+
+  // Parse hostname
+  if (results.hostname && results.hostname.success) {
+    data.hostname = results.hostname.stdout.trim();
+  }
+
+  // Parse os-release
+  if (results['os-release'] && results['os-release'].success) {
+    var osRelease = results['os-release'].stdout;
+    var nameMatch = osRelease.match(/^NAME="?([^"\n]+)"?/m);
+    var versionMatch = osRelease.match(/^VERSION_ID="?([^"\n]+)"?/m);
+    var prettyMatch = osRelease.match(/^PRETTY_NAME="?([^"\n]+)"?/m);
+
+    if (nameMatch) data.os_name = nameMatch[1];
+    if (versionMatch) data.os_version = versionMatch[1];
+    if (prettyMatch) data.os_pretty = prettyMatch[1];
+  }
+
+  // Parse uname
+  if (results.uname && results.uname.success) {
+    var uname = results.uname.stdout.trim();
+    var parts = uname.split(' ');
+    if (parts.length >= 3) {
+      data.kernel = parts[2];  // Kernel version is usually 3rd field
+    }
+    // Architecture is usually last field
+    var archPart = parts[parts.length - 1];
+    if (archPart) {
+      data.arch = archPart;
+    }
+  }
+
+  // Parse kernel-version (more reliable)
+  if (results['kernel-version'] && results['kernel-version'].success) {
+    data.kernel = results['kernel-version'].stdout.trim();
+  }
+
+  // Parse cpu-info
+  if (results['cpu-info'] && results['cpu-info'].success) {
+    var cpuInfo = results['cpu-info'].stdout;
+    var processorMatches = cpuInfo.match(/^processor\s*:/gm);
+    if (processorMatches) {
+      data.cpu_cores = processorMatches.length;
+    }
+  }
+
+  // Parse mem-info
+  if (results['mem-info'] && results['mem-info'].success) {
+    var memInfo = results['mem-info'].stdout;
+    var memMatch = memInfo.match(/^MemTotal:\s*(\d+)/m);
+    if (memMatch) {
+      // meminfo is in kB, convert to MB
+      data.ram_total_mb = Math.round(parseInt(memMatch[1], 10) / 1024);
+    }
+  }
+
+  // Check for docker
+  if (results['docker-check'] && results['docker-check'].success) {
+    data.has_docker = results['docker-check'].stdout.indexOf('HAS_DOCKER') !== -1 ? 1 : 0;
+  }
+
+  // Check for systemd
+  if (results['systemd-check'] && results['systemd-check'].success) {
+    data.has_systemd = results['systemd-check'].stdout.indexOf('HAS_SYSTEMD') !== -1 ? 1 : 0;
+  }
 
   return data;
 }
@@ -195,6 +350,7 @@ async function runFullDiscovery(node, runHardware) {
 
 module.exports = {
   runDiscovery: runDiscovery,
+  runDiscoveryForChild: runDiscoveryForChild,
   determineNodeType: determineNodeType,
   getTagsFromDiscovery: getTagsFromDiscovery,
   applyAutoTags: applyAutoTags,

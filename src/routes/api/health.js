@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router({ mergeParams: true });
 const db = require('../../db');
 const ssh = require('../../ssh');
+const childCollector = require('../../collector/child-collector');
 const { asyncHandler, apiResponse } = require('./helpers');
 const path = require('path');
 const fs = require('fs');
@@ -79,16 +80,51 @@ router.post('/check', asyncHandler(async (req, res) => {
   }
 
   try {
-    // Run health check script via SSH (120s timeout for apt update)
-    const result = await ssh.controlMaster.executeScript(node, HEALTH_CHECK_SCRIPT, 120000);
-
-    // Parse JSON output
     let healthData;
-    try {
-      healthData = JSON.parse(result.stdout);
-    } catch (e) {
-      console.error('[Health] Parse error:', result.stdout);
-      return apiResponse(res, 500, null, 'Ungültige Antwort vom Health-Check Script');
+
+    // Check if this is a child node (VM/LXC)
+    if (node.guest_type && node.parent_id) {
+      // Child-Node: Health check via pct/qm exec through parent
+      const parent = db.nodes.getByIdWithCredentials(node.parent_id);
+      if (!parent) {
+        return apiResponse(res, 400, null, 'Parent-Node nicht gefunden');
+      }
+      if (!parent.online) {
+        return apiResponse(res, 400, null, 'Parent-Node ist offline');
+      }
+
+      console.log('[Health] Running child health check for ' + node.name +
+                  ' (' + node.guest_type + ' ' + node.guest_vmid + ') via ' + parent.name);
+
+      // Run health commands via pct/qm exec
+      const commands = ['kernel-version', 'uptime', 'load', 'memory', 'df-root',
+                        'systemctl-failed', 'reboot-required', 'apt-updates'];
+
+      const batchResult = await childCollector.execBatchInChild(
+        parent,
+        node.guest_vmid,
+        node.guest_type,
+        commands,
+        { timeout: 60000 }
+      );
+
+      if (!batchResult.success) {
+        return apiResponse(res, 500, null, 'Health-Check fehlgeschlagen: ' + batchResult.error);
+      }
+
+      // Parse child health results
+      healthData = parseChildHealthResults(batchResult.results, node);
+    } else {
+      // Normal node: Run health check script via SSH (120s timeout for apt update)
+      const result = await ssh.controlMaster.executeScript(node, HEALTH_CHECK_SCRIPT, 120000);
+
+      // Parse JSON output
+      try {
+        healthData = JSON.parse(result.stdout);
+      } catch (e) {
+        console.error('[Health] Parse error:', result.stdout);
+        return apiResponse(res, 500, null, 'Ungültige Antwort vom Health-Check Script');
+      }
     }
 
     // Save to database (Extended health metrics)
@@ -160,6 +196,195 @@ router.post('/check', asyncHandler(async (req, res) => {
     return apiResponse(res, 500, null, errorMessage);
   }
 }));
+
+/**
+ * Parse health results from child node batch commands
+ */
+function parseChildHealthResults(results, childNode) {
+  var healthData = {
+    kernel_version: '',
+    last_boot: '',
+    uptime_seconds: 0,
+    reboot_required: 0,
+    cpu_temp: 0,
+    cpu_temp_status: 'unknown',
+    load_1: 0,
+    load_5: 0,
+    load_15: 0,
+    load_status: 'ok',
+    mem_percent: 0,
+    mem_status: 'ok',
+    swap_percent: 0,
+    swap_status: 'ok',
+    disk_percent: 0,
+    disk_status: 'ok',
+    failed_services: 0,
+    failed_services_list: '',
+    services_status: 'ok',
+    zombie_processes: 0,
+    zombie_status: 'ok',
+    time_sync: '',
+    time_status: 'unknown',
+    net_gateway: '',
+    net_status: 'ok',
+    health_score: 100,
+    health_status: 'healthy',
+    health_issues: '',
+    apt_updates: 0,
+    apt_security: 0,
+    apt_status: 'ok',
+    apt_packages: [],
+    pve_version: '',
+    pve_repo: '',
+    docker_images: 0,
+    npm_outdated: 0,
+    apt_cache_free_mb: 0,
+  };
+
+  var issues = [];
+
+  // Parse kernel version
+  if (results['kernel-version'] && results['kernel-version'].success) {
+    healthData.kernel_version = results['kernel-version'].stdout.trim();
+  }
+
+  // Parse uptime
+  if (results.uptime && results.uptime.success) {
+    var uptimeOutput = results.uptime.stdout.trim();
+    var upMatch = uptimeOutput.match(/up\s+(\d+)\s+day/i);
+    var hourMatch = uptimeOutput.match(/up\s+(?:\d+\s+days?,\s+)?(\d+):(\d+)/);
+    var seconds = 0;
+    if (upMatch) {
+      seconds += parseInt(upMatch[1], 10) * 86400;
+    }
+    if (hourMatch) {
+      seconds += parseInt(hourMatch[1], 10) * 3600;
+      seconds += parseInt(hourMatch[2], 10) * 60;
+    }
+    healthData.uptime_seconds = seconds;
+  }
+
+  // Parse load average
+  if (results.load && results.load.success) {
+    var loadParts = results.load.stdout.trim().split(/\s+/);
+    if (loadParts.length >= 3) {
+      healthData.load_1 = parseFloat(loadParts[0]) || 0;
+      healthData.load_5 = parseFloat(loadParts[1]) || 0;
+      healthData.load_15 = parseFloat(loadParts[2]) || 0;
+
+      // Get CPU cores from discovery to calculate load status
+      var discovery = db.discovery.getByNodeId(childNode.id);
+      var cores = (discovery && discovery.cpu_cores) || 1;
+      var loadPercent = Math.round((healthData.load_1 / cores) * 100);
+
+      if (loadPercent > 100) {
+        healthData.load_status = 'critical';
+        issues.push('Load critical (' + loadPercent + '%)');
+      } else if (loadPercent > 80) {
+        healthData.load_status = 'warning';
+        issues.push('Load warning (' + loadPercent + '%)');
+      }
+    }
+  }
+
+  // Parse memory
+  if (results.memory && results.memory.success) {
+    var memLines = results.memory.stdout.trim().split('\n');
+    for (var i = 0; i < memLines.length; i++) {
+      var line = memLines[i];
+      if (line.indexOf('Mem:') === 0) {
+        var memParts = line.split(/\s+/);
+        if (memParts.length >= 3) {
+          var totalBytes = parseInt(memParts[1], 10) || 0;
+          var usedBytes = parseInt(memParts[2], 10) || 0;
+          if (totalBytes > 0) {
+            healthData.mem_percent = Math.round((usedBytes / totalBytes) * 100);
+            if (healthData.mem_percent > 90) {
+              healthData.mem_status = 'critical';
+              issues.push('Memory critical (' + healthData.mem_percent + '%)');
+            } else if (healthData.mem_percent > 80) {
+              healthData.mem_status = 'warning';
+              issues.push('Memory warning (' + healthData.mem_percent + '%)');
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  // Parse disk usage
+  if (results['df-root'] && results['df-root'].success) {
+    var diskStr = results['df-root'].stdout.trim().replace('%', '');
+    healthData.disk_percent = parseInt(diskStr, 10) || 0;
+    if (healthData.disk_percent > 90) {
+      healthData.disk_status = 'critical';
+      issues.push('Disk critical (' + healthData.disk_percent + '%)');
+    } else if (healthData.disk_percent > 80) {
+      healthData.disk_status = 'warning';
+      issues.push('Disk warning (' + healthData.disk_percent + '%)');
+    }
+  }
+
+  // Parse systemctl failed
+  if (results['systemctl-failed'] && results['systemctl-failed'].success) {
+    var failedOutput = results['systemctl-failed'].stdout.trim();
+    var failedMatch = failedOutput.match(/(\d+)\s+loaded\s+units/i);
+    if (failedMatch) {
+      healthData.failed_services = parseInt(failedMatch[1], 10) || 0;
+    }
+    if (failedOutput.indexOf('failed') !== -1 && failedOutput.indexOf('0 loaded') === -1) {
+      healthData.services_status = 'warning';
+      issues.push('Failed services detected');
+    }
+  }
+
+  // Parse reboot required
+  if (results['reboot-required'] && results['reboot-required'].success) {
+    healthData.reboot_required = results['reboot-required'].stdout.trim() === '1' ? 1 : 0;
+    if (healthData.reboot_required) {
+      issues.push('Reboot required');
+    }
+  }
+
+  // Parse apt updates
+  if (results['apt-updates'] && results['apt-updates'].success) {
+    healthData.apt_updates = parseInt(results['apt-updates'].stdout.trim(), 10) || 0;
+    if (healthData.apt_updates > 0) {
+      healthData.apt_status = 'warning';
+      issues.push(healthData.apt_updates + ' updates available');
+    }
+  }
+
+  // Calculate health score
+  var deductions = 0;
+  if (healthData.load_status === 'critical') deductions += 20;
+  else if (healthData.load_status === 'warning') deductions += 10;
+
+  if (healthData.mem_status === 'critical') deductions += 20;
+  else if (healthData.mem_status === 'warning') deductions += 10;
+
+  if (healthData.disk_status === 'critical') deductions += 20;
+  else if (healthData.disk_status === 'warning') deductions += 10;
+
+  if (healthData.services_status === 'warning') deductions += 10;
+  if (healthData.reboot_required) deductions += 5;
+  if (healthData.apt_updates > 10) deductions += 5;
+
+  healthData.health_score = Math.max(0, 100 - deductions);
+
+  if (healthData.health_score >= 90) {
+    healthData.health_status = 'healthy';
+  } else if (healthData.health_score >= 70) {
+    healthData.health_status = 'warning';
+  } else {
+    healthData.health_status = 'critical';
+  }
+
+  healthData.health_issues = issues.join(', ');
+
+  return healthData;
+}
 
 // =============================================================================
 // PROXMOX REPOSITORY
