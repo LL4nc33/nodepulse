@@ -336,6 +336,28 @@ async function init() {
       // Don't throw - table might already exist
     }
 
+    // Migration 12: Guest VM/LXC columns for Child-Node Discovery
+    try {
+      const nodeCols = db.prepare("PRAGMA table_info(nodes)").all();
+      const hasGuestVmid = nodeCols.some(col => col.name === 'guest_vmid');
+      const hasGuestType = nodeCols.some(col => col.name === 'guest_type');
+
+      if (!hasGuestVmid) {
+        db.exec('ALTER TABLE nodes ADD COLUMN guest_vmid INTEGER');
+        console.log('[DB] Migration: Added guest_vmid column');
+      }
+      if (!hasGuestType) {
+        db.exec('ALTER TABLE nodes ADD COLUMN guest_type TEXT');
+        console.log('[DB] Migration: Added guest_type column');
+      }
+
+      // Index for efficient guest lookups
+      db.exec('CREATE INDEX IF NOT EXISTS idx_nodes_guest ON nodes(auto_discovered_from, guest_vmid, guest_type)');
+    } catch (err) {
+      console.error('[DB] Migration error (guest columns):', err.message);
+      throw err;
+    }
+
     // Run seed data
     const seedPath = path.join(__dirname, 'seed.sql');
     const seed = fs.readFileSync(seedPath, 'utf8');
