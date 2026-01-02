@@ -45,8 +45,7 @@ CREATE TABLE IF NOT EXISTS nodes (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Index for efficient child-node lookup by guest ID
-CREATE INDEX IF NOT EXISTS idx_nodes_guest ON nodes(auto_discovered_from, guest_vmid, guest_type);
+-- Index for hierarchy lookups (guest index created by Migration 12)
 CREATE INDEX IF NOT EXISTS idx_nodes_parent ON nodes(parent_id);
 
 -- Tags für Gruppierung
