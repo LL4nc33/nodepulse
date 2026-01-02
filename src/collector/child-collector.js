@@ -425,7 +425,8 @@ async function getGuestIpFromHost(hostNode, vmid, type) {
   if (validType === 'lxc') {
     // lxc-info runs on host, reads container network config
     // -iH = IP only, no hostname/header
-    cmd = 'lxc-info -n ' + validVmid + ' -iH 2>/dev/null | grep -E "^[0-9]+\\." | head -1';
+    // Filter out Docker bridge IPs (172.17-31.x.x) to get the real LAN IP
+    cmd = 'lxc-info -n ' + validVmid + ' -iH 2>/dev/null | grep -E "^[0-9]+\\." | grep -vE "^172\\.(1[7-9]|2[0-9]|3[0-1])\\." | head -1';
   } else {
     // qm guest cmd requires QEMU Guest Agent running in the VM
     // Returns JSON with network interfaces
