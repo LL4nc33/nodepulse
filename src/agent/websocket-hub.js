@@ -82,6 +82,11 @@ function handleConnection(ws, req) {
   // Extract API key from header or query
   var apiKey = req.headers['x-api-key'] || getQueryParam(req.url, 'key');
 
+  // Debug logging
+  console.log('[AgentHub] Connection attempt from:', req.socket.remoteAddress);
+  console.log('[AgentHub] API key received:', apiKey ? (apiKey.substring(0, 8) + '...' + apiKey.substring(56)) : 'NONE');
+  console.log('[AgentHub] API key length:', apiKey ? apiKey.length : 0);
+
   if (!apiKey) {
     console.warn('[AgentHub] Connection rejected: No API key');
     ws.close(4001, 'API key required');
@@ -90,6 +95,7 @@ function handleConnection(ws, req) {
 
   // Validate API key
   var agent = db.agents.validateApiKey(apiKey);
+  console.log('[AgentHub] Validation result:', agent ? ('node_id=' + agent.node_id) : 'NULL');
   if (!agent) {
     console.warn('[AgentHub] Connection rejected: Invalid API key');
     ws.close(4003, 'Invalid API key');
