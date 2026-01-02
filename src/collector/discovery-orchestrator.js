@@ -16,6 +16,8 @@
 'use strict';
 
 var db = require('../db');
+var childCollector = require('./child-collector');
+var validators = require('../lib/validators');
 
 /**
  * DiscoveryOrchestrator - Manages child node discovery and sync
@@ -55,9 +57,9 @@ DiscoveryOrchestrator.prototype.isEnabled = function() {
  * Sync all VMs and LXCs from Proxmox as child nodes
  * Main entry point - call this after ProxmoxPoller.poll()
  *
- * @returns {Object} Sync result with counts
+ * @returns {Promise<Object>} Sync result with counts
  */
-DiscoveryOrchestrator.prototype.syncChildNodes = function() {
+DiscoveryOrchestrator.prototype.syncChildNodes = async function() {
   this.stats = { created: 0, updated: 0, deleted: 0, errors: [] };
 
   if (!this.isEnabled()) {
@@ -70,12 +72,12 @@ DiscoveryOrchestrator.prototype.syncChildNodes = function() {
 
     // Sync VMs
     if (proxmoxData.vms && proxmoxData.vms.length > 0) {
-      this.syncGuests(proxmoxData.vms, 'vm');
+      await this.syncGuests(proxmoxData.vms, 'vm');
     }
 
     // Sync CTs (LXCs)
     if (proxmoxData.cts && proxmoxData.cts.length > 0) {
-      this.syncGuests(proxmoxData.cts, 'lxc');
+      await this.syncGuests(proxmoxData.cts, 'lxc');
     }
 
     // Cleanup orphaned children
@@ -105,55 +107,87 @@ DiscoveryOrchestrator.prototype.syncChildNodes = function() {
 
 /**
  * Sync guests (VMs or CTs) as child nodes
+ * N+1 Fix: Cache all children once instead of querying per guest
+ *
  * @param {Array} guests - Array of VM/CT objects from proxmox_vms/proxmox_cts
  * @param {string} type - 'vm' or 'lxc'
  */
-DiscoveryOrchestrator.prototype.syncGuests = function(guests, type) {
+DiscoveryOrchestrator.prototype.syncGuests = async function(guests, type) {
   var self = this;
 
-  guests.forEach(function(guest) {
+  // N+1 Fix: Load all existing children once (1 query instead of N)
+  var existingChildren = db.nodes.getChildren(this.hostNodeId);
+  var childMap = {};
+  for (var i = 0; i < existingChildren.length; i++) {
+    var c = existingChildren[i];
+    if (c.guest_type === type && c.guest_vmid) {
+      childMap[c.guest_vmid] = c;
+    }
+  }
+
+  for (var j = 0; j < guests.length; j++) {
+    var guest = guests[j];
     try {
       var vmid = type === 'vm' ? guest.vmid : guest.ctid;
 
-      // Check if child node already exists
-      var existing = db.nodes.getByGuestId(self.hostNodeId, vmid, type);
+      // O(1) lookup instead of O(N) query
+      var existing = childMap[vmid];
 
       if (existing) {
         // Update existing child node status
         self.updateChildNode(existing, guest);
         self.stats.updated++;
       } else {
-        // Create new child node
-        self.createChildNode(guest, type);
+        // Create new child node (async for IP retrieval)
+        await self.createChildNode(guest, type);
         self.stats.created++;
       }
     } catch (err) {
       self.stats.errors.push('Failed to sync ' + type + ' ' + (guest.vmid || guest.ctid) + ': ' + err.message);
     }
-  });
+  }
 };
 
 /**
  * Create a new child node from Proxmox guest
+ * Fetches guest IP immediately if guest is running
+ *
  * @param {Object} guest - VM/CT object
  * @param {string} type - 'vm' or 'lxc'
- * @returns {number} New node ID
+ * @returns {Promise<number>} New node ID
  */
-DiscoveryOrchestrator.prototype.createChildNode = function(guest, type) {
+DiscoveryOrchestrator.prototype.createChildNode = async function(guest, type) {
   var vmid = type === 'vm' ? guest.vmid : guest.ctid;
   var name = guest.name || (type + '-' + vmid);
 
-  console.log('[DiscoveryOrchestrator] Creating child node: ' + name + ' (' + type + ' ' + vmid + ')');
+  // Get guest IP if running (async)
+  var guestIp = null;
+  if (guest.status === 'running') {
+    try {
+      var hostNode = db.nodes.getByIdWithCredentials(this.hostNodeId);
+      if (hostNode) {
+        var ipResult = await childCollector.getGuestIpFromHost(hostNode, vmid, type);
+        if (ipResult.success && ipResult.ip && validators.isValidIP(ipResult.ip)) {
+          guestIp = ipResult.ip;
+        }
+      }
+    } catch (err) {
+      console.warn('[DiscoveryOrchestrator] Failed to get IP for ' + name + ':', err.message);
+    }
+  }
+
+  console.log('[DiscoveryOrchestrator] Creating child node: ' + name +
+              ' (' + type + ' ' + vmid + ') IP: ' + (guestIp || 'pending'));
 
   var nodeId = db.nodes.createChildFromProxmox(this.hostNodeId, {
     name: name,
     guest_vmid: vmid,
     guest_type: type,
+    guest_ip: guestIp,
     node_type: type === 'vm' ? 'proxmox-vm' : 'proxmox-lxc'
   });
 
   // Set initial online status based on Proxmox status
-  var isOnline = guest.status === 'running';
   db.nodes.updateChildStatus(nodeId, guest.status);
 
   return nodeId;
@@ -234,9 +268,9 @@ DiscoveryOrchestrator.prototype.handleOrphanedChild = function(orphan) {
  * Force sync a single guest (manual trigger)
  * @param {number} vmid - VM/CT ID
  * @param {string} type - 'vm' or 'lxc'
- * @returns {Object} Result
+ * @returns {Promise<Object>} Result
  */
-DiscoveryOrchestrator.prototype.syncSingleGuest = function(vmid, type) {
+DiscoveryOrchestrator.prototype.syncSingleGuest = async function(vmid, type) {
   try {
     // Get guest from Proxmox data
     var guest = type === 'vm'
@@ -253,7 +287,7 @@ DiscoveryOrchestrator.prototype.syncSingleGuest = function(vmid, type) {
       this.updateChildNode(existing, guest);
       return { success: true, action: 'updated', nodeId: existing.id };
     } else {
-      var nodeId = this.createChildNode(guest, type);
+      var nodeId = await this.createChildNode(guest, type);
       return { success: true, action: 'created', nodeId: nodeId };
     }
   } catch (err) {
@@ -305,9 +339,9 @@ function getOrchestrator(hostNodeId) {
 /**
  * Sync all Proxmox hosts' children
  * Called periodically or after ProxmoxPoller updates
- * @returns {Object} Combined results
+ * @returns {Promise<Object>} Combined results
  */
-function syncAllHosts() {
+async function syncAllHosts() {
   var results = {
     hosts: 0,
     created: 0,
@@ -324,9 +358,11 @@ function syncAllHosts() {
       return discovery && discovery.is_proxmox_host === 1;
     });
 
-    proxmoxHosts.forEach(function(host) {
+    // Process hosts sequentially (to avoid overwhelming SSH)
+    for (var i = 0; i < proxmoxHosts.length; i++) {
+      var host = proxmoxHosts[i];
       var orchestrator = getOrchestrator(host.id);
-      var result = orchestrator.syncChildNodes();
+      var result = await orchestrator.syncChildNodes();
 
       if (!result.skipped) {
         results.hosts++;
@@ -337,7 +373,7 @@ function syncAllHosts() {
           results.errors = results.errors.concat(result.errors);
         }
       }
-    });
+    }
 
     return results;
   } catch (err) {

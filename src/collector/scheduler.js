@@ -243,9 +243,9 @@ function startProxmoxPollers() {
  */
 function startDiscoverySync() {
   // Initial sync after ProxmoxPollers have run (delay to let them populate data)
-  setTimeout(function() {
+  setTimeout(async function() {
     try {
-      var result = DiscoveryOrchestrator.syncAllHosts();
+      var result = await DiscoveryOrchestrator.syncAllHosts();
       console.log('[SCHEDULER] Discovery sync complete: created=' + result.created +
                   ', updated=' + result.updated + ', deleted=' + result.deleted);
     } catch (err) {
@@ -254,9 +254,9 @@ function startDiscoverySync() {
   }, 10000);  // 10 seconds after start
 
   // Periodic sync
-  discoverySyncTimer = setInterval(function() {
+  discoverySyncTimer = setInterval(async function() {
     try {
-      DiscoveryOrchestrator.syncAllHosts();
+      await DiscoveryOrchestrator.syncAllHosts();
     } catch (err) {
       console.error('[SCHEDULER] Discovery sync failed:', err.message);
     }

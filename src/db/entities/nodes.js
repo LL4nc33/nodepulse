@@ -359,6 +359,7 @@ const nodes = {
    * @param {string} data.name - VM/LXC name
    * @param {number} data.guest_vmid - VM/CT ID (100-999999)
    * @param {string} data.guest_type - 'vm' or 'lxc'
+   * @param {string} data.guest_ip - Guest IP address (optional)
    * @param {string} data.node_type - 'proxmox-vm' or 'proxmox-lxc'
    * @returns {number} New node ID
    */
@@ -367,12 +368,12 @@ const nodes = {
       INSERT INTO nodes (
         name, host, ssh_port, ssh_user,
         parent_id, auto_discovered_from,
-        guest_vmid, guest_type, node_type,
+        guest_vmid, guest_type, guest_ip, node_type,
         monitoring_enabled, auto_discovery
       ) VALUES (
         @name, @host, @ssh_port, @ssh_user,
         @parent_id, @auto_discovered_from,
-        @guest_vmid, @guest_type, @node_type,
+        @guest_vmid, @guest_type, @guest_ip, @node_type,
         @monitoring_enabled, @auto_discovery
       )
     `);
@@ -390,6 +391,7 @@ const nodes = {
       auto_discovered_from: parentId,
       guest_vmid: data.guest_vmid,
       guest_type: data.guest_type,
+      guest_ip: data.guest_ip || null,
       node_type: data.node_type || (data.guest_type === 'vm' ? 'proxmox-vm' : 'proxmox-lxc'),
       monitoring_enabled: 1,
       auto_discovery: 1

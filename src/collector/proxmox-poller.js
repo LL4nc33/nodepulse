@@ -115,21 +115,38 @@ ProxmoxPoller.prototype.parseOutput = function(stdout) {
 
       // Parse pct list output (CTs)
       // Format: VMID Status Lock Name
+      // Example: "102 running palmr" or "102 running migrate palmr"
       if (sections[i] === 'PCT' && sections[i + 1]) {
         var ctLines = sections[i + 1].trim().split('\n').slice(1); // Skip header
         for (var k = 0; k < ctLines.length; k++) {
           var ctParts = ctLines[k].trim().split(/\s+/);
           if (ctParts.length >= 2 && !isNaN(parseInt(ctParts[0], 10))) {
-            // pct list: VMID Status [Lock] Name - Name kann an Position 2 oder 3 sein
-            var ctName = ctParts.length >= 4 ? ctParts[3] : (ctParts.length >= 3 ? ctParts[2] : null);
-            // Wenn ctParts[2] "running" oder "stopped" ist, dann ist es kein Lock
-            if (ctName === 'running' || ctName === 'stopped') {
-              ctName = null;
+            // pct list output: VMID Status [Lock] Name
+            // - Parts[0] = VMID
+            // - Parts[1] = Status (running/stopped)
+            // - Parts[2] = Lock (if present) OR Name (if no lock)
+            // - Parts[3+] = Name (if lock present)
+            var ctName = null;
+            var status = ctParts[1].toLowerCase();
+
+            if (ctParts.length >= 3) {
+              // Check if parts[2] looks like a lock type or is the name
+              var lockTypes = ['backup', 'create', 'migrate', 'rollback', 'snapshot', 'suspended'];
+              var potentialLock = ctParts[2].toLowerCase();
+
+              if (lockTypes.indexOf(potentialLock) !== -1) {
+                // Parts[2] is a lock, name is parts[3+]
+                ctName = ctParts.slice(3).join(' ') || null;
+              } else {
+                // Parts[2+] is the name (no lock)
+                ctName = ctParts.slice(2).join(' ') || null;
+              }
             }
+
             data.cts.push({
               ctid: parseInt(ctParts[0], 10),
               name: ctName,
-              status: ctParts[1].toLowerCase()
+              status: status
             });
           }
         }

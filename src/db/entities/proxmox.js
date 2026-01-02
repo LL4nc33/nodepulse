@@ -307,11 +307,12 @@ const proxmox = {
       }
 
       // Upsert VMs (INSERT OR REPLACE)
+      // Fix: Only update name if new value is not NULL (prevents losing names)
       const upsertStmt = database.prepare(`
         INSERT INTO proxmox_vms (node_id, vmid, name, status, cpu_cores, memory_bytes, disk_bytes, template)
         VALUES (@node_id, @vmid, @name, @status, @cpu_cores, @memory_bytes, @disk_bytes, @template)
         ON CONFLICT(node_id, vmid) DO UPDATE SET
-          name = COALESCE(@name, name),
+          name = CASE WHEN @name IS NOT NULL AND @name != '' THEN @name ELSE name END,
           status = @status,
           updated_at = CURRENT_TIMESTAMP
       `);
@@ -350,11 +351,12 @@ const proxmox = {
       }
 
       // Upsert CTs (INSERT OR REPLACE)
+      // Fix: Only update name if new value is not NULL (prevents losing names)
       const upsertStmtCT = database.prepare(`
         INSERT INTO proxmox_cts (node_id, ctid, name, status, cpu_cores, memory_bytes, disk_bytes, template)
         VALUES (@node_id, @ctid, @name, @status, @cpu_cores, @memory_bytes, @disk_bytes, @template)
         ON CONFLICT(node_id, ctid) DO UPDATE SET
-          name = COALESCE(@name, name),
+          name = CASE WHEN @name IS NOT NULL AND @name != '' THEN @name ELSE name END,
           status = @status,
           updated_at = CURRENT_TIMESTAMP
       `);
