@@ -37,7 +37,7 @@ function getSSHOptions(node) {
     `ssh-${node.ssh_user}@${node.host}:${node.ssh_port || 22}`
   );
 
-  return [
+  const options = [
     '-o', 'ControlMaster=auto',
     '-o', `ControlPath=${controlPath}`,
     '-o', `ControlPersist=${CONTROL_PERSIST}`,
@@ -45,9 +45,16 @@ function getSSHOptions(node) {
     '-o', 'ServerAliveInterval=15',
     '-o', 'ServerAliveCountMax=3',
     '-o', 'StrictHostKeyChecking=no',
-    '-o', 'BatchMode=yes',
     '-o', 'ConnectTimeout=10',
   ];
+
+  // Only use BatchMode for key-based auth (no password)
+  // BatchMode=yes disables password prompts which breaks sshpass
+  if (!node.ssh_password) {
+    options.push('-o', 'BatchMode=yes');
+  }
+
+  return options;
 }
 
 /**
