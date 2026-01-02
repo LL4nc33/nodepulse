@@ -9,6 +9,7 @@ var db = require('../db');
 var ssh = require('../ssh');
 var utils = require('./utils');
 var childCollector = require('./child-collector');
+var validators = require('../lib/validators');
 
 /**
  * Run discovery on a node
@@ -91,15 +92,18 @@ async function runDiscoveryForChild(childNode) {
   // Extract and save guest IP (for display instead of host IP)
   var guestIp = null;
   if (batchResult.results['get-ip'] && batchResult.results['get-ip'].success) {
-    guestIp = batchResult.results['get-ip'].stdout.trim();
-    if (guestIp) {
-      // Update node with guest_ip via proper entity method
+    var rawIp = batchResult.results['get-ip'].stdout.trim();
+    // Validate IP format before saving (security: prevent injection via SSH output)
+    if (rawIp && validators.isValidIP(rawIp)) {
+      guestIp = rawIp;
       try {
         db.nodes.setGuestIp(childNode.id, guestIp);
         console.log('[DISCOVERY] Set guest_ip for ' + childNode.name + ': ' + guestIp);
       } catch (err) {
         console.error('[DISCOVERY] Failed to save guest_ip:', err.message);
       }
+    } else if (rawIp) {
+      console.warn('[DISCOVERY] Invalid IP format for ' + childNode.name + ': ' + rawIp.substring(0, 50));
     }
   }
 
@@ -315,11 +319,20 @@ function getTagsFromDiscovery(discoveryData) {
  */
 function applyAutoTags(nodeId, discoveryData) {
   var tagNames = getTagsFromDiscovery(discoveryData);
+  if (tagNames.length === 0) return;
 
-  for (var i = 0; i < tagNames.length; i++) {
-    var tag = db.tags.getByName(tagNames[i]);
-    if (tag) {
-      db.tags.addToNode(nodeId, tag.id);
+  // Pre-fetch all tags once (N+1 fix: 1 query instead of N)
+  var allTags = db.tags.getAll();
+  var tagMap = {};
+  for (var i = 0; i < allTags.length; i++) {
+    tagMap[allTags[i].name] = allTags[i].id;
+  }
+
+  // Apply tags using cached lookup
+  for (var j = 0; j < tagNames.length; j++) {
+    var tagId = tagMap[tagNames[j]];
+    if (tagId) {
+      db.tags.addToNode(nodeId, tagId);
     }
   }
 }

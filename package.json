@@ -13,6 +13,7 @@
     "build:css": "node scripts/build-css.js",
     "build:js": "node scripts/build-detail-js.js",
     "build": "npm run build:css && npm run build:js",
+    "test": "node --test 'tests/unit/*.test.js'",
     "test:perf": "node tests/performance/api-performance.js"
   },
   "keywords": [

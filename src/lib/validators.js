@@ -195,6 +195,31 @@ function validateResizeParams(data) {
   };
 }
 
+/**
+ * Validiert eine IPv4 oder IPv6 Adresse
+ * @param {*} ip - IP-Adresse
+ * @returns {boolean} true wenn valide IP
+ */
+function isValidIP(ip) {
+  if (!ip || typeof ip !== 'string') return false;
+  if (ip.length > 45) return false;  // IPv6 max length
+
+  // IPv4 Pattern
+  var ipv4Pattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+  if (ipv4Pattern.test(ip)) {
+    var parts = ip.split('.');
+    for (var i = 0; i < parts.length; i++) {
+      var num = parseInt(parts[i], 10);
+      if (num < 0 || num > 255) return false;
+    }
+    return true;
+  }
+
+  // IPv6 Pattern (vereinfacht - erlaubt :: Kompression)
+  var ipv6Pattern = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
+  return ipv6Pattern.test(ip);
+}
+
 module.exports = {
   validateRequired: validateRequired,
   validateRequiredWithLength: validateRequiredWithLength,
@@ -203,5 +228,6 @@ module.exports = {
   validateCommand: validateCommand,
   validateCores: validateCores,
   validateMemory: validateMemory,
-  validateResizeParams: validateResizeParams
+  validateResizeParams: validateResizeParams,
+  isValidIP: isValidIP
 };

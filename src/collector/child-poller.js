@@ -33,30 +33,38 @@ var MAX_BATCH_TIMEOUT = 30000;  // 30 seconds total
 
 /**
  * Parse Docker size string to bytes
- * Handles formats: "1.2GB", "500MB", "100KB", "50B"
+ * Handles formats: "1.2GB", "500MB", "100KB", "50B", "5TB", "1PB"
+ * Also handles binary formats: "1.2GiB", "500MiB", etc.
  * @param {string} sizeStr - Size string from docker (e.g., "1.2GB")
  * @returns {number} Size in bytes
  */
 function parseSizeToBytes(sizeStr) {
   if (!sizeStr || typeof sizeStr !== 'string') return 0;
 
-  var match = sizeStr.match(/^([\d.]+)\s*([KMGT]?B)/i);
+  // Match: number + optional space + optional prefix (K/M/G/T/P) + optional 'i' + B
+  // Supports: B, KB, MB, GB, TB, PB, KiB, MiB, GiB, TiB, PiB
+  var match = sizeStr.match(/^([\d.]+)\s*([KMGTP]?i?B)/i);
   if (!match) return 0;
 
   var num = parseFloat(match[1]);
-  var unit = match[2].toUpperCase();
+  // Normalize: remove 'i' from binary units (KiB → KB)
+  var unit = match[2].toUpperCase().replace('I', '');
 
   if (isNaN(num)) return 0;
 
   switch (unit) {
+    case 'PB':
+      return Math.floor(num * 1125899906842624);  // 1024^5
+    case 'TB':
+      return Math.floor(num * 1099511627776);     // 1024^4
     case 'GB':
-      return Math.round(num * 1073741824);  // 1024^3
+      return Math.floor(num * 1073741824);        // 1024^3
     case 'MB':
-      return Math.round(num * 1048576);     // 1024^2
+      return Math.floor(num * 1048576);           // 1024^2
     case 'KB':
-      return Math.round(num * 1024);
+      return Math.floor(num * 1024);
     case 'B':
-      return Math.round(num);
+      return Math.floor(num);
     default:
       return 0;
   }
@@ -262,14 +270,15 @@ ChildPoller.prototype.pollBatched = async function(hostNode, children) {
  * Parse Docker output with section markers
  * Parses containers, images, volumes, and networks
  * @param {string} output - Docker output with section markers
- * @returns {Object} Object with containers, images, volumes, networks arrays
+ * @returns {Object} Object with containers, images, volumes, networks arrays + parseErrors count
  */
 ChildPoller.prototype.parseDockerOutput = function(output) {
   var result = {
     containers: [],
     images: [],
     volumes: [],
-    networks: []
+    networks: [],
+    parseErrors: 0
   };
 
   if (!output) return result;
@@ -317,6 +326,9 @@ ChildPoller.prototype.parseDockerOutput = function(output) {
         name: parts[1],
         driver: parts[2]
       });
+    } else if (section) {
+      // Line in a known section but malformed (insufficient parts)
+      result.parseErrors++;
     }
   }
 

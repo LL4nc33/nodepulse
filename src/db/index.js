@@ -376,6 +376,15 @@ async function init() {
       // Don't throw - app can function without this column
     }
 
+    // Migration 14: Composite index for parent guest lookup
+    // Optimizes getByGuestId() queries that filter by parent_id + guest_vmid + guest_type
+    try {
+      db.exec('CREATE INDEX IF NOT EXISTS idx_nodes_parent_guest ON nodes(parent_id, guest_vmid, guest_type)');
+    } catch (err) {
+      // Index might already exist with different definition
+      console.error('[DB] Migration error (parent_guest index):', err.message);
+    }
+
     // Run seed data
     const seedPath = path.join(__dirname, 'seed.sql');
     const seed = fs.readFileSync(seedPath, 'utf8');

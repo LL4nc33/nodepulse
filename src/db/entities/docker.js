@@ -183,21 +183,105 @@ const docker = {
   },
 
   /**
-   * Save all Docker data for a node
+   * Save all Docker data for a node in a single transaction
+   * Performance: 1 transaction instead of 4
    */
   saveAll(nodeId, data) {
-    if (data.containers) {
-      this.saveContainers(nodeId, data.containers);
-    }
-    if (data.images) {
-      this.saveImages(nodeId, data.images);
-    }
-    if (data.volumes) {
-      this.saveVolumes(nodeId, data.volumes);
-    }
-    if (data.networks) {
-      this.saveNetworks(nodeId, data.networks);
-    }
+    var self = this;
+    var db = getDb();
+
+    // Prepare all statements once
+    var stmts = {
+      delContainers: db.prepare('DELETE FROM docker_containers WHERE node_id = ?'),
+      insContainer: db.prepare(`
+        INSERT OR REPLACE INTO docker_containers (node_id, container_id, name, image, status, state, ports_json, created_at)
+        VALUES (@node_id, @container_id, @name, @image, @status, @state, @ports_json, @created_at)
+      `),
+      delImages: db.prepare('DELETE FROM docker_images WHERE node_id = ?'),
+      insImage: db.prepare(`
+        INSERT OR REPLACE INTO docker_images (node_id, image_id, repository, tag, size_bytes, created_at)
+        VALUES (@node_id, @image_id, @repository, @tag, @size_bytes, @created_at)
+      `),
+      delVolumes: db.prepare('DELETE FROM docker_volumes WHERE node_id = ?'),
+      insVolume: db.prepare(`
+        INSERT OR REPLACE INTO docker_volumes (node_id, name, driver, mountpoint, in_use)
+        VALUES (@node_id, @name, @driver, @mountpoint, @in_use)
+      `),
+      delNetworks: db.prepare('DELETE FROM docker_networks WHERE node_id = ?'),
+      insNetwork: db.prepare(`
+        INSERT OR REPLACE INTO docker_networks (node_id, network_id, name, driver, scope)
+        VALUES (@node_id, @network_id, @name, @driver, @scope)
+      `)
+    };
+
+    // Single transaction for all operations
+    var saveAllTx = db.transaction(function(nodeId, data) {
+      // Containers
+      stmts.delContainers.run(nodeId);
+      if (data.containers) {
+        for (var i = 0; i < data.containers.length; i++) {
+          var c = data.containers[i];
+          stmts.insContainer.run({
+            node_id: nodeId,
+            container_id: c.id,
+            name: c.name,
+            image: c.image,
+            status: c.status,
+            state: c.state,
+            ports_json: c.ports || null,
+            created_at: c.created || null
+          });
+        }
+      }
+
+      // Images
+      stmts.delImages.run(nodeId);
+      if (data.images) {
+        for (var j = 0; j < data.images.length; j++) {
+          var img = data.images[j];
+          stmts.insImage.run({
+            node_id: nodeId,
+            image_id: img.id,
+            repository: img.repository,
+            tag: img.tag,
+            size_bytes: img.size_bytes || 0,
+            created_at: img.created || null
+          });
+        }
+      }
+
+      // Volumes
+      stmts.delVolumes.run(nodeId);
+      if (data.volumes) {
+        for (var k = 0; k < data.volumes.length; k++) {
+          var v = data.volumes[k];
+          stmts.insVolume.run({
+            node_id: nodeId,
+            name: v.name,
+            driver: v.driver || 'local',
+            mountpoint: v.mountpoint || null,
+            in_use: v.in_use ? 1 : 0
+          });
+        }
+      }
+
+      // Networks
+      stmts.delNetworks.run(nodeId);
+      if (data.networks) {
+        for (var l = 0; l < data.networks.length; l++) {
+          var n = data.networks[l];
+          stmts.insNetwork.run({
+            node_id: nodeId,
+            network_id: n.id,
+            name: n.name,
+            driver: n.driver || 'bridge',
+            scope: n.scope || 'local'
+          });
+        }
+      }
+    });
+
+    saveAllTx(nodeId, data);
   },
 
   /**
