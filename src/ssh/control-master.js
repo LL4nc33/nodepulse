@@ -42,7 +42,6 @@ function getSSHOptions(node) {
     '-o', `ControlPath=${controlPath}`,
     '-o', `ControlPersist=${CONTROL_PERSIST}`,
     '-o', 'Compression=yes',
-    '-o', 'CompressionLevel=6',
     '-o', 'ServerAliveInterval=15',
     '-o', 'ServerAliveCountMax=3',
     '-o', 'StrictHostKeyChecking=no',
