@@ -200,8 +200,11 @@ function start() {
   // Initial collection (after a short delay to let the server start)
   initialCollectionTimer = setTimeout(tick, 2000);
 
-  // Start ProxmoxPollers for Proxmox hosts
-  startProxmoxPollers();
+  // Start ProxmoxPollers for Proxmox hosts (after Discovery has run)
+  // Discovery runs at tick() (2s), so wait 10s to ensure is_proxmox_host is set
+  setTimeout(function() {
+    startProxmoxPollers();
+  }, 10000);
 
   // Start Discovery Orchestrator sync (syncs VMs/LXCs as child nodes)
   startDiscoverySync();
