@@ -22,6 +22,10 @@ const DISCOVERY_SYNC_INTERVAL = 120000;  // 2 minutes
 let childDiscoveryTimer = null;
 const CHILD_DISCOVERY_INTERVAL = 300000;  // 5 minutes
 
+// Circuit breaker cleanup timer
+let circuitBreakerCleanupTimer = null;
+const CIRCUIT_BREAKER_CLEANUP_INTERVAL = 600000;  // 10 minutes
+
 // Track collection state
 let isRunning = false;
 let isCollecting = false;
@@ -69,7 +73,13 @@ async function collectNode(node) {
   }
 
   try {
-    await collector.runStats(node, true);
+    // Check if this is a child node (VM/LXC) - use pct/qm exec via parent
+    if (node.parent_id && node.guest_type && node.guest_vmid) {
+      await collector.runStatsForChild(node, true);
+    } else {
+      // Normal node: Direct SSH stats
+      await collector.runStats(node, true);
+    }
     const durationMs = Date.now() - startMs;
     stats.successfulCollections++;
     stats.totalDurationMs += durationMs;
@@ -214,6 +224,11 @@ function start() {
 
   // Start child discovery (to collect guest_ip for VMs/LXCs)
   startChildDiscovery();
+
+  // Start circuit breaker cleanup (resets stale open breakers)
+  circuitBreakerCleanupTimer = setInterval(function() {
+    CircuitBreaker.cleanupStale(CIRCUIT_BREAKER_CLEANUP_INTERVAL);
+  }, CIRCUIT_BREAKER_CLEANUP_INTERVAL);
 }
 
 /**
@@ -399,6 +414,12 @@ function stop() {
   if (childDiscoveryTimer) {
     clearInterval(childDiscoveryTimer);
     childDiscoveryTimer = null;
+  }
+
+  // Stop circuit breaker cleanup timer
+  if (circuitBreakerCleanupTimer) {
+    clearInterval(circuitBreakerCleanupTimer);
+    circuitBreakerCleanupTimer = null;
   }
 }
 

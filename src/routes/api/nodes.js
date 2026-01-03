@@ -824,4 +824,58 @@ router.get('/:id/commands/history', asyncHandler(async (req, res) => {
   apiResponse(res, 200, history);
 }));
 
+// =====================================================
+// Circuit Breaker Management
+// =====================================================
+
+var CircuitBreaker = require('../../lib/circuit-breaker');
+
+// Reset circuit breaker for a node (allows retry after failures)
+router.post('/:id/circuit-breaker/reset', asyncHandler(async function(req, res) {
+  var nodeId = parseIntParam(req.params.id);
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
+  }
+
+  var node = db.nodes.getById(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  CircuitBreaker.reset(nodeId);
+  apiResponse(res, 200, {
+    success: true,
+    message: 'Circuit breaker für ' + node.name + ' zurückgesetzt',
+    node_id: nodeId,
+    node_name: node.name
+  });
+}));
+
+// Get circuit breaker status for a node
+router.get('/:id/circuit-breaker', asyncHandler(async function(req, res) {
+  var nodeId = parseIntParam(req.params.id);
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
+  }
+
+  var node = db.nodes.getById(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  var allStates = CircuitBreaker.getAllStates();
+  var state = allStates.find(function(s) { return s.nodeId === nodeId; });
+
+  apiResponse(res, 200, {
+    node_id: nodeId,
+    node_name: node.name,
+    circuit_breaker: state || {
+      state: 'closed',
+      failures: 0,
+      lastFailure: null,
+      timeSinceFailureSec: null
+    }
+  });
+}));
+
 module.exports = router;

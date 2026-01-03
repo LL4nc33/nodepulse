@@ -199,13 +199,65 @@ function resetAll() {
   console.log(`[CircuitBreaker] All ${count} breakers RESET`);
 }
 
+/**
+ * Periodic cleanup of stale open circuit breakers
+ * Resets breakers that have been open for longer than maxAge
+ *
+ * @param {number} maxAgeMs - Maximum age in milliseconds (default: 10 minutes)
+ * @returns {number} - Number of breakers reset
+ */
+function cleanupStale(maxAgeMs) {
+  if (maxAgeMs === undefined) maxAgeMs = 600000; // 10 minutes
+  const now = Date.now();
+  let resetCount = 0;
+
+  states.forEach(function(state, nodeId) {
+    if (state.state === 'open' && now - state.lastFailure > maxAgeMs) {
+      states.delete(nodeId);
+      resetCount++;
+      console.log('[CircuitBreaker] Node ' + nodeId + ' breaker auto-reset (stale for ' + Math.round((now - state.lastFailure) / 60000) + ' min)');
+    }
+  });
+
+  if (resetCount > 0) {
+    console.log('[CircuitBreaker] Cleanup: reset ' + resetCount + ' stale breakers');
+  }
+
+  return resetCount;
+}
+
+/**
+ * Get detailed state for all nodes
+ * Useful for debugging and UI display
+ *
+ * @returns {Array} - Array of {nodeId, state, failures, lastFailure, timeSinceFailure}
+ */
+function getAllStates() {
+  const now = Date.now();
+  const result = [];
+
+  states.forEach(function(state, nodeId) {
+    result.push({
+      nodeId: nodeId,
+      state: state.state,
+      failures: state.failures,
+      lastFailure: state.lastFailure,
+      timeSinceFailureSec: state.lastFailure ? Math.round((now - state.lastFailure) / 1000) : null
+    });
+  });
+
+  return result;
+}
+
 module.exports = {
   canExecute,
   recordSuccess,
   recordFailure,
   getStats,
+  getAllStates,
   reset,
   resetAll,
+  cleanupStale,
   // Export constants for testing
   FAILURE_THRESHOLD,
   OPEN_TIMEOUT,
