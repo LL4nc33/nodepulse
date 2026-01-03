@@ -294,13 +294,18 @@ async function runChildDiscovery() {
   try {
     var nodes = db.nodes.getAll();
 
-    // Find child nodes that need discovery (missing guest_ip, online, have guest_type)
+    // Find child nodes that need discovery (missing discovery data or guest_ip)
     var childrenNeedingDiscovery = nodes.filter(function(n) {
-      return n.guest_type &&          // Is a child node (VM or LXC)
-             n.guest_vmid &&          // Has VMID
-             n.online === 1 &&        // Is online
-             !n.guest_ip &&           // Missing guest_ip
-             n.monitoring_enabled;    // Monitoring enabled
+      if (!n.guest_type || !n.guest_vmid || n.online !== 1 || !n.monitoring_enabled) {
+        return false;
+      }
+      // Need discovery if missing guest_ip
+      if (!n.guest_ip) {
+        return true;
+      }
+      // Also need discovery if no discovery data exists
+      var disc = db.discovery.get(n.id);
+      return !disc || !disc.hostname;
     });
 
     if (childrenNeedingDiscovery.length === 0) {
