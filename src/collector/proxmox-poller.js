@@ -69,10 +69,7 @@ ProxmoxPoller.prototype.poll = async function() {
     });
 
     if (result && result.stdout) {
-      console.log('[ProxmoxPoller] Raw stdout length:', result.stdout.length);
-      console.log('[ProxmoxPoller] Raw stdout (first 500 chars):', result.stdout.substring(0, 500));
       var data = this.parseOutput(result.stdout);
-      console.log('[ProxmoxPoller] Parsed CTs:', JSON.stringify(data.cts));
       if (data) {
         // Use syncFromPoller to add/remove/update VMs and CTs
         db.proxmox.syncFromPoller(this.nodeId, data);
@@ -121,10 +118,8 @@ ProxmoxPoller.prototype.parseOutput = function(stdout) {
       // Example: "102 running palmr" or "102 running migrate palmr"
       if (sections[i] === 'PCT' && sections[i + 1]) {
         var ctLines = sections[i + 1].trim().split('\n').slice(1); // Skip header
-        console.log('[ProxmoxPoller] PCT lines count:', ctLines.length);
         for (var k = 0; k < ctLines.length; k++) {
           var ctParts = ctLines[k].trim().split(/\s+/);
-          console.log('[ProxmoxPoller] CT parts:', JSON.stringify(ctParts));
           if (ctParts.length >= 2 && !isNaN(parseInt(ctParts[0], 10))) {
             // pct list output: VMID Status [Lock] Name
             // - Parts[0] = VMID
@@ -148,7 +143,6 @@ ProxmoxPoller.prototype.parseOutput = function(stdout) {
               }
             }
 
-            console.log('[ProxmoxPoller] Parsed CT:', ctParts[0], 'name:', ctName, 'status:', status);
             data.cts.push({
               ctid: parseInt(ctParts[0], 10),
               name: ctName,

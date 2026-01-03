@@ -249,6 +249,8 @@ function startDiscoverySync() {
   // ProxmoxPoller runs every 30s, so wait 45s to ensure first poll is complete
   setTimeout(async function() {
     try {
+      // Start any new ProxmoxPollers (for newly discovered Proxmox hosts)
+      startProxmoxPollers();
       var result = await DiscoveryOrchestrator.syncAllHosts();
       console.log('[SCHEDULER] Discovery sync complete: created=' + result.created +
                   ', updated=' + result.updated + ', deleted=' + result.deleted);
@@ -260,6 +262,8 @@ function startDiscoverySync() {
   // Periodic sync
   discoverySyncTimer = setInterval(async function() {
     try {
+      // Start any new ProxmoxPollers (for newly discovered Proxmox hosts)
+      startProxmoxPollers();
       await DiscoveryOrchestrator.syncAllHosts();
     } catch (err) {
       console.error('[SCHEDULER] Discovery sync failed:', err.message);
