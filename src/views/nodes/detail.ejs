@@ -29,18 +29,36 @@
     </h1>
     <div class="node-info-inline">
       <% if (node.parent_id && typeof parentNode !== 'undefined' && parentNode) { %>
-        <span class="parent-link">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 18 9 12 15 6"/>
+        <!-- Child-Node: Prominente Badges -->
+        <span class="child-info-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
           </svg>
-          <a href="/nodes/<%= parentNode.id %>"><%= parentNode.name %></a>
+          Via <a href="/nodes/<%= parentNode.id %>"><%= parentNode.name %></a>
         </span>
+        <% if (node.guest_type) { %>
+          <span class="node-type-badge guest-badge <%= node.guest_type %>"><%= node.guest_type.toUpperCase() %></span>
+        <% } %>
+        <% if (!node.guest_ip) { %>
+          <span class="node-warning-badge" title="IP konnte nicht ermittelt werden - VM/LXC ist moeglicherweise gestoppt">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Keine IP
+          </span>
+        <% } else { %>
+          <span class="mono child-ip"><%= node.guest_ip %></span>
+        <% } %>
+        <% if (node.auto_discovered_from) { %>
+          <span class="auto-discovered-badge" title="Automatisch per Discovery erkannt">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            Auto
+          </span>
+        <% } %>
       <% } else { %>
         <span class="mono"><%= node.ssh_user %>@<%= node.guest_ip || node.host %>:<%= node.ssh_port %></span>
-      <% } %>
-      <% if (node.guest_type) { %>
-        <span class="node-type-badge guest-badge <%= node.guest_type %>"><%= node.guest_type.toUpperCase() %></span>
-      <% } else { %>
         <span class="node-type-badge"><%= node.node_type || 'Server' %></span>
       <% } %>
       <span class="monitoring-badge <%= node.monitoring_enabled ? 'active' : 'inactive' %>">

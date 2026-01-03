@@ -59,7 +59,7 @@
 
   --color-text: #e0e0e0;
   --color-text-muted: #b5b5b5;
-  --color-text-secondary: #888888;
+  --color-text-secondary: #999999;
   --color-text-heading: #ffffff;
 
   --color-accent: #5fa332;
@@ -407,11 +407,12 @@ a:focus {
   100% { -webkit-transform: scale(1); transform: scale(1); }
 }
 
-/* Icon-only buttons */
+/* Icon-only buttons - 48px for better touch targets */
 .btn.btn-icon {
   padding: var(--space-sm);
-  min-width: 44px;
-  width: 44px;
+  min-width: 48px;
+  width: 48px;
+  height: 48px;
 }
 
 .btn.btn-icon svg {

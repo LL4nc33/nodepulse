@@ -98,6 +98,34 @@
   // Initialize section states on DOMContentLoaded
   document.addEventListener('DOMContentLoaded', function() {
     SectionToggle.init();
+
+    // Tab scroll indicator
+    var tabsContainer = document.querySelector('.tabs-container');
+    var tabs = document.querySelector('.tabs');
+    if (tabsContainer && tabs) {
+      function updateScrollIndicators() {
+        var scrollLeft = tabs.scrollLeft;
+        var scrollWidth = tabs.scrollWidth;
+        var clientWidth = tabs.clientWidth;
+
+        if (scrollLeft > 5) {
+          tabsContainer.classList.add('scroll-left');
+        } else {
+          tabsContainer.classList.remove('scroll-left');
+        }
+
+        if (scrollLeft < scrollWidth - clientWidth - 5) {
+          tabsContainer.classList.add('scroll-right');
+        } else {
+          tabsContainer.classList.remove('scroll-right');
+        }
+      }
+
+      tabs.addEventListener('scroll', updateScrollIndicators);
+      window.addEventListener('resize', updateScrollIndicators);
+      // Initial check
+      setTimeout(updateScrollIndicators, 100);
+    }
   });
 
   // =====================================================
