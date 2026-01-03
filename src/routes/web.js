@@ -232,19 +232,21 @@ router.post('/nodes/add', asyncHandler(async (req, res) => {
 
 // Node detail
 router.get('/nodes/:id', asyncHandler(async (req, res) => {
-  // Use combined query to reduce 5 queries to 1
-  const coreData = db.nodes.getByIdWithCoreData(req.params.id);
-  if (!coreData) {
+  const node = db.nodes.getById(req.params.id);
+  if (!node) {
     return res.status(404).render('error', {
       title: 'Node nicht gefunden',
       message: 'Der angeforderte Node existiert nicht.',
     });
   }
 
-  const { node, discovery, hardware, currentStats, health } = coreData;
   const nodeTags = db.tags.getForNode(node.id);
+  const discovery = db.discovery.getForNode(node.id);
+  const hardware = db.hardware.getForNode(node.id);
   const docker = discovery && discovery.has_docker ? db.docker.getAllForNode(node.id) : null;
   const proxmox = discovery && discovery.is_proxmox_host ? db.proxmox.getAllForNode(node.id) : null;
+  const currentStats = db.stats.getCurrent(node.id);
+  const health = db.health.get(node.id);
 
   // Parent node for child nodes (VM/LXC)
   const parentNode = node.parent_id ? db.nodes.getById(node.parent_id) : null;
