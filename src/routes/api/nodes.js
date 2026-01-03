@@ -220,6 +220,73 @@ router.patch('/:id/parent', asyncHandler(async (req, res) => {
   apiResponse(res, 200, updated);
 }));
 
+// Update guest IP for child nodes (VMs/LXCs)
+// Also updates host field for network tools
+router.patch('/:id/guest-ip', asyncHandler(async (req, res) => {
+  var nodeId = parseInt(req.params.id, 10);
+  if (isNaN(nodeId)) {
+    return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
+  }
+
+  var node = db.nodes.getById(nodeId);
+  if (!node) {
+    return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Only allow for child nodes (VMs/LXCs)
+  if (!node.guest_type) {
+    return apiResponse(res, 400, null, {
+      code: 'NOT_CHILD',
+      message: 'Guest-IP kann nur für Child-Nodes (VMs/LXCs) gesetzt werden'
+    });
+  }
+
+  var guestIp = req.body.guest_ip;
+
+  // Allow empty string or null to reset to auto-detection
+  if (guestIp === '' || guestIp === undefined) {
+    guestIp = null;
+  }
+
+  // Validate IP format if provided
+  if (guestIp) {
+    // Simple IPv4 validation
+    var ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    if (!ipPattern.test(guestIp)) {
+      return apiResponse(res, 400, null, {
+        code: 'INVALID_IP',
+        message: 'Ungültiges IP-Format (erwartet: IPv4, z.B. 192.168.1.100)'
+      });
+    }
+  }
+
+  // Update guest_ip
+  db.nodes.setGuestIp(nodeId, guestIp);
+
+  // Also update host field for network tools (ping, traceroute, etc.)
+  if (guestIp) {
+    var stmt = db.getDb().prepare('UPDATE nodes SET host = ? WHERE id = ?');
+    stmt.run(guestIp, nodeId);
+  } else {
+    // Reset to parent host if guest_ip is cleared
+    if (node.parent_id) {
+      var parent = db.nodes.getById(node.parent_id);
+      if (parent) {
+        var stmt = db.getDb().prepare('UPDATE nodes SET host = ? WHERE id = ?');
+        stmt.run(parent.host, nodeId);
+      }
+    }
+  }
+
+  var updated = db.nodes.getById(nodeId);
+  apiResponse(res, 200, {
+    success: true,
+    guest_ip: updated.guest_ip,
+    host: updated.host,
+    message: guestIp ? 'Guest-IP gesetzt' : 'Guest-IP zurückgesetzt (Auto-Detection aktiv)'
+  });
+}));
+
 // Import Proxmox VMs/CTs as child nodes
 router.post('/:id/import-children', asyncHandler(async (req, res) => {
   const node = db.nodes.getByIdWithCredentials(req.params.id);

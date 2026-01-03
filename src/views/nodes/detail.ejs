@@ -58,33 +58,44 @@
   </div>
   <div class="page-actions">
     <div class="page-actions-buttons">
-      <button class="btn btn-icon btn-primary" id="btn-test" onclick="testConnection(<%= node.id %>)" title="SSH Test">
-        <span class="btn-text">
+      <% if (!node.guest_type) { %>
+        <!-- Parent-Node: SSH Test, Discovery, Health Check Buttons -->
+        <button class="btn btn-icon btn-primary" id="btn-test" onclick="testConnection(<%= node.id %>)" title="SSH Test">
+          <span class="btn-text">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8l4 4-4 4"/><line x1="12" y1="16" x2="18" y2="16"/>
+            </svg>
+          </span>
+          <span class="btn-loading"><span class="spinner"></span></span>
+        </button>
+        <button class="btn btn-icon btn-secondary" id="btn-discover" onclick="runDiscovery(<%= node.id %>)" title="Discovery">
+          <span class="btn-text">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </span>
+          <span class="btn-loading"><span class="spinner"></span></span>
+        </button>
+        <button class="btn btn-icon btn-health-check <%= health && health.apt_updates > 0 ? 'btn-warning' : '' %>" onclick="runHealthCheck(<%= node.id %>)" title="Health Check">
+          <span class="btn-text">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            <% if (health && health.apt_updates > 0) { %>
+              <span class="btn-badge"><%= health.apt_updates %></span>
+            <% } %>
+          </span>
+          <span class="btn-loading"><span class="spinner"></span></span>
+        </button>
+      <% } else { %>
+        <!-- Child-Node: Info indicator -->
+        <span class="child-info-badge" title="Überwachung via Parent-Host">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8l4 4-4 4"/><line x1="12" y1="16" x2="18" y2="16"/>
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
+          Via Parent
         </span>
-        <span class="btn-loading"><span class="spinner"></span></span>
-      </button>
-      <button class="btn btn-icon btn-secondary" id="btn-discover" onclick="runDiscovery(<%= node.id %>)" title="Discovery">
-        <span class="btn-text">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-        </span>
-        <span class="btn-loading"><span class="spinner"></span></span>
-      </button>
-      <button class="btn btn-icon btn-health-check <%= health && health.apt_updates > 0 ? 'btn-warning' : '' %>" onclick="runHealthCheck(<%= node.id %>)" title="Health Check">
-        <span class="btn-text">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-          </svg>
-          <% if (health && health.apt_updates > 0) { %>
-            <span class="btn-badge"><%= health.apt_updates %></span>
-          <% } %>
-        </span>
-        <span class="btn-loading"><span class="spinner"></span></span>
-      </button>
+      <% } %>
       <button class="btn btn-edit" onclick="openEditPanel()" title="Node bearbeiten">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -176,32 +187,58 @@
         </div>
         <div class="form-group">
           <label for="edit-host">Host / IP</label>
-          <input type="text" id="edit-host" name="host" value="<%= node.host %>" required maxlength="255">
+          <input type="text" id="edit-host" name="host" value="<%= node.host %>" required maxlength="255"
+                 <%= node.guest_type ? 'readonly' : '' %>>
+          <% if (node.guest_type) { %>
+            <small class="form-hint">Wird automatisch aus Guest-IP ermittelt</small>
+          <% } %>
         </div>
+        <% if (node.guest_type) { %>
+          <div class="form-group">
+            <label for="edit-guest_ip">Guest IP (manuell setzen)</label>
+            <input type="text" id="edit-guest_ip" name="guest_ip"
+                   value="<%= node.guest_ip || '' %>"
+                   placeholder="Leer = automatische Erkennung"
+                   pattern="^(\d{1,3}\.){3}\d{1,3}$">
+            <small class="form-hint">IP-Adresse der VM/LXC. Leer lassen für Auto-Discovery.</small>
+          </div>
+        <% } %>
       </div>
 
       <!-- SSH Settings -->
       <div class="right-panel-section">
         <h3>SSH Verbindung</h3>
+        <% if (node.guest_type) { %>
+          <p class="form-section-note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            Verbindung erfolgt ueber den Parent-Host via pct/qm exec
+          </p>
+        <% } %>
         <div class="form-row">
           <div class="form-group">
             <label for="edit-ssh_user">User</label>
-            <input type="text" id="edit-ssh_user" name="ssh_user" value="<%= node.ssh_user %>" required maxlength="64">
+            <input type="text" id="edit-ssh_user" name="ssh_user" value="<%= node.ssh_user %>"
+                   <%= node.guest_type ? 'readonly' : 'required' %> maxlength="64">
           </div>
           <div class="form-group form-group-small">
             <label for="edit-ssh_port">Port</label>
-            <input type="number" id="edit-ssh_port" name="ssh_port" value="<%= node.ssh_port %>" min="1" max="65535">
+            <input type="number" id="edit-ssh_port" name="ssh_port" value="<%= node.ssh_port %>"
+                   min="1" max="65535" <%= node.guest_type ? 'readonly' : '' %>>
           </div>
         </div>
         <div class="form-group">
           <label for="edit-ssh_password">Passwort</label>
           <input type="password" id="edit-ssh_password" name="ssh_password" autocomplete="new-password"
-                 placeholder="<%= node.has_ssh_password ? 'Gesetzt - leer lassen zum Behalten' : 'Nicht gesetzt' %>">
+                 <%= node.guest_type ? 'disabled' : '' %>
+                 placeholder="<%= node.guest_type ? 'Nicht verwendet (via Parent)' : (node.has_ssh_password ? 'Gesetzt - leer lassen zum Behalten' : 'Nicht gesetzt') %>">
         </div>
         <div class="form-group">
           <label for="edit-ssh_key_path">SSH Key Pfad</label>
           <input type="text" id="edit-ssh_key_path" name="ssh_key_path" value="<%= node.ssh_key_path || '' %>"
-                 placeholder="z.B. ~/.ssh/id_rsa">
+                 <%= node.guest_type ? 'disabled' : '' %>
+                 placeholder="<%= node.guest_type ? 'Nicht verwendet (via Parent)' : 'z.B. ~/.ssh/id_rsa' %>">
         </div>
       </div>
 

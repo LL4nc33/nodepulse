@@ -95,39 +95,61 @@ function saveNode(event) {
     data.ssh_password = passwordInput.value;
   }
 
+  // Check for guest_ip field (child nodes only)
+  var guestIpInput = form.querySelector('[name="guest_ip"]');
+  var guestIpValue = guestIpInput ? guestIpInput.value.trim() : null;
+
   // Show loading state
   if (submitBtn) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner"></span> Speichern...';
   }
 
-  // API call
-  window.NP.API.put('/api/nodes/' + nodeId, data)
-    .then(function(result) {
+  // Helper function to finish save
+  function finishSave(success, errorMsg) {
+    if (success) {
       if (window.NP && window.NP.Toast) {
         window.NP.Toast.show('Node gespeichert', 'success');
       }
       closeEditPanel();
-
-      // Update page header with new values
       updatePageHeader(data);
-
-      // Reset button
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Speichern';
+    } else {
+      if (window.NP && window.NP.Toast) {
+        window.NP.Toast.show('Fehler: ' + errorMsg, 'error');
       }
+    }
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<span class="btn-text">Speichern</span><span class="btn-loading"><span class="spinner"></span></span>';
+    }
+  }
+
+  // If guest_ip is present (child node), update it first via separate endpoint
+  var guestIpPromise;
+  if (guestIpInput !== null) {
+    guestIpPromise = window.NP.API.patch('/api/nodes/' + nodeId + '/guest-ip', {
+      guest_ip: guestIpValue || null
+    }).then(function(result) {
+      // Update host field with new guest_ip for header update
+      if (guestIpValue) {
+        data.host = guestIpValue;
+      }
+      return result;
+    });
+  } else {
+    guestIpPromise = Promise.resolve();
+  }
+
+  // Chain: Update guest_ip first (if child), then update node
+  guestIpPromise
+    .then(function() {
+      return window.NP.API.put('/api/nodes/' + nodeId, data);
+    })
+    .then(function(result) {
+      finishSave(true);
     })
     .catch(function(error) {
-      if (window.NP && window.NP.Toast) {
-        window.NP.Toast.show('Fehler: ' + error.message, 'error');
-      }
-
-      // Reset button
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Speichern';
-      }
+      finishSave(false, error.message);
     });
 }
 

@@ -228,7 +228,10 @@ DiscoveryOrchestrator.prototype.updateChildNode = async function(childNode, gues
         var ipResult = await childCollector.getGuestIpFromHost(hostNode, vmid, type);
         if (ipResult.success && ipResult.ip && validators.isValidIP(ipResult.ip)) {
           db.nodes.setGuestIp(childNode.id, ipResult.ip);
-          console.log('[DiscoveryOrchestrator] Updated guest_ip for ' + childNode.name + ': ' + ipResult.ip);
+          // Also update host field for network tools (ping, traceroute, etc.)
+          var updateHostStmt = db.getDb().prepare('UPDATE nodes SET host = ? WHERE id = ?');
+          updateHostStmt.run(ipResult.ip, childNode.id);
+          console.log('[DiscoveryOrchestrator] Updated guest_ip and host for ' + childNode.name + ': ' + ipResult.ip);
         }
       }
     } catch (err) {

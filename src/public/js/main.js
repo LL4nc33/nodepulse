@@ -299,6 +299,10 @@
       return this.request('PUT', url, data, options);
     },
 
+    patch: function(url, data, options) {
+      return this.request('PATCH', url, data, options);
+    },
+
     delete: function(url, options) {
       return this.request('DELETE', url, null, options);
     }

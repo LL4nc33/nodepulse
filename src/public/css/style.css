@@ -1,5 +1,5 @@
 /* nodepulse - Built from modular CSS v0.4.0
-   Generated: 2026-01-01T17:09:04.009Z
+   Generated: 2026-01-03T14:27:07.050Z
    Compatible with Fire HD 10 2017 (Chrome ~50-60)
 
    Source modules:
@@ -1054,7 +1054,7 @@ a:focus {
 
 
 /* ============================================================
-   FROM: layout.css (2238 lines)
+   FROM: layout.css (2463 lines)
    ============================================================ */
 
 /* =====================================================
@@ -1422,6 +1422,27 @@ button.nav-link {
   gap: 0.5rem;
 }
 
+/* Child-Node Info Badge (shows "Via Parent" for child nodes) */
+.child-info-badge {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.child-info-badge svg {
+  color: var(--color-accent);
+}
 
 /* Bearbeiten Button mit Gap */
 .btn-edit {
@@ -3295,6 +3316,210 @@ button.node-tree-row {
   }
 }
 
+/* =====================================================
+   Sidebar Tree Toggle & Icons (Phase 4 - Hierarchical)
+   ===================================================== */
+
+/* Row wrapper for toggle button + link */
+.node-tree-row-wrapper {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+}
+
+/* Toggle button for expand/collapse */
+.node-tree-toggle {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin-right: 0.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  border-radius: 4px;
+  -webkit-transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.node-tree-toggle:hover {
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+}
+
+.node-tree-toggle:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* Chevron rotation */
+.node-tree-toggle .toggle-chevron {
+  -webkit-transition: transform 0.2s ease;
+  transition: transform 0.2s ease;
+}
+
+.node-tree-toggle.expanded .toggle-chevron {
+  -webkit-transform: rotate(90deg);
+  transform: rotate(90deg);
+}
+
+/* Placeholder for items without children (keeps alignment) */
+.node-tree-toggle-placeholder {
+  width: 24px;
+  height: 24px;
+  margin-right: 0.25rem;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+/* Node type icons */
+.node-icon {
+  font-size: 1rem;
+  margin-right: 0.5rem;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.node-icon.vm { color: #3b82f6; }
+.node-icon.lxc { color: #22c55e; }
+.node-icon.proxmox { color: #e97627; }
+.node-icon.server { color: var(--color-text-muted); }
+
+/* Guest type badge (VM/LXC) */
+.node-tree-guest-badge {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.0625rem 0.25rem;
+  border-radius: 3px;
+  margin-left: 0.375rem;
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+}
+
+.node-tree-guest-badge.vm {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.node-tree-guest-badge.lxc {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+/* Nested children list */
+.node-tree-children {
+  border-left: 1px solid var(--color-border);
+  margin-left: 12px;
+  padding-left: 0;
+}
+
+/* Adjust row padding for nested items */
+.node-tree-children .node-tree-row {
+  padding-left: 0.75rem;
+}
+
+/* Indent wrapper with toggle for nested items */
+.node-tree-children .node-tree-row-wrapper {
+  padding-left: 0.5rem;
+}
+
+/* Remove border from last item in children */
+.node-tree-children .node-tree-item:last-child {
+  border-bottom: none;
+}
+
+/* Animate children visibility */
+.node-tree-children {
+  overflow: hidden;
+}
+
+/* =====================================================
+   Node Detail Page - Guest Node Styling (Phase 5)
+   ===================================================== */
+
+/* Guest type icon in header */
+.guest-type-icon {
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.guest-type-icon.vm { color: #3b82f6; }
+.guest-type-icon.lxc { color: #22c55e; }
+
+/* VMID badge */
+.guest-vmid-badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: var(--color-bg-elevated);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+/* Guest badge in node-info-inline */
+.node-type-badge.guest-badge {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.node-type-badge.guest-badge.vm {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.node-type-badge.guest-badge.lxc {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+/* Parent link in node-info-inline */
+.parent-link {
+  display: -webkit-inline-box;
+  display: -webkit-inline-flex;
+  display: inline-flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.parent-link a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.parent-link a:hover {
+  text-decoration: underline;
+}
+
+.parent-link svg {
+  opacity: 0.6;
+}
+
 
 /* ============================================================
    FROM: pulse-components.css (453 lines)
@@ -3755,7 +3980,7 @@ button.node-tree-row {
 
 
 /* ============================================================
-   FROM: components.css (3215 lines)
+   FROM: components.css (3258 lines)
    ============================================================ */
 
 /* =====================================================
@@ -6367,6 +6592,49 @@ button.node-tree-row {
   margin-top: 0.25rem;
   font-size: 0.6875rem;
   color: var(--color-text-muted);
+}
+
+/* Form hint below input fields */
+.right-panel-section .form-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
+/* Informational note in form sections */
+.right-panel-section .form-section-note {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border-radius: 4px;
+  border-left: 2px solid var(--color-accent);
+}
+
+.right-panel-section .form-section-note svg {
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+/* Readonly/disabled input styling */
+.right-panel-section .form-group input[readonly],
+.right-panel-section .form-group input[disabled],
+.right-panel-section .form-group textarea[readonly],
+.right-panel-section .form-group textarea[disabled] {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 @media (max-width: 480px) {

@@ -384,7 +384,7 @@ const nodes = {
 
     const result = stmt.run({
       name: data.name,
-      host: hostName,  // Same host as parent (commands go via parent)
+      host: data.guest_ip || hostName,  // Use guest IP for display/network tools, fallback to parent
       ssh_port: 22,
       ssh_user: 'root',
       parent_id: parentId,

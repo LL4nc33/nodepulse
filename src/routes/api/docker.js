@@ -6,7 +6,28 @@ const express = require('express');
 const router = express.Router({ mergeParams: true });
 const db = require('../../db');
 const collector = require('../../collector');
+const ChildPoller = require('../../collector/child-poller');
 const { asyncHandler, apiResponse } = require('./helpers');
+
+/**
+ * Get node info with child-node support
+ * Returns isChild=true if this is a VM/LXC, with hostNode reference
+ * @param {number} nodeId - Node ID
+ * @returns {Object|null} { isChild: boolean, node: Object, hostNode: Object|null }
+ */
+function getNodeWithChildSupport(nodeId) {
+  var node = db.nodes.getByIdWithCredentials(nodeId);
+  if (!node) return null;
+
+  if (!node.parent_id) {
+    return { isChild: false, node: node, hostNode: null };
+  }
+
+  var hostNode = db.nodes.getByIdWithCredentials(node.parent_id);
+  if (!hostNode) return null;
+
+  return { isChild: true, node: node, hostNode: hostNode };
+}
 
 // Get all Docker data for a node
 router.get('/', asyncHandler(async (req, res) => {
@@ -32,20 +53,34 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Refresh Docker data for a node (collect from remote)
+// Supports both parent nodes (direct SSH) and child nodes (via ChildPoller)
 router.post('/', asyncHandler(async (req, res) => {
   var nodeId = parseInt(req.params.nodeId, 10);
   if (isNaN(nodeId)) {
     return apiResponse(res, 400, null, { code: 'INVALID_ID', message: 'Ungültige Node-ID' });
   }
 
-  // Need credentials for SSH connection
-  var node = db.nodes.getByIdWithCredentials(nodeId);
-  if (!node) {
+  var nodeInfo = getNodeWithChildSupport(nodeId);
+  if (!nodeInfo) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
   }
 
   try {
-    var data = await collector.runDocker(node);
+    var data;
+    if (nodeInfo.isChild) {
+      // Child-Node: Trigger immediate poll via ChildPoller
+      var poller = ChildPoller.getPoller(nodeInfo.hostNode.id);
+      if (poller) {
+        await poller.pollNow();
+      }
+      // Return cached data from DB
+      data = db.docker.getAllForNode(nodeId);
+      var summary = db.docker.getSummary(nodeId);
+      data.summary = summary;
+    } else {
+      // Parent-Node: Direct SSH collection
+      data = await collector.runDocker(nodeInfo.node);
+    }
     apiResponse(res, 200, data);
   } catch (err) {
     apiResponse(res, 503, null, { code: 'DOCKER_ERROR', message: err.message });
@@ -89,15 +124,23 @@ router.post('/containers/:containerId/:action', asyncHandler(async (req, res) =>
     return apiResponse(res, 400, null, { code: 'INVALID_ACTION', message: 'Ungültige Aktion. Erlaubt: ' + validActions.join(', ') });
   }
 
-  // Need credentials for SSH connection
-  var node = db.nodes.getByIdWithCredentials(nodeId);
-  if (!node) {
+  // Get node with child support
+  var nodeInfo = getNodeWithChildSupport(nodeId);
+  if (!nodeInfo) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Child-Nodes: Container actions not yet supported (would need pct/qm exec)
+  if (nodeInfo.isChild) {
+    return apiResponse(res, 501, null, {
+      code: 'NOT_IMPLEMENTED',
+      message: 'Container-Aktionen für Child-Nodes (VMs/LXCs) werden noch nicht unterstützt. Bitte direkt auf der VM/LXC ausführen.'
+    });
   }
 
   try {
     var command = 'docker ' + action + ' ' + containerId;
-    var result = await collector.runDockerCommand(node, command, 60000);
+    var result = await collector.runDockerCommand(nodeInfo.node, command, 60000);
 
     if (result.exitCode !== 0) {
       return apiResponse(res, 500, null, { code: 'DOCKER_ERROR', message: result.stderr || 'Aktion fehlgeschlagen' });
@@ -105,7 +148,7 @@ router.post('/containers/:containerId/:action', asyncHandler(async (req, res) =>
 
     // Refresh container list after action
     try {
-      await collector.runDocker(node);
+      await collector.runDocker(nodeInfo.node);
     } catch (refreshErr) {
       // Ignore refresh errors
     }
@@ -130,10 +173,18 @@ router.get('/containers/:containerId/logs', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_CONTAINER_ID', message: 'Ungültige Container-ID' });
   }
 
-  // Need credentials for SSH connection
-  var node = db.nodes.getByIdWithCredentials(nodeId);
-  if (!node) {
+  // Get node with child support
+  var nodeInfo = getNodeWithChildSupport(nodeId);
+  if (!nodeInfo) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Child-Nodes: Logs not yet supported (would need pct/qm exec)
+  if (nodeInfo.isChild) {
+    return apiResponse(res, 501, null, {
+      code: 'NOT_IMPLEMENTED',
+      message: 'Container-Logs für Child-Nodes (VMs/LXCs) werden noch nicht unterstützt. Bitte direkt auf der VM/LXC abrufen.'
+    });
   }
 
   var tail = parseInt(req.query.tail, 10) || 100;
@@ -142,7 +193,7 @@ router.get('/containers/:containerId/logs', asyncHandler(async (req, res) => {
 
   try {
     var command = 'docker logs --tail ' + tail + ' ' + containerId + ' 2>&1';
-    var result = await collector.runDockerCommand(node, command, 30000);
+    var result = await collector.runDockerCommand(nodeInfo.node, command, 30000);
 
     apiResponse(res, 200, {
       containerId: containerId,
@@ -221,14 +272,23 @@ router.delete('/containers/:containerId', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_CONTAINER_ID', message: 'Ungültige Container-ID (hex, 12-64 Zeichen)' });
   }
 
-  var node = db.nodes.getByIdWithCredentials(nodeId);
-  if (!node) {
+  // Get node with child support
+  var nodeInfo = getNodeWithChildSupport(nodeId);
+  if (!nodeInfo) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Child-Nodes: Delete not yet supported
+  if (nodeInfo.isChild) {
+    return apiResponse(res, 501, null, {
+      code: 'NOT_IMPLEMENTED',
+      message: 'Container-Löschung für Child-Nodes (VMs/LXCs) wird noch nicht unterstützt.'
+    });
   }
 
   try {
     var command = force ? 'docker rm -f ' + containerId : 'docker rm ' + containerId;
-    var result = await collector.runDockerCommand(node, command, 30000);
+    var result = await collector.runDockerCommand(nodeInfo.node, command, 30000);
 
     if (result.exitCode !== 0) {
       var errMsg = result.stderr || 'Container konnte nicht gelöscht werden';
@@ -241,7 +301,7 @@ router.delete('/containers/:containerId', asyncHandler(async (req, res) => {
 
     // Refresh Docker data
     try {
-      await collector.runDocker(node);
+      await collector.runDocker(nodeInfo.node);
     } catch (refreshErr) {
       // Ignore refresh errors
     }
@@ -273,14 +333,23 @@ router.delete('/images/:imageId', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_IMAGE_ID', message: 'Ungültige Image-ID oder Name:Tag' });
   }
 
-  var node = db.nodes.getByIdWithCredentials(nodeId);
-  if (!node) {
+  // Get node with child support
+  var nodeInfo = getNodeWithChildSupport(nodeId);
+  if (!nodeInfo) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Child-Nodes: Delete not yet supported
+  if (nodeInfo.isChild) {
+    return apiResponse(res, 501, null, {
+      code: 'NOT_IMPLEMENTED',
+      message: 'Image-Löschung für Child-Nodes (VMs/LXCs) wird noch nicht unterstützt.'
+    });
   }
 
   try {
     var command = force ? 'docker rmi -f ' + imageId : 'docker rmi ' + imageId;
-    var result = await collector.runDockerCommand(node, command, 60000);
+    var result = await collector.runDockerCommand(nodeInfo.node, command, 60000);
 
     if (result.exitCode !== 0) {
       var errMsg = result.stderr || 'Image konnte nicht gelöscht werden';
@@ -292,7 +361,7 @@ router.delete('/images/:imageId', asyncHandler(async (req, res) => {
 
     // Refresh Docker data
     try {
-      await collector.runDocker(node);
+      await collector.runDocker(nodeInfo.node);
     } catch (refreshErr) {
       // Ignore refresh errors
     }
@@ -321,15 +390,24 @@ router.delete('/volumes/:volumeName', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_VOLUME_NAME', message: 'Ungültiger Volume-Name' });
   }
 
-  var node = db.nodes.getByIdWithCredentials(nodeId);
-  if (!node) {
+  // Get node with child support
+  var nodeInfo = getNodeWithChildSupport(nodeId);
+  if (!nodeInfo) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Child-Nodes: Delete not yet supported
+  if (nodeInfo.isChild) {
+    return apiResponse(res, 501, null, {
+      code: 'NOT_IMPLEMENTED',
+      message: 'Volume-Löschung für Child-Nodes (VMs/LXCs) wird noch nicht unterstützt.'
+    });
   }
 
   try {
     // Note: docker volume rm has no -f flag, volumes in use cannot be force-deleted
     var command = 'docker volume rm ' + volumeName;
-    var result = await collector.runDockerCommand(node, command, 30000);
+    var result = await collector.runDockerCommand(nodeInfo.node, command, 30000);
 
     if (result.exitCode !== 0) {
       var errMsg = result.stderr || 'Volume konnte nicht gelöscht werden';
@@ -341,7 +419,7 @@ router.delete('/volumes/:volumeName', asyncHandler(async (req, res) => {
 
     // Refresh Docker data
     try {
-      await collector.runDocker(node);
+      await collector.runDocker(nodeInfo.node);
     } catch (refreshErr) {
       // Ignore refresh errors
     }
@@ -371,14 +449,23 @@ router.delete('/networks/:networkId', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_NETWORK_ID', message: 'Ungültige Network-ID oder Name' });
   }
 
-  var node = db.nodes.getByIdWithCredentials(nodeId);
-  if (!node) {
+  // Get node with child support
+  var nodeInfo = getNodeWithChildSupport(nodeId);
+  if (!nodeInfo) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Child-Nodes: Delete not yet supported
+  if (nodeInfo.isChild) {
+    return apiResponse(res, 501, null, {
+      code: 'NOT_IMPLEMENTED',
+      message: 'Network-Löschung für Child-Nodes (VMs/LXCs) wird noch nicht unterstützt.'
+    });
   }
 
   try {
     var command = 'docker network rm ' + networkId;
-    var result = await collector.runDockerCommand(node, command, 30000);
+    var result = await collector.runDockerCommand(nodeInfo.node, command, 30000);
 
     if (result.exitCode !== 0) {
       var errMsg = result.stderr || 'Network konnte nicht gelöscht werden';
@@ -394,7 +481,7 @@ router.delete('/networks/:networkId', asyncHandler(async (req, res) => {
 
     // Refresh Docker data
     try {
-      await collector.runDocker(node);
+      await collector.runDocker(nodeInfo.node);
     } catch (refreshErr) {
       // Ignore refresh errors
     }
@@ -423,10 +510,18 @@ router.post('/prune/:type', asyncHandler(async (req, res) => {
     return apiResponse(res, 400, null, { code: 'INVALID_TYPE', message: 'Ungültiger Prune-Typ. Erlaubt: ' + validTypes.join(', ') });
   }
 
-  // Need credentials for SSH connection
-  var node = db.nodes.getByIdWithCredentials(nodeId);
-  if (!node) {
+  // Get node with child support
+  var nodeInfo = getNodeWithChildSupport(nodeId);
+  if (!nodeInfo) {
     return apiResponse(res, 404, null, { code: 'NOT_FOUND', message: 'Node nicht gefunden' });
+  }
+
+  // Child-Nodes: Prune not yet supported
+  if (nodeInfo.isChild) {
+    return apiResponse(res, 501, null, {
+      code: 'NOT_IMPLEMENTED',
+      message: 'Docker-Prune für Child-Nodes (VMs/LXCs) wird noch nicht unterstützt.'
+    });
   }
 
   try {
@@ -443,11 +538,11 @@ router.post('/prune/:type', asyncHandler(async (req, res) => {
       command = 'docker network prune -f';
     }
 
-    var result = await collector.runDockerCommand(node, command, 120000);
+    var result = await collector.runDockerCommand(nodeInfo.node, command, 120000);
 
     // Refresh Docker data after prune
     try {
-      await collector.runDocker(node);
+      await collector.runDocker(nodeInfo.node);
     } catch (refreshErr) {
       // Ignore refresh errors
     }

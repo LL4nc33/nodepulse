@@ -2609,6 +2609,49 @@
   color: var(--color-text-muted);
 }
 
+/* Form hint below input fields */
+.right-panel-section .form-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+}
+
+/* Informational note in form sections */
+.right-panel-section .form-section-note {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border-radius: 4px;
+  border-left: 2px solid var(--color-accent);
+}
+
+.right-panel-section .form-section-note svg {
+  -webkit-flex-shrink: 0;
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+/* Readonly/disabled input styling */
+.right-panel-section .form-group input[readonly],
+.right-panel-section .form-group input[disabled],
+.right-panel-section .form-group textarea[readonly],
+.right-panel-section .form-group textarea[disabled] {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 @media (max-width: 480px) {
   .right-panel-wide {
     width: 100%;
